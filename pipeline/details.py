@@ -47,8 +47,9 @@ INSTANT = {"equity", "lt_debt", "st_debt", "cash"}
 
 
 def sec_headers() -> dict:
-    contact = os.environ.get("SEC_CONTACT", "momentum-lab@users.noreply.github.com")
-    return {"User-Agent": f"MomentumLab/0.1 private non-commercial research {contact}",
+    owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "momentum-lab")
+    contact = os.environ.get("SEC_CONTACT") or f"{owner}@users.noreply.github.com"
+    return {"User-Agent": f"{owner} MomentumLab {contact}",
             "Accept-Encoding": "gzip, deflate"}
 
 

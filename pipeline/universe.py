@@ -20,6 +20,8 @@ import pandas as pd
 MIN_UNIVERSE = 500  # weniger Aktien => Liste vermutlich unvollständig
 
 ISHARES_URLS = [
+    "https://www.ishares.com/us/products/239696/ishares-msci-world-etf/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239696/x/latest-holdings.csv",
     "https://www.ishares.com/us/products/239696/ishares-msci-world-etf/1467271812596.ajax?fileType=csv&fileName=URTH_holdings&dataType=fund",
 ]
 
@@ -33,7 +35,9 @@ COLUMN_ALIASES = {
     "price": ["price", "kurs"],
     "location": ["location", "standort"],
     "exchange": ["exchange", "börse", "boerse"],
-    "currency": ["currency", "market currency", "marktwährung", "marktwaehrung"],
+    "currency": ["market currency", "marktwährung", "marktwaehrung"],
+    "price_currency": ["currency", "währung", "waehrung"],
+    "fx_rate": ["fx rate", "devisenkurs", "wechselkurs"],
     "isin": ["isin"],
     "sedol": ["sedol"],
     "cusip": ["cusip"],
@@ -171,7 +175,9 @@ def parse_ishares_csv(text: str) -> tuple[pd.DataFrame, str | None]:
             header_idx = i
             break
     if header_idx is None:
-        raise ValueError("Kopfzeile 'Ticker' nicht gefunden – Format der iShares-Datei hat sich geändert")
+        head = text[:120].replace("\n", " ")
+        kind = "HTML-Seite statt CSV" if "<html" in text[:2000].lower() else "unbekanntes Format"
+        raise ValueError(f"Kopfzeile 'Ticker' nicht gefunden ({kind}: {head!r})")
     reader = csv.reader(io.StringIO("\n".join(lines[header_idx:])))
     header = [_norm_header(h) for h in next(reader)]
     colmap = {}
@@ -191,9 +197,15 @@ def parse_ishares_csv(text: str) -> tuple[pd.DataFrame, str | None]:
         rec = {k: row[j].strip() for k, j in colmap.items()}
         rows.append(rec)
     df = pd.DataFrame(rows)
-    for num in ("market_value", "weight", "price"):
+    for num in ("market_value", "weight", "price", "fx_rate"):
         if num in df:
             df[num] = df[num].map(parse_number)
+    # US-Liste: Kurs in USD, FX Rate = Landeswährung je USD -> Kurs in Landeswährung umrechnen
+    if "currency" not in df and "price_currency" in df:
+        df["currency"] = df["price_currency"]
+    if {"price", "fx_rate", "price_currency", "currency"} <= set(df.columns):
+        conv = (df["price_currency"].str.upper() == "USD") & (df["currency"].str.upper() != "USD") & df["fx_rate"].notna()
+        df.loc[conv, "price"] = df.loc[conv, "price"] * df.loc[conv, "fx_rate"]
     return df, as_of
 
 

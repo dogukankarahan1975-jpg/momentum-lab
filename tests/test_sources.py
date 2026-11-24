@@ -216,3 +216,34 @@ def test_parse_rss():
     assert items[0]["date"] == "2026-11-23" and items[1]["date"] == "2026-11-20"
     assert details.parse_rss("kaputt") == []
     assert details.short_name("ALPHABET INC CLASS A") == "ALPHABET"
+
+
+NEW_FORMAT = """iShares MSCI World ETF
+Fund Holdings as of,"Nov 23, 2026"
+Inception Date,"Jan 10, 2012"
+Shares Outstanding,"48,300,000.00"
+Stock,"-"
+Bond,"-"
+Cash,"-"
+Other,"-"
+ 
+Ticker,Name,Sector,Asset Class,Market Value,Weight (%),Notional Value,Quantity,Price,Location,Exchange,Currency,FX Rate,Market Currency,Accrual Date
+"AAPL","APPLE INC","Information Technology","Equity","552,982,329.20","5.74","552,982,329.20","1,615,160.00","342.37","United States","NASDAQ","USD","1.00","USD","-"
+"8306","MITSUBISHI UFJ FINANCIAL GROUP INC","Financials","Equity","23,984,172.38","0.25","23,984,172.38","1,177,300.00","20.37","Japan","Tokyo Stock Exchange","USD","154.10","JPY","-"
+"RR.","ROLLS-ROYCE HOLDINGS PLC","Industrials","Equity","15,497,715.92","0.16","15,497,715.92","919,697.00","16.85","United Kingdom","London Stock Exchange","USD","0.79","GBP","-"
+"""
+
+
+def test_parse_new_ishares_format_converts_usd_prices():
+    raw, as_of = universe.parse_ishares_csv(NEW_FORMAT)
+    frame, _ = universe.build_from_ishares(raw)
+    f = frame.set_index("symbol")
+    assert f.at["8306.T", "ref_price"] == pytest.approx(20.37 * 154.10)
+    assert f.at["8306.T", "ref_currency"] == "JPY" and f.at["8306.T", "currency_hint"] == "JPY"
+    assert f.at["RR.L", "ref_price"] == pytest.approx(16.85 * 0.79)
+    assert f.at["AAPL", "ref_price"] == pytest.approx(342.37)
+
+
+def test_html_instead_of_csv_is_reported():
+    with pytest.raises(ValueError, match="HTML"):
+        universe.parse_ishares_csv("<!DOCTYPE html><html><head></head></html>")

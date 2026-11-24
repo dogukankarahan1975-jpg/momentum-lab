@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.1.0"
+PIPELINE_VERSION = "0.1.1"
 METHODOLOGY_VERSION = "1.0.0"
 
 METHODOLOGY = {
