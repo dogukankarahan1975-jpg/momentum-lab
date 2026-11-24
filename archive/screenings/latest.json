@@ -1,0 +1,450 @@
+{
+ "asof": "2026-11-24",
+ "methodology_version": "1.0.0",
+ "params_hash": "9e9068d7afa0",
+ "pipeline_version": "0.1.0",
+ "status": "warnung",
+ "candidates": [
+  "6098.T",
+  "O39.SI",
+  "FTNT",
+  "MU",
+  "OMV.VI",
+  "BNS.TO",
+  "REP.MC",
+  "CRWD",
+  "PANW",
+  "TD.TO"
+ ],
+ "top_pick": null,
+ "market": {
+  "proxy": "URTH",
+  "name": "iShares MSCI World ETF (USD)",
+  "date": "2026-11-24",
+  "above_ma200": false,
+  "dist_ma200": -0.023374,
+  "dd_from_high": -0.080138,
+  "ret_12m": 0.089898,
+  "ret_24m": 0.2579,
+  "vol_3m": 0.18336,
+  "vol_change": 0.79408,
+  "vol_shock_threshold": 0.35323,
+  "vol_shock": true,
+  "bear_state": false,
+  "breadth_above_ma200": 0.55605
+ },
+ "universe": {
+  "source": "Notfall-Universum",
+  "as_of": null,
+  "size": 449,
+  "priced": 447,
+  "eligible": 446,
+  "excluded_by_reason": {
+   "penny": 1,
+   "no_data": 2
+  },
+  "watchlist": []
+ },
+ "top50": [
+  [
+   "2914.T",
+   "Japan Tobacco",
+   2.2172,
+   13,
+   0.58717,
+   0.32299
+  ],
+  [
+   "4502.T",
+   "Takeda Pharmaceutical",
+   1.9387,
+   20,
+   0.53959,
+   0.21852
+  ],
+  [
+   "6098.T",
+   "Recruit Holdings",
+   4.5335,
+   1,
+   1.4101,
+   1.6102
+  ],
+  [
+   "8591.T",
+   "Orix",
+   1.4482,
+   35,
+   0.56543,
+   0.20515
+  ],
+  [
+   "ABBV",
+   "AbbVie",
+   1.5456,
+   30,
+   0.29036,
+   0.45659
+  ],
+  [
+   "ADP",
+   "Automatic Data Processing",
+   2.0061,
+   17,
+   0.11407,
+   0.56937
+  ],
+  [
+   "AMGN",
+   "Amgen",
+   1.4434,
+   36,
+   0.54732,
+   0.29201
+  ],
+  [
+   "BMO.TO",
+   "Bank of Montreal",
+   1.26,
+   49,
+   0.38156,
+   0.15584
+  ],
+  [
+   "BNS.TO",
+   "Bank of Nova Scotia",
+   2.759,
+   6,
+   0.49248,
+   0.27857
+  ],
+  [
+   "CNQ.TO",
+   "Canadian Natural Resources",
+   1.883,
+   21,
+   0.8363,
+   0.29582
+  ],
+  [
+   "COP",
+   "ConocoPhillips",
+   1.5935,
+   28,
+   0.76706,
+   0.25603
+  ],
+  [
+   "CPU.AX",
+   "Computershare",
+   1.4144,
+   37,
+   0.20394,
+   0.45194
+  ],
+  [
+   "CRWD",
+   "CrowdStrike",
+   2.5979,
+   8,
+   0.9538,
+   1.2991
+  ],
+  [
+   "CVX",
+   "Chevron",
+   1.7912,
+   23,
+   0.55824,
+   0.28179
+  ],
+  [
+   "D05.SI",
+   "DBS Group",
+   2.3831,
+   11,
+   0.47378,
+   0.34077
+  ],
+  [
+   "DB1.DE",
+   "Deutsche Börse",
+   1.6072,
+   27,
+   0.39735,
+   0.19825
+  ],
+  [
+   "DHL.DE",
+   "DHL Group",
+   1.4719,
+   32,
+   0.52381,
+   0.24991
+  ],
+  [
+   "ENI.MI",
+   "Eni",
+   2.1994,
+   14,
+   0.83598,
+   0.23268
+  ],
+  [
+   "EOG",
+   "EOG Resources",
+   1.3135,
+   45,
+   0.58129,
+   0.24198
+  ],
+  [
+   "EQNR.OL",
+   "Equinor",
+   1.8459,
+   22,
+   0.94116,
+   0.2981
+  ],
+  [
+   "FPH.NZ",
+   "Fisher & Paykel Healthcare",
+   1.9416,
+   19,
+   0.38153,
+   0.37004
+  ],
+  [
+   "FTNT",
+   "Fortinet",
+   2.9353,
+   3,
+   1.1037,
+   1.1341
+  ],
+  [
+   "GIVN.SW",
+   "Givaudan",
+   1.3962,
+   39,
+   0.16011,
+   0.41898
+  ],
+  [
+   "IBE.MC",
+   "Iberdrola",
+   1.3102,
+   46,
+   0.32208,
+   0.12141
+  ],
+  [
+   "JNJ",
+   "Johnson & Johnson",
+   1.4555,
+   33,
+   0.41678,
+   0.17203
+  ],
+  [
+   "KNIN.SW",
+   "Kuehne + Nagel",
+   1.4485,
+   34,
+   0.50251,
+   0.26381
+  ],
+  [
+   "KO",
+   "Coca-Cola",
+   2.006,
+   18,
+   0.36529,
+   0.22492
+  ],
+  [
+   "LLY",
+   "Eli Lilly",
+   1.3073,
+   47,
+   0.55248,
+   0.44518
+  ],
+  [
+   "MAERSK-B.CO",
+   "A.P. Møller-Mærsk B",
+   1.7428,
+   25,
+   0.80071,
+   0.56003
+  ],
+  [
+   "MFC.TO",
+   "Manulife",
+   1.3723,
+   41,
+   0.40759,
+   0.19211
+  ],
+  [
+   "MRK",
+   "Merck & Co",
+   1.774,
+   24,
+   0.70917,
+   0.31527
+  ],
+  [
+   "MU",
+   "Micron",
+   2.9216,
+   4,
+   3.0113,
+   0.76724
+  ],
+  [
+   "O39.SI",
+   "OCBC",
+   3.6283,
+   2,
+   0.80148,
+   0.35584
+  ],
+  [
+   "OMV.VI",
+   "OMV",
+   2.896,
+   5,
+   0.74013,
+   0.38133
+  ],
+  [
+   "PANW",
+   "Palo Alto Networks",
+   2.5455,
+   9,
+   0.7528,
+   1.1315
+  ],
+  [
+   "PUB.PA",
+   "Publicis",
+   1.2385,
+   50,
+   0.22045,
+   0.35122
+  ],
+  [
+   "QBE.AX",
+   "QBE Insurance",
+   1.3312,
+   44,
+   0.38011,
+   0.20234
+  ],
+  [
+   "REP.MC",
+   "Repsol",
+   2.7319,
+   7,
+   1.0135,
+   0.44592
+  ],
+  [
+   "RY.TO",
+   "Royal Bank of Canada",
+   2.0494,
+   16,
+   0.39969,
+   0.18193
+  ],
+  [
+   "SHB-A.ST",
+   "Handelsbanken A",
+   1.3049,
+   48,
+   0.40199,
+   0.15848
+  ],
+  [
+   "SHEL.L",
+   "Shell",
+   1.3476,
+   43,
+   0.41511,
+   0.21957
+  ],
+  [
+   "SU.TO",
+   "Suncor Energy",
+   2.2759,
+   12,
+   1.0568,
+   0.28636
+  ],
+  [
+   "SWED-A.ST",
+   "Swedbank A",
+   1.588,
+   29,
+   0.45312,
+   0.18327
+  ],
+  [
+   "TD.TO",
+   "Toronto-Dominion Bank",
+   2.4568,
+   10,
+   0.58564,
+   0.2318
+  ],
+  [
+   "TGT",
+   "Target",
+   1.3827,
+   40,
+   0.68625,
+   0.20213
+  ],
+  [
+   "TRV",
+   "Travelers",
+   2.1246,
+   15,
+   0.49827,
+   0.32564
+  ],
+  [
+   "TTE.PA",
+   "TotalEnergies",
+   1.3722,
+   42,
+   0.62686,
+   0.11008
+  ],
+  [
+   "V",
+   "Visa",
+   1.4099,
+   38,
+   0.18367,
+   0.32352
+  ],
+  [
+   "WOW.AX",
+   "Woolworths",
+   1.4741,
+   31,
+   0.60246,
+   0.11627
+  ],
+  [
+   "XOM",
+   "Exxon Mobil",
+   1.7123,
+   26,
+   0.63376,
+   0.24671
+  ]
+ ]
+}
