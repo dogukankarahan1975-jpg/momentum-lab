@@ -1,0 +1,6 @@
+# Zusätzliche Yahoo-Symbole, die täglich mit Kursen und Momentum-Werten versorgt werden,
+# z. B. Aktien in deinem Depot, die nicht im MSCI World sind. Ein Symbol pro Zeile.
+# Hinweis: Diese Datei ist öffentlich sichtbar (nur Symbole, keine Stückzahlen).
+# Beispiele (Raute entfernen zum Aktivieren):
+# HAG.DE
+# EUNL.DE

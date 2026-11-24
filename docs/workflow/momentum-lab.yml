@@ -1,0 +1,111 @@
+name: Momentum Lab
+
+on:
+  schedule:
+    - cron: "17 22 * * 1-5"   # werktags nach US-Börsenschluss (Zeit in UTC)
+    - cron: "41 6 * * 6"      # samstags: alle Kurse komplett neu laden
+  workflow_dispatch:
+    inputs:
+      full_refresh:
+        description: "Alle Kurse komplett neu laden"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "momentum-lab*.zip"
+      - ".github/workflows/momentum-lab.yml"
+      - "config/**"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: momentum-lab
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    outputs:
+      pipeline: ${{ steps.pipe.outcome }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Hochgeladenes Code-Paket installieren
+        run: |
+          shopt -s nullglob; zips=(momentum-lab*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then echo "Kein neues Code-Paket."; exit 0; fi
+          tmp=$(mktemp -d); unzip -q "${zips[-1]}" -d "$tmp"
+          src="$tmp"; if [ -d "$tmp/momentum-lab" ]; then src="$tmp/momentum-lab"; fi
+          python3 "$src/tools/install_package.py" "$src" "${zips[@]}"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install -r pipeline/requirements.txt pytest
+
+      - name: Tests (bei Fehlern wird nichts veröffentlicht)
+        run: |
+          python -m pytest -q tests
+          node tests/js/run.mjs
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: cache
+          key: ml-cache-${{ github.run_id }}
+          restore-keys: ml-cache-
+
+      - name: Datenlauf
+        id: pipe
+        continue-on-error: true
+        env:
+          FULL_REFRESH: ${{ (github.event_name == 'schedule' && github.event.schedule == '41 6 * * 6') || inputs.full_refresh == true }}
+          SEC_CONTACT: ${{ vars.SEC_CONTACT }}
+        run: |
+          python tools/build_site.py --out site --build "$(git rev-parse --short HEAD)"
+          python -m pipeline.run --out site/data --cache cache --archive archive
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: cache
+          key: ml-cache-${{ github.run_id }}
+
+      - name: Archiv und Protokoll sichern
+        if: always()
+        run: |
+          git config user.name "momentum-lab-bot"; git config user.email "momentum-lab-bot@users.noreply.github.com"
+          git add archive || true
+          git commit -q -m "Datenlauf $(date -u +%F)" || true
+          git pull -q --rebase || true
+          git push -q || true
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  melden:
+    needs: [build, deploy]
+    if: needs.build.outputs.pipeline == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Der Datenlauf ist fehlgeschlagen. Die App zeigt die letzten gültigen Daten mit Warnung an."
+          exit 1
