@@ -97,6 +97,7 @@ with sync_playwright() as p:
     page.goto(BASE + "#/aktie/DMO008"); page.wait_for_selector("text=Warum nicht"); shot("07b-stock-excluded")
     page.goto(BASE + "#/depot"); page.wait_for_selector("text=Positionen"); page.wait_for_timeout(800); shot("08-depot")
     page.goto(BASE + "#/signale"); page.wait_for_selector("h1"); shot("09-signals")
+    page.goto(BASE + "#/autopilot"); page.wait_for_selector("text=Was du tun musst"); page.wait_for_timeout(500); shot("09b-autopilot")
     page.goto(BASE + "#/backtest"); page.wait_for_selector("text=Kennzahlen"); page.wait_for_selector("text=Stage 2: Teilvalidierung"); page.wait_for_timeout(800); shot("10-backtest")
     page.goto(BASE + "#/einstellungen"); page.wait_for_selector("text=Datenstatus"); shot("11-settings")
     page.goto(BASE + "#/"); page.wait_for_selector("text=Übersicht"); shot("12-dashboard-after")

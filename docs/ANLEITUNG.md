@@ -33,6 +33,7 @@ Der erste Lauf startet sofort (Reiter **Actions**). Er dauert 20–40 Minuten, w
 4. In der App: Zahnrad → **Dauerhaften Speicher anfordern**.
 
 ## Alltag
+- **Autopilot (einmal im Monat genügt):** In der ersten Woche jedes Monats Übersicht → **Autopilot** öffnen. Dort steht genau, was zu tun ist: verkaufen, neu kaufen (mit Betrag), aufstocken oder nichts. Trage oben dein neues Geld ein (zum Beispiel die Sparrate). Danach die Käufe und Verkäufe im Depot erfassen, damit der nächste Plan dein Depot kennt. Zwischen den Terminen musst du nichts tun.
 - **SCREENING STARTEN** prüft den neuesten Datenstand (werktags nachts aktualisiert), zeigt Stage 1 und Stage 2 und bewertet dein Depot.
 - **Top 10 → Finale Rangfolge**: die Stage-1-Kandidaten, neu sortiert nach dem Stage-2-Score (0 bis 10), mit Entscheidung, Risiko-Stufe, Datenqualität und Outperformance-Einschätzung. **Top 10 → Stage 1** zeigt die ursprüngliche Momentum-Liste. Die App merkt sich die zuletzt gewählte Ansicht.
 - **Aktie antippen**: Stage-2-Details mit aufklappbaren Abschnitten (Momentum, Gewinne, Trend, Fundamentaldaten, Bewertung und Risiko), Begründungen und Quellen.

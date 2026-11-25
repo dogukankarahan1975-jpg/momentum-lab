@@ -15,6 +15,7 @@ const ROUTES = [
   [/^#\/position\/(.+)$/, 'position', 'depot'],
   [/^#\/signale$/, 'signals', 'signals'],
   [/^#\/backtest$/, 'backtest', 'dashboard'],
+  [/^#\/autopilot$/, 'autopilot', 'dashboard'],
   [/^#\/einstellungen$/, 'settings', 'dashboard'],
 ];
 const VIEWS = {
@@ -26,6 +27,7 @@ const VIEWS = {
   position: () => import('./views/position.js'),
   signals: () => import('./views/signals-view.js'),
   backtest: () => import('./views/backtest.js'),
+  autopilot: () => import('./views/autopilot-view.js'),
   settings: () => import('./views/settings.js'),
 };
 

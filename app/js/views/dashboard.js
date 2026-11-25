@@ -1,4 +1,5 @@
-import { cachedStatus, freshness, loadScreen, loadStage2, loadStatus } from '../data.js';
+import { cachedStatus, freshness, loadAutopilot, loadScreen, loadStage2, loadStatus } from '../data.js';
+import { ACTION_TEXT, buildPlan, monthName } from '../autopilot.js';
 import { decisionBadge, stage2Usable } from '../stage2.js';
 import { computePortfolio } from '../depot.js';
 import { cls, fmtDate, fmtDateTime, fmtEUR, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
@@ -22,6 +23,23 @@ export async function render(root) {
     <p class="lede">${status?.asof ? `Datenstand ${fmtDate(status.asof)}, ${fr.label}` : 'Noch keine Daten vom Datenlauf.'}</p>`);
   if (status?.overall === 'fehler') parts.push(note('error', `Der letzte Datenlauf ist fehlgeschlagen. ${status.messages?.filter((m) => m.level === 'fehler').map((m) => m.text).join(' ') || ''}`));
   else if (status && !fr.ok) parts.push(note('warn', `Die Daten sind ${fr.label}. Empfehlungen werden erst mit aktuellen Daten wieder erzeugt.`));
+
+  // Autopilot (Monatsplan)
+  let ap = null;
+  try { ap = await loadAutopilot(); } catch { ap = null; }
+  if (ap?.plan?.available) {
+    const hold = computePortfolio(state.positions, state.txs, screen).open.map((i) => ({
+      symbol: i.pos.symbol, name: i.pos.name, mvEUR: i.mvEUR, sector: screen?.bySymbol?.get(i.pos.symbol)?.sector || null }));
+    const res = buildPlan(ap.plan, hold, await getSetting('apNewCash', 0));
+    const n = res.sells.length + res.buys.length + res.topups.length;
+    const act = ACTION_TEXT[ap.plan.action] || ACTION_TEXT.NORMAL;
+    parts.push(html`<a class="panel" href="#/autopilot" style="display:block;color:inherit">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3 style="margin:0">Autopilot: Plan für ${monthName(ap.plan.trade_from)}</h3>${chevron}</div>
+      <p class="small" style="margin:6px 0 4px"><span class="badge ${act.cls === 'ok' ? 'b-buy' : act.cls === 'warn' ? 'b-stop' : 'b-sell'}">${act.label}</span>
+        ${n ? `${res.sells.length} verkaufen, ${res.buys.length} kaufen${res.topups.length ? `, ${res.topups.length} aufstocken` : ''}` : 'Diesen Monat nichts zu tun'}</p>
+      <p class="xs muted" style="margin:0">Nächster Plan ab ${fmtDate(ap.plan.next_plan)}</p>
+    </a>`);
+  }
 
   // Screening
   parts.push(html`<section class="panel">

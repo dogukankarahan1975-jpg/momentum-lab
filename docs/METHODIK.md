@@ -333,6 +333,24 @@ Quartal mehr als 2 Standardabweichungen über dem Tempo davor. Sonst: Seitwärts
 5. **Aufbauphase:** In den ersten Läufen werden die Vergleichsdaten aufgebaut. Bis mindestens 60 % des Universums
    Kennzahlen haben, sind die fundamentalen Kategorien ausgesetzt, und Stage 2 gibt keine Freigabe.
 
+## 8b. Autopilot – fester Monatsplan (AP v1.0.0)
+
+**Zweck:** Eine eindeutige Handlungsanweisung pro Monat. Nur Regeln, die sich mit kostenlosen Daten historisch testen lassen (Kurse). Quality und Value sind bewusst nicht enthalten, weil es dafür keine kostenlose zeitpunktgenaue Historie gibt.
+
+**Regeln je Monat** (Signal am letzten Handelstag, Handel ab dem nächsten Handelstag, Plan gilt für den ganzen Monat):
+1. Verkaufen nach der Stage-1-Halteregel (Abschnitt 6): außerhalb der besten 20 % oder 12-1-Momentum ≤ 0 an zwei Monatsenden in Folge; sofort bei Rang unter dem Median oder 12-1-Momentum ≤ -10 %.
+2. Markt-Trendfilter (je Variante): Liegt der gleichgewichtete Markt unter seiner 200-Tage-Linie, gilt „keine Neukäufe“ (soft) oder „alles verkaufen und Geld parken“ (hard). Geparktes Geld wird mit 0 % gerechnet.
+3. Freie Plätze bis n Aktien mit den bestplatzierten Stage-1-Kandidaten füllen (bestes Zehntel, positives 6- und 12-Monats-Momentum), gehaltene überspringen, Branchengrenze beachten. Zielbetrag je Aktie = Depotwert / n.
+4. Übriges Geld (Sparrate, Verkaufserlöse) in Positionen, die mehr als 25 % unter dem Zielbetrag liegen. Gewinner werden nie gekürzt.
+
+**Variantenraster (vorab festgelegt, 12 Varianten):** n ∈ {10, 15} × Branchengrenze ∈ {keine, 30 %} × Trendfilter ∈ {keiner, soft, hard}.
+
+**Auswahl ohne Blick in die Zukunft:** Gewählt wird automatisch nur mit 2003–2014: höchste Rendite nach jährlich gezahlten Steuern (26,375 %, 1.000 € Pauschbetrag, Verlustverrechnung, FIFO) und realistischen Kosten (1 € + 0,20 %) unter allen Varianten mit höchstens -45 % Zwischenverlust (Vorgabe des Nutzers). Hält keine Variante die Grenze ein, gewinnt die mit dem kleinsten Zwischenverlust. 2015–heute ist der Prüfzeitraum: frischer Start mit 10.000 € und als Sparplan mit 500 € pro Monat, verglichen mit dem MSCI World ETF und dem MSCI World Momentum ETF nach Steuern (ETF: Teilfreistellung 30 %, Steuer beim Verkauf am Ende).
+
+**Grenzen:** Survivorship Bias wie in Abschnitt 7; Vorabpauschale und Dividendenbesteuerung vereinfacht; die Auswahl unter 12 Varianten ist selbst eine (kleine) Optimierung, deshalb zählt der Prüfzeitraum.
+
+**Literatur:** Faber (2007), *A Quantitative Approach to Tactical Asset Allocation* (Trendfilter mit gleitendem Durchschnitt); Daniel/Moskowitz (2016), *Momentum Crashes*; Barroso/Santa-Clara (2015), *Momentum has its moments*.
+
 ## 9. Quellen
 
 - MSCI Inc. (2025): *MSCI Momentum Indexes Methodology*, Juli 2025. https://www.msci.com/indexes/documents/methodology/2_MSCI_Momentum_Indexes_Methodology_20250725.pdf

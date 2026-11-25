@@ -191,6 +191,11 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     assert det["news"][0]["title"] == "Demo meldet Rekord"
     assert (archive / "universe" / "latest.csv").exists() and (archive / "runs.log").exists()
     assert (cache / "last_good" / "screen.json").exists()
+    # Autopilot: Monatsplan auch ohne Backtest (vorläufige Regel), archiviert
+    apj = json.loads((out / "autopilot.json").read_text())
+    assert apj["status"] == "ok" and apj["plan"]["available"] and apj["rule"]["provisional"]
+    assert apj["plan"]["buy_list"] and apj["plan"]["status"]
+    assert list((archive / "autopilot").glob("*.json"))
     # Stage 2: automatisch berechnet, über den echten Parser-Pfad (Crumb, quoteSummary, Zeitreihen)
     s2 = json.loads((out / "stage2.json").read_text())
     assert seen["qs"] > 250 and seen["ts"] > 100

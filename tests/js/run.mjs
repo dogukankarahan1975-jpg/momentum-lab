@@ -7,6 +7,7 @@ import { freshness } from '../../app/js/data.js';
 import { validateBackup } from '../../app/js/store.js';
 import { parseStage2 } from '../../app/js/data.js';
 import { decisionCounts, fmtMetric, stage2Usable } from '../../app/js/stage2.js';
+import { buildPlan } from '../../app/js/autopilot.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -183,6 +184,63 @@ test('Stage 2: Kennzahlen formatieren', () => {
   assert.equal(fmtMetric(0.012, 'pp'), '+1,2 Pp.');
   assert.equal(fmtMetric(0.97, 'ratio'), '-3,0 % vom Hoch');
   assert.equal(fmtMetric(null, 'pct'), '–');
+});
+
+// ---------------------------------------------------------------- Autopilot
+const apPlan = (o = {}) => ({
+  rule: { n: 4, sector_cap: 2, market: 'soft' }, action: 'NORMAL',
+  status: { A: ['H', 0.05], B: ['V', 0.4], C: ['W', 0.25], D: ['P', null] },
+  buy_list: [
+    { rank: 1, symbol: 'A', name: 'A', sector: 'Energie' },
+    { rank: 2, symbol: 'E', name: 'E', sector: 'Energie' },
+    { rank: 3, symbol: 'F', name: 'F', sector: 'IT' },
+    { rank: 4, symbol: 'G', name: 'G', sector: 'IT' },
+  ], ...o,
+});
+test('Autopilot: Verkauf, Branchengrenze und Beträge', () => {
+  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }, { symbol: 'B', mvEUR: 800, sector: 'IT' }];
+  const r = buildPlan(apPlan({ status: { A: ['H', 0.05], B: ['V', 0.4] } }), hold, 1200);
+  assert.deepEqual(r.sells.map((x) => x.symbol), ['B']);
+  // 3 freie Plätze: E (Energie 2/2), F, G
+  assert.deepEqual(r.buys.map((x) => x.symbol), ['E', 'F', 'G']);
+  near(r.total, 1000 + 800 + 1200);
+  near(r.target, 750);
+  assert.deepEqual(r.buys.map((b) => Math.round(b.amount)), [750, 750, 500]);
+});
+test('Autopilot: Branchengrenze überspringt', () => {
+  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }, { symbol: 'X', mvEUR: 1000, sector: 'Energie' }];
+  const r = buildPlan(apPlan({ status: { A: ['H', 0.05], X: ['H', 0.1] } }), hold, 1000);
+  assert.deepEqual(r.buys.map((x) => x.symbol), ['F', 'G']);
+  assert.equal(r.skipped[0].symbol, 'E');
+});
+test('Autopilot: wenig Geld -> keine Mini-Orders', () => {
+  const r = buildPlan(apPlan({ status: {} }), [], 120);
+  assert.deepEqual(r.buys.map((b) => b.amount), [50, 50]);
+  assert.equal(r.waiting.length, 2);
+});
+test('Autopilot: Parken verkauft alles, keine Käufe', () => {
+  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }];
+  const r = buildPlan(apPlan({ action: 'PARKEN' }), hold, 500);
+  assert.equal(r.sells.length, 1);
+  assert.equal(r.buys.length, 0);
+});
+test('Autopilot: Keine Neukäufe bei Abwärtstrend (soft)', () => {
+  const r = buildPlan(apPlan({ action: 'KEINE_KAEUFE' }), [], 5000);
+  assert.equal(r.buys.length, 0);
+  near(r.rest, 5000);
+});
+test('Autopilot: volle Plätze -> untergewichtete auffüllen, Gewinner nicht', () => {
+  const st = { A: ['H', 0.01], C: ['W', 0.2], F: ['H', 0.03], G: ['H', 0.04] };
+  const hold = [{ symbol: 'A', mvEUR: 3000 }, { symbol: 'C', mvEUR: 500 }, { symbol: 'F', mvEUR: 1400 }, { symbol: 'G', mvEUR: 1400 }];
+  const r = buildPlan(apPlan({ status: st }), hold, 500);
+  assert.equal(r.buys.length, 0);
+  assert.deepEqual(r.topups.map((t) => t.symbol), ['C']);
+  near(r.topups[0].amount, 500);
+});
+test('Autopilot: unbekannte Aktie -> prüfen, zählt als Platz', () => {
+  const r = buildPlan(apPlan(), [{ symbol: 'ZZZ', mvEUR: 100 }], 0);
+  assert.equal(r.rows[0].todo, 'pruefen');
+  assert.equal(r.freeSlots, 3);
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);
