@@ -31,7 +31,7 @@
   "vol_shock_threshold": 0.35323,
   "vol_shock": true,
   "bear_state": false,
-  "breadth_above_ma200": 0.55783
+  "breadth_above_ma200": 0.5644
  },
  "universe": {
   "source": "iShares MSCI World (URTH)",
