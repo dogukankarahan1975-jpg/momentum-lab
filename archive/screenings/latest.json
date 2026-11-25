@@ -2,21 +2,21 @@
  "asof": "2026-11-24",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.1.1",
+ "pipeline_version": "0.2.0",
  "status": "ok",
  "candidates": [
+  "6098.T",
   "MPC",
   "O39.SI",
   "VLO",
   "ILMN",
+  "OKTA",
   "PSX",
+  "MU",
   "FTNT",
-  "OMV.VI",
-  "BNS.TO",
-  "REP.MC",
-  "GWO.TO"
+  "OMV.VI"
  ],
- "top_pick": "MPC",
+ "top_pick": "6098.T",
  "market": {
   "proxy": "URTH",
   "name": "iShares MSCI World ETF (USD)",
@@ -31,18 +31,18 @@
   "vol_shock_threshold": 0.35323,
   "vol_shock": true,
   "bear_state": false,
-  "breadth_above_ma200": 0.59406
+  "breadth_above_ma200": 0.54963
  },
  "universe": {
   "source": "iShares MSCI World (URTH)",
   "as_of": "Nov 23, 2026",
   "size": 1251,
   "priced": 1247,
-  "eligible": 1010,
+  "eligible": 1219,
   "excluded_by_reason": {
-   "crosscheck": 218,
    "duplicate": 7,
    "short_history": 18,
+   "crosscheck": 1,
    "penny": 4,
    "no_data": 4
   },
@@ -50,402 +50,402 @@
  },
  "top50": [
   [
-   "0019.HK",
-   "Swire Pacific Ltd A",
-   1.8669,
-   50,
-   0.63339,
-   0.24068
-  ],
-  [
-   "1308.HK",
-   "Sitc International Holdings Ltd",
-   1.8769,
-   49,
-   0.89237,
-   0.54996
-  ],
-  [
    "2914.T",
    "Japan Tobacco",
-   2.2481,
-   28,
+   2.2472,
+   35,
    0.58717,
    0.32299
   ],
   [
    "4502.T",
    "Takeda Pharmaceutical",
-   1.9787,
-   38,
+   1.9775,
+   46,
    0.53959,
    0.21852
   ],
   [
    "4768.T",
    "Otsuka Corp",
-   2.2714,
-   24,
+   2.2773,
+   31,
    0.46944,
    0.50831
   ],
   [
+   "6098.T",
+   "Recruit Holdings",
+   4.5186,
+   1,
+   1.4101,
+   1.6102
+  ],
+  [
    "6178.T",
    "Japan Post Holdings Ltd",
-   2.0703,
-   34,
+   2.0702,
+   41,
    0.6568,
    0.33184
   ],
   [
    "7272.T",
    "Yamaha Motor",
-   1.951,
-   41,
+   1.9589,
+   48,
    0.60676,
    0.6524
   ],
   [
    "ABN.AS",
    "Abn Amro Bank Nv",
-   1.9693,
-   39,
+   1.9712,
+   47,
    0.61898,
    0.34911
   ],
   [
    "ADP",
    "Automatic Data Processing Inc",
-   1.9693,
-   40,
+   1.9871,
+   45,
    0.11407,
    0.56937
   ],
   [
    "BNS.TO",
    "Bank Of Nova Scotia",
-   2.7926,
-   8,
+   2.787,
+   12,
    0.49248,
    0.27857
   ],
   [
    "CNC",
    "Centene Corp",
-   2.0403,
-   35,
+   2.0427,
+   42,
    1.0596,
    0.67791
   ],
   [
-   "CNQ.TO",
-   "Canadian Natural Resources Ltd",
-   1.927,
-   43,
-   0.8363,
-   0.29582
-  ],
-  [
    "CRWD",
    "Crowdstrike Holdings Class A",
-   2.59,
-   16,
+   2.5961,
+   21,
    0.9538,
    1.2991
   ],
   [
    "D05.SI",
    "Dbs Group Holdings Ltd",
-   2.4034,
-   21,
+   2.4039,
+   27,
    0.47378,
    0.34077
   ],
   [
+   "DELL",
+   "Dell Technologies Inc Class C",
+   2.5478,
+   23,
+   1.9075,
+   1.1187
+  ],
+  [
    "DEMANT.CO",
    "Demant",
-   2.4186,
-   20,
+   2.4261,
+   26,
    0.53157,
    0.74951
   ],
   [
    "DSFIR.AS",
    "Dsm Firmenich Ag",
-   2.7139,
-   11,
+   2.7205,
+   14,
    0.49098,
    0.75676
   ],
   [
-   "ELE.MC",
-   "Endesa Sa",
-   1.8841,
-   46,
-   0.56008,
-   0.16891
-  ],
-  [
    "EMSN.SW",
    "Ems-Chemie Holding Ag",
-   2.5869,
-   17,
+   2.5838,
+   22,
    0.56216,
    0.33517
   ],
   [
    "ENI.MI",
    "Eni",
-   2.2566,
-   27,
+   2.2491,
+   34,
    0.83598,
    0.23268
   ],
   [
-   "ENX.PA",
-   "Euronext Nv",
-   1.8815,
-   47,
-   0.41847,
-   0.25824
-  ],
-  [
-   "EQNR.OL",
-   "Equinor",
-   1.8929,
-   45,
-   0.94116,
-   0.2981
-  ],
-  [
    "EXPD",
    "Expeditors International Of Washin",
-   2.2614,
-   25,
+   2.2593,
+   33,
    0.68288,
    0.33655
   ],
   [
    "FPH.NZ",
    "Fisher And Paykel Healthcare Corpo",
-   1.9492,
-   42,
+   1.9562,
+   49,
    0.38153,
    0.37004
   ],
   [
    "FTNT",
    "Fortinet",
-   2.9391,
-   6,
+   2.9398,
+   9,
    1.1037,
    1.1341
   ],
   [
    "GWO.TO",
    "Great West Lifeco Inc",
-   2.7196,
-   10,
+   2.713,
+   15,
    0.57274,
    0.28083
   ],
   [
+   "HPE",
+   "Hewlett Packard Enterprise",
+   2.8582,
+   11,
+   1.4558,
+   1.0241
+  ],
+  [
    "ILMN",
    "Illumina Inc",
-   3.61,
-   4,
+   3.5991,
+   5,
    1.6912,
    1.1068
   ],
   [
    "KO",
    "Coca-Cola",
-   2.0309,
-   36,
+   2.033,
+   43,
    0.36529,
    0.22492
   ],
   [
-   "KRZ.IR",
-   "Kerry Group Plc",
-   1.9241,
-   44,
-   0.21772,
-   0.47704
-  ],
-  [
    "LOTB.BR",
    "Lotus Bakeries Nv",
-   1.9868,
-   37,
+   1.9876,
+   44,
    0.64227,
    0.32985
   ],
   [
    "MPC",
    "Marathon Petroleum",
-   3.93,
-   1,
+   3.9191,
+   2,
    1.3691,
    1.0533
   ],
   [
+   "MU",
+   "Micron Technology",
+   2.9781,
+   8,
+   3.0113,
+   0.76724
+  ],
+  [
+   "NTAP",
+   "Netapp Inc",
+   2.6773,
+   17,
+   0.87581,
+   0.99266
+  ],
+  [
    "NTRA",
    "Natera",
-   2.6016,
-   15,
+   2.603,
+   20,
    1.0983,
    0.98258
   ],
   [
    "O39.SI",
    "Oversea-Chinese Banking",
-   3.6833,
-   2,
+   3.6658,
+   3,
    0.80148,
    0.35584
   ],
   [
+   "OKTA",
+   "Okta Class A",
+   3.545,
+   6,
+   1.3919,
+   1.804
+  ],
+  [
    "OMV.VI",
    "Omv",
-   2.9354,
-   7,
+   2.9273,
+   10,
    0.74013,
    0.38133
   ],
   [
    "PANW",
    "Palo Alto Networks",
-   2.5339,
-   18,
+   2.5414,
+   24,
    0.7528,
    1.1315
   ],
   [
    "POW.TO",
    "Power Corporation Of Canada",
-   2.295,
-   23,
+   2.294,
+   30,
    0.49997,
    0.28436
   ],
   [
    "PSX",
    "Phillips 66",
-   3.2087,
-   5,
+   3.2013,
+   7,
    1.1601,
    0.76082
   ],
   [
    "REP.MC",
    "Repsol",
-   2.7776,
-   9,
+   2.7691,
+   13,
    1.0135,
    0.44592
   ],
   [
+   "ROIV",
+   "Roivant Sciences Ltd",
+   1.9556,
+   50,
+   1.0027,
+   0.33127
+  ],
+  [
    "RPRX",
    "Royalty Pharma Plc Class A",
-   2.6802,
-   12,
+   2.6718,
+   18,
    0.74714,
    0.30419
   ],
   [
+   "RVMD",
+   "Revolution Medicines",
+   2.3491,
+   28,
+   2.4323,
+   0.38204
+  ],
+  [
    "RY.TO",
    "Royal Bank Of Canada",
-   2.0863,
-   32,
+   2.0851,
+   39,
    0.39969,
    0.18193
   ],
   [
    "SN",
    "Sharkninja",
-   2.2589,
-   26,
+   2.26,
+   32,
    1.0317,
    0.69673
   ],
   [
    "SOON.SW",
    "Sonova Holding Ag",
-   2.2029,
-   29,
+   2.2162,
+   36,
    0.26259,
    0.65607
   ],
   [
    "SU.TO",
    "Suncor Energy Inc",
-   2.3354,
-   22,
+   2.3267,
+   29,
    1.0568,
    0.28636
   ],
   [
    "TD.TO",
    "Toronto Dominion",
-   2.5041,
-   19,
+   2.4973,
+   25,
    0.58564,
    0.2318
   ],
   [
    "TEAM",
    "Atlassian Corp Class A",
-   2.6733,
-   13,
+   2.6896,
+   16,
    0.39947,
    2.1811
   ],
   [
-   "TRGP",
-   "Targa Resources",
-   1.8777,
-   48,
-   1.0087,
-   0.26848
-  ],
-  [
    "TRV",
    "Travelers Companies",
-   2.1478,
-   30,
+   2.1495,
+   37,
    0.49827,
    0.32564
   ],
   [
    "TWLO",
    "Twilio Class A",
-   2.0782,
-   33,
+   2.08,
+   40,
    1.3258,
    0.82064
   ],
   [
    "VAR.OL",
    "Var Energi",
-   2.1218,
-   31,
+   2.1186,
+   38,
    0.98183,
    0.3773
   ],
   [
    "VLO",
    "Valero Energy Corp",
-   3.6189,
-   3,
+   3.6046,
+   4,
    1.5032,
    0.79309
   ],
   [
    "WCP.TO",
    "Whitecap Resources Inc",
-   2.6354,
-   14,
+   2.6274,
+   19,
    1.0241,
    0.41429
   ]

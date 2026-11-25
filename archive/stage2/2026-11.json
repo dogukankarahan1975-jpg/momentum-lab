@@ -1,0 +1,119 @@
+{
+ "asof": "2026-11-24",
+ "stage2_version": "1.0.0",
+ "params_hash": "e46d88e97e15",
+ "status": "ok",
+ "eligible": [],
+ "ranking": [
+  {
+   "symbol": "OMV.VI",
+   "name": "Omv",
+   "stage1_rank": 10,
+   "stage2_rank": 1,
+   "score": 8.428,
+   "decision": "WATCHLIST",
+   "risk": "NORMAL",
+   "dq": "HIGH",
+   "outperformance": "MODERATE"
+  },
+  {
+   "symbol": "PSX",
+   "name": "Phillips 66",
+   "stage1_rank": 7,
+   "stage2_rank": 2,
+   "score": 7.726,
+   "decision": "WATCHLIST",
+   "risk": "NORMAL",
+   "dq": "HIGH",
+   "outperformance": "HIGH"
+  },
+  {
+   "symbol": "MPC",
+   "name": "Marathon Petroleum",
+   "stage1_rank": 2,
+   "stage2_rank": 3,
+   "score": 7.68,
+   "decision": "WATCHLIST",
+   "risk": "NORMAL",
+   "dq": "HIGH",
+   "outperformance": "HIGH"
+  },
+  {
+   "symbol": "VLO",
+   "name": "Valero Energy Corp",
+   "stage1_rank": 4,
+   "stage2_rank": 4,
+   "score": 7.649,
+   "decision": "WATCHLIST",
+   "risk": "ELEVATED",
+   "dq": "HIGH",
+   "outperformance": "MODERATE"
+  },
+  {
+   "symbol": "6098.T",
+   "name": "Recruit Holdings",
+   "stage1_rank": 1,
+   "stage2_rank": 5,
+   "score": 7.543,
+   "decision": "WATCHLIST",
+   "risk": "NORMAL",
+   "dq": "HIGH",
+   "outperformance": "HIGH"
+  },
+  {
+   "symbol": "O39.SI",
+   "name": "Oversea-Chinese Banking",
+   "stage1_rank": 3,
+   "stage2_rank": 6,
+   "score": 7.433,
+   "decision": "NO_ENTRY",
+   "risk": "HIGH",
+   "dq": "HIGH",
+   "outperformance": "LOW"
+  },
+  {
+   "symbol": "FTNT",
+   "name": "Fortinet",
+   "stage1_rank": 9,
+   "stage2_rank": 7,
+   "score": 7.264,
+   "decision": "NO_ENTRY",
+   "risk": "HIGH",
+   "dq": "HIGH",
+   "outperformance": "MARKET_LIKE"
+  },
+  {
+   "symbol": "MU",
+   "name": "Micron Technology",
+   "stage1_rank": 8,
+   "stage2_rank": 8,
+   "score": 7.087,
+   "decision": "NO_ENTRY",
+   "risk": "HIGH",
+   "dq": "HIGH",
+   "outperformance": "MODERATE"
+  },
+  {
+   "symbol": "ILMN",
+   "name": "Illumina Inc",
+   "stage1_rank": 5,
+   "stage2_rank": 9,
+   "score": 7.014,
+   "decision": "NO_ENTRY",
+   "risk": "HIGH",
+   "dq": "HIGH",
+   "outperformance": "MODERATE"
+  },
+  {
+   "symbol": "OKTA",
+   "name": "Okta Class A",
+   "stage1_rank": 6,
+   "stage2_rank": 10,
+   "score": 6.99,
+   "decision": "NO_ENTRY",
+   "risk": "HIGH",
+   "dq": "HIGH",
+   "outperformance": "MODERATE"
+  }
+ ]
+}
