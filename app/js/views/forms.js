@@ -1,4 +1,5 @@
 // Eingabemasken (Bottom-Sheets): Transaktion, Sparplan, manueller Kurs, Position bearbeiten.
+import { HOLD_CHOICES } from '../holding.js';
 import { cachedScreen, loadScreen } from '../data.js';
 import { replay, INTERVALS } from '../depot.js';
 import { fmtDate, fmtNum, parseDec, todayISO, uid } from '../fmt.js';
@@ -56,6 +57,11 @@ export async function openTxForm({ preset = {}, tx = null } = {}) {
     </div>
     <div data-for="SPLIT">
       <label class="field"><span>Neue Aktien je alte Aktie</span><input id="ratio" inputmode="decimal" value="${fmtIn(v('ratio', ''))}" placeholder="4 bei 4:1, 0,1 bei 1:10"></label>
+    </div>
+    <div data-for="BUY">
+      <label class="field"><span>Wie lange willst du halten?</span><select id="holdm">${HOLD_CHOICES.map(([k, l]) => html`<option value="${k}" ${String(fixedPos?.holdMonths ?? preset.holdMonths ?? '') === k ? 'selected' : ''}>${l}</option>`)}</select>
+        <div class="hint">Bei 6 oder 12 Monaten zeigt die App am Verkaufstermin (erster Werktag des Monats nach Ablauf) „Verkaufen“. Erinnerung per Kalender möglich.</div></label>
+      <label class="check" style="display:flex;gap:8px;align-items:center;margin:-4px 0 12px"><input type="checkbox" id="holdbe" ${fixedPos?.holdBE ?? preset.holdBE ?? true ? 'checked' : ''}><span class="small">Im Minus nicht verkaufen, sondern warten bis ±0</span></label>
     </div>
     <label class="field"><span>Notiz (optional)</span><input id="note" autocomplete="off" value="${v('note', '')}"></label>
     <p class="err-text" id="err" hidden></p>
@@ -150,6 +156,12 @@ export async function openTxForm({ preset = {}, tx = null } = {}) {
             rec.ratio = ratio;
           }
           await db.put('transactions', rec);
+          if (type === 'BUY') {
+            const hm = $('#holdm')?.value;
+            pos.holdMonths = hm ? Number(hm) : null;
+            pos.holdBE = !!$('#holdbe')?.checked;
+            await db.put('positions', pos);
+          }
           await reloadDepot();
           close();
           toast('Gespeichert');
@@ -223,12 +235,15 @@ export function openPositionEdit(pos) {
     <label class="field"><span>Symbol (Yahoo)</span><input id="s" value="${pos.symbol}" autocapitalize="characters"></label>
     <div class="grid2"><label class="field"><span>ISIN</span><input id="i" value="${pos.isin || ''}" autocapitalize="characters"></label>
     <label class="field"><span>Börse</span><input id="b" value="${pos.exchange || ''}"></label></div>
+    <label class="field"><span>Haltedauer</span><select id="hm">${HOLD_CHOICES.map(([k, l]) => html`<option value="${k}" ${String(pos.holdMonths ?? '') === k ? 'selected' : ''}>${l}</option>`)}</select></label>
+    <label class="check" style="display:flex;gap:8px;align-items:center;margin:-4px 0 12px"><input type="checkbox" id="be" ${pos.holdBE ? 'checked' : ''}><span class="small">Im Minus nicht verkaufen, sondern warten bis ±0</span></label>
     <label class="field"><span>Notizen</span><textarea id="t">${pos.note || ''}</textarea></label>
     <div class="btn-row"><button class="btn primary" id="save">Speichern</button></div>`);
   openSheet({ title: 'Position bearbeiten', body, onMount: (el, close) => {
     el.querySelector('#save').onclick = async () => {
       Object.assign(pos, { name: el.querySelector('#n').value.trim() || pos.name, symbol: el.querySelector('#s').value.trim().toUpperCase() || pos.symbol,
-        isin: el.querySelector('#i').value.trim().toUpperCase(), exchange: el.querySelector('#b').value.trim(), note: el.querySelector('#t').value });
+        isin: el.querySelector('#i').value.trim().toUpperCase(), exchange: el.querySelector('#b').value.trim(), note: el.querySelector('#t').value,
+        holdMonths: el.querySelector('#hm').value ? Number(el.querySelector('#hm').value) : null, holdBE: el.querySelector('#be').checked });
       await db.put('positions', pos); await reloadDepot(); close(); toast('Gespeichert'); rerender();
     };
   } });

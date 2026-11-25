@@ -78,7 +78,7 @@ export function computePosition(pos, txs, mark) {
   return {
     id: pos.id, pos, mark, qty: st.qty, costOpen: st.costOpen, avgCost: st.qty > 0 ? st.costOpen / st.qty : null,
     bought: st.bought, soldProceeds: st.soldProceeds, realized: st.realized, realizedByYear: st.realizedByYear,
-    dividends: st.dividends, fees: st.fees, priceEUR, mvEUR, unreal,
+    dividends: st.dividends, fees: st.fees, priceEUR, mvEUR, unreal, firstOpen: st.lots[0]?.date || null,
     unrealPct: unreal != null && st.costOpen > 0 ? unreal / st.costOpen : null,
     totalReturn, totalReturnPct: totalReturn != null && st.bought > 0 ? totalReturn / st.bought : null,
     errors: st.errors, closed: st.qty === 0, lots: st.lots, sells: st.sells,

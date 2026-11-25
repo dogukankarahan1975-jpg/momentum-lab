@@ -4,7 +4,30 @@ import numpy as np
 import pandas as pd
 
 from pipeline.simulator import build_sim_data
-from tests.test_autopilot import _ctx
+from pipeline import backtest as bt
+from pipeline import core
+
+
+def _ctx(seed=7, n=40, start="2000-01-03", end="2016-12-30", crash=True):
+    idx = pd.bdate_range(start, end)
+    rng = np.random.default_rng(seed)
+    cols = [f"S{i:02d}" for i in range(n)]
+    rets = rng.normal(0.0003, 0.012, (len(idx), n))
+    rets[:, :4] += 0.0008
+    if crash:  # gemeinsamer Markteinbruch 2008
+        m = (idx >= "2008-06-01") & (idx <= "2009-02-28")
+        rets[m, :] -= 0.004
+    adj = pd.DataFrame(100 * np.exp(np.cumsum(rets, axis=0)), index=idx, columns=cols)
+    vol = pd.DataFrame(1e6, index=idx, columns=cols)
+    panel = core.prepare_panel(adj, adj.copy(), vol)
+    fx = pd.DataFrame({"USD": 1.0}, index=idx)
+    cur = pd.Series("EUR", index=cols)
+    ctx = bt.Context(panel, cur, fx, set(), idx[-1], {}, log=lambda *a: None)
+    ctx.compute_signals()
+    sectors = pd.Series([["IT", "Energie", "Finanzen", "Gesundheit"][i % 4] for i in range(n)], index=cols)
+    sectors.iloc[:4] = "IT"   # alle Gewinner in einer Branche
+    return ctx, sectors
+
 
 
 def test_sim_data_shapes_and_no_lookahead():

@@ -1,10 +1,19 @@
+import { holdEvents, holdStatus, buildICS, openICS } from '../holding.js';
 import { loadScreen } from '../data.js';
 import { computePosition, estimateSaleTax, markFor, planOverview, TX_LABEL, INTERVALS, sortTx } from '../depot.js';
-import { cls, fmtDate, fmtEUR, fmtMoney, fmtNum, fmtPct, fmtPrice, fmtQty } from '../fmt.js';
+import { cls, fmtDate, fmtEUR, fmtMoney, fmtNum, fmtPct, fmtPrice, fmtQty, todayISO } from '../fmt.js';
 import { latestScreening, reloadDepot, state, go } from '../state.js';
 import { db } from '../store.js';
 import { badge, confirmDialog, html, note, toast } from '../ui.js';
 import { openManualPrice, openPlanForm, openPositionEdit, openTxForm } from './forms.js';
+
+export function holdPanel(hs, pos) {
+  const cls = hs.state === 'verkaufen' ? 'b-sell' : hs.state === 'warten' ? 'b-stop' : 'b-hold';
+  return html`<div class="panel"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3 style="margin:0">Deine Haltedauer: ${hs.months} Monate</h3><span class="badge ${cls}">${hs.state === 'laeuft' ? 'läuft' : hs.state === 'warten' ? 'bis ±0 halten' : hs.state === 'verkaufen' ? 'verkaufen' : 'prüfen'}</span></div>
+    <p class="small" style="margin:8px 0">${hs.text}</p>
+    <p class="xs muted" style="margin:0 0 8px">Gekauft am ${fmtDate(hs.since)}, Verkaufstermin ${fmtDate(hs.end)}${hs.breakEven ? ', im Minus warten bis ±0' : ', auch im Minus verkaufen'}. Dieser Hinweis ist getrennt vom Verkaufssignal der App.</p>
+    <div class="btn-row"><button class="btn small" data-ics="1">Erinnerung in den Kalender</button><button class="btn small" id="edit-hold">Haltedauer ändern</button></div></div>`;
+}
 
 export async function render(root, id) {
   const pos = state.positions.find((p) => p.id === id);
@@ -21,6 +30,9 @@ export async function render(root, id) {
   const parts = [html`<p style="margin:4px 0"><a href="#/depot">‹ Depot</a></p><h1>${pos.name}</h1>
     <div class="chips" style="margin:6px 0 12px"><span class="chip">${pos.symbol}</span>${pos.isin ? html`<span class="chip">${pos.isin}</span>` : ''}${row ? html`<a class="chip" href="#/aktie/${encodeURIComponent(pos.symbol)}" style="color:var(--ice)">Analyse öffnen</a>` : ''}</div>`];
   if (it.errors.length) parts.push(note('error', html`Unstimmigkeiten: ${it.errors.join('; ')}`));
+  const hs = holdStatus(pos, it, todayISO());
+  if (hs) parts.push(holdPanel(hs, pos));
+  else if (it.qty > 0) parts.push(html`<p class="small muted">Haltedauer: bis zum Verkaufssignal der App. <a href="#" id="edit-hold">Ändern</a></p>`);
   if (sig) parts.push(html`<a class="panel" href="#/signale" style="display:block;color:inherit"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${badge(sig.signal)}${sig.plan ? badge(sig.plan.signal) : ''}</div>
     <p class="small" style="margin:0;color:var(--ink-2)">${sig.reasons?.[0] || ''}</p><p class="xs muted" style="margin:6px 0 0">Screening vom ${fmtDate(snap.createdAt.slice(0, 10))}</p></a>`);
   parts.push(html`<div class="panel"><dl class="kv">
@@ -70,6 +82,11 @@ export async function render(root, id) {
   const np = root.querySelector('#newplan'); if (np) np.onclick = () => openPlanForm(pos);
   for (const sel of ['#mp', '#mp2']) { const b = root.querySelector(sel); if (b) b.onclick = () => openManualPrice(pos); }
   root.querySelector('#edit').onclick = () => openPositionEdit(pos);
+  root.querySelector('#edit-hold')?.addEventListener('click', (e) => { e.preventDefault(); openPositionEdit(pos); });
+  root.querySelector('[data-ics]')?.addEventListener('click', () => {
+    const ev = holdEvents([{ ...it, pos }]);
+    if (ev.length) openICS(`verkaufen-${pos.symbol}.ics`, buildICS(ev));
+  });
   root.querySelector('#del').onclick = async () => {
     const ok = await confirmDialog({ title: 'Position löschen?', text: `${pos.name} mit ${txs.length} Transaktionen und ${plans.length} Sparplänen wird dauerhaft von diesem Gerät gelöscht. Ein vorheriges Backup kann sie wiederherstellen.`, confirm: 'Endgültig löschen', danger: true });
     if (!ok) return;

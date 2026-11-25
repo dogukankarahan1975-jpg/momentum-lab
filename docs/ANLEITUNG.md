@@ -33,8 +33,10 @@ Der erste Lauf startet sofort (Reiter **Actions**). Er dauert 20–40 Minuten, w
 4. In der App: Zahnrad → **Dauerhaften Speicher anfordern**.
 
 ## Alltag
+- **Haltedauer:** Beim Erfassen eines Kaufs wählst du „Wie lange willst du halten?“ (Verkaufssignal der App, 6 oder 12 Monate) und ob im Minus bis ±0 gewartet wird. Depot → „Verkaufstermine in den Kalender“ legt Kalender-Erinnerungen an. Am Termin zeigt das Depot „Verkaufen“ oder „Halten bis ±0“.
+- **Kauf-Rechner** (Depot → Kauf-Rechner): Einstand und Gutschrift der Verkäufe eintragen, dazu neues Geld. Der Rechner zeigt den Gewinn und den Betrag je neuer Aktie nach 1 € Gebühr.
+- **Monats-Screening-Erinnerung:** Einstellungen → Erinnerungen.
 - **Backtest → Simulator:** Strategien antippen, Budget, Dynamik, Gebühren, Spread und Haltedauer einstellen. Darunter steht, was aus dem Geld geworden wäre (vor und nach Steuern), Jahr für Jahr mit Bestand, und welche Aktien in jedem Monat auf der Liste standen.
-- **Autopilot (einmal im Monat genügt):** In der ersten Woche jedes Monats Übersicht → **Autopilot** öffnen. Dort steht genau, was zu tun ist: verkaufen, neu kaufen (mit Betrag), aufstocken oder nichts. Trage oben dein neues Geld ein (zum Beispiel die Sparrate). Danach die Käufe und Verkäufe im Depot erfassen, damit der nächste Plan dein Depot kennt. Zwischen den Terminen musst du nichts tun.
 - **SCREENING STARTEN** prüft den neuesten Datenstand (werktags nachts aktualisiert), zeigt Stage 1 und Stage 2 und bewertet dein Depot.
 - **Top 10 → Finale Rangfolge**: die Stage-1-Kandidaten, neu sortiert nach dem Stage-2-Score (0 bis 10), mit Entscheidung, Risiko-Stufe, Datenqualität und Outperformance-Einschätzung. **Top 10 → Stage 1** zeigt die ursprüngliche Momentum-Liste. Die App merkt sich die zuletzt gewählte Ansicht.
 - **Aktie antippen**: Stage-2-Details mit aufklappbaren Abschnitten (Momentum, Gewinne, Trend, Fundamentaldaten, Bewertung und Risiko), Begründungen und Quellen.

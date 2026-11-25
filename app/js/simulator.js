@@ -14,7 +14,11 @@ export const DEFAULTS = {
   hold: 'signal', rest: 'etf', budgetMode: 'reinvest', strategies: ['world', 'sp500', 's1top5', 's1top10', 's2'],
 };
 
-export const HOLD_LABEL = { signal: 'bis zum ersten Verkaufssignal der App', 6: 'immer 6 Monate', 12: 'immer 12 Monate' };
+export const HOLD_LABEL = {
+  signal: 'bis zum ersten Verkaufssignal der App',
+  6: 'immer 6 Monate, dann verkaufen (auch im Minus)', 12: 'immer 12 Monate, dann verkaufen (auch im Minus)',
+  '6be': '6 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist', '12be': '12 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist',
+};
 export const BUDGET_LABEL = {
   reinvest: 'Monatsbudget plus Verkaufserlöse werden angelegt',
   fixed: 'Nur das feste Monatsbudget wird angelegt, Verkaufserlöse bleiben auf dem Konto',
@@ -163,7 +167,7 @@ export function simulate(data, key, opts) {
     if (st.kind === 'etf') {
       // reiner Sparplan: jeden Monat kaufen, nie verkaufen
       const px = data.bench?.[st.bench]?.px?.[k];
-      if (px > 0) {
+      if (px > 0 && b.cash > o.feeEtf) {
         const sc = b.cash * (o.spreadEtf / 200);
         const units = (b.cash - o.feeEtf - sc) / px;
         b.log.push({ k, type: 'ETF-Kauf', sym: 'ETF', name: data.bench[st.bench].name, px, shares: units, amount: b.cash, fee: o.feeEtf, spread: sc, why: 'Sparrate', cash: 0 });
@@ -189,14 +193,27 @@ export function simulate(data, key, opts) {
             if (sellLots(b, data, i, px, o, k, year, why)) { b.yearly[year].sells.push(sym); m.sold.push(data.names[i]); }
           }
         } else {
-          const h = Number(o.hold);
+          const be = String(o.hold).endsWith('be');
+          const h = parseInt(o.hold, 10);
           const due = (l) => k - l.k >= h;
-          if (targetSyms.has(sym)) {
-            for (const l of b.lots.get(sym)) if (due(l)) l.k = k; // noch auf der Liste: weiter halten
-          } else if ((b.lots.get(sym) || []).some(due)) {
-            if (sellLots(b, data, i, px, o, k, year, `Haltedauer ${h} Monate erreicht, nicht mehr auf der Liste`, due)) {
-              b.yearly[year].sells.push(sym); m.sold.push(data.names[i]);
+          const lots = b.lots.get(sym) || [];
+          if (!lots.some(due) || !(px > 0)) continue;
+          if (be) {
+            // nur verkaufen, wenn der Erlös nach Spread und Gebühr mindestens den Einstand deckt
+            const dl = lots.filter(due);
+            const sh = dl.reduce((x, l) => x + l.shares, 0), bas = dl.reduce((x, l) => x + l.basis, 0);
+            const net = sh * px * (1 - o.spread / 200) - o.feeSell;
+            if (net < bas) {
+              if (!b.waiting) b.waiting = new Set();
+              if (!b.waiting.has(sym)) { b.waiting.add(sym); b.log.push({ k, type: 'Halten', sym, name: data.names[i], px, shares: sh, amount: 0, why: `Haltedauer ${h} Monate erreicht, aber im Minus (${eur(net - bas)}). Weiter halten bis ±0.`, cash: b.cash }); }
+              continue;
             }
+            const was = b.waiting?.has(sym);
+            if (sellLots(b, data, i, px, o, k, year, was ? 'Wieder bei ±0 oder im Plus nach Wartezeit' : `Haltedauer ${h} Monate erreicht, im Plus`, due)) {
+              b.waiting?.delete(sym); b.yearly[year].sells.push(sym); m.sold.push(data.names[i]);
+            }
+          } else if (sellLots(b, data, i, px, o, k, year, `Haltedauer ${h} Monate erreicht`, due)) {
+            b.yearly[year].sells.push(sym); m.sold.push(data.names[i]);
           }
         }
       }
@@ -229,7 +246,7 @@ export function simulate(data, key, opts) {
     if (prevVal !== null && prevVal > 0) {
       const r = (v - budget) / prevVal;
       const t = twr[twr.length - 1] * r;
-      twr.push(t); peak = Math.max(peak, t); maxDD = Math.min(maxDD, t / peak - 1);
+      if (t > 0) { twr.push(t); peak = Math.max(peak, t); maxDD = Math.min(maxDD, t / peak - 1); }
     }
     prevVal = v;
     series.push([date, v, b.contrib]);

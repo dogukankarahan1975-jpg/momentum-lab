@@ -1,5 +1,12 @@
 # Änderungen
 
+## Pipeline 0.5.0 – 26.11.2026
+- Autopilot entfernt (Wunsch des Nutzers).
+- Simulator: ETF-Sparplan als normaler Sparplanrechner; Feld heißt jetzt „Gebühr je ETF-Sparrate“, unrealistische Gebühren/Spreads werden abgefangen (vorher konnte die Sparrate versehentlich als Gebühr eingetragen werden). Neue Haltedauer-Optionen „6/12 Monate, im Minus warten bis ±0“; Protokoll zeigt „Halten“-Einträge. Feste Haltedauer verkauft jetzt am ersten Monatsende nach Ablauf (auch wenn die Aktie noch auf der Liste steht; sie wird dann mit dem neuen Geld wieder gekauft).
+- Depot: Haltedauer je Position (beim Kauf wählbar: Verkaufssignal der App, 6 oder 12 Monate, optional „im Minus warten bis ±0“). Verkaufstermin = erster Werktag des Monats nach Ablauf. Hinweis „Haltedauer vorbei“ getrennt vom Verkaufssignal der App, in Depot, Position und Signalen.
+- Erinnerungen über den iPhone-Kalender (.ics): Verkaufstermine der Positionen und monatliches Screening. Keine Daten verlassen das iPhone.
+- Neuer Kauf-Rechner: Gewinn aus Verkäufen (rein → raus) und Aufteilung von Gutschrift + neuem Geld auf n Aktien mit 1 € Gebühr je Kauf.
+
 ## Pipeline 0.4.1 – 25.11.2026: Simulator transparenter
 - ETF-Sparpläne: reiner Sparplan (jeden Monat kaufen, nie verkaufen); angezeigt wird das Vermögen ohne Verkauf, die Steuer bei einem gedachten Verkauf nur nachrichtlich.
 - Neu: „Jede Order nachvollziehen“ – je Monat Konto vorher, Steuer, Budget, Verkaufserlöse, angelegter Betrag, Betrag je Aktie, Konto danach; jede Order mit Kurs, Stückzahl, Betrag, beim Verkauf Kaufdatum, Ø-Kaufkurs, Gewinn und Grund; Steuerabrechnungen; Bestand am Ende.

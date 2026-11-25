@@ -23,9 +23,7 @@ from . import backtest as bt
 from . import core
 from .config import (BENCHMARKS, METHODOLOGY, METHODOLOGY_VERSION, PIPELINE_VERSION, REGIME_SYMBOL_ORDER,
                      BACKTEST_VARIANTS, COST_SCENARIOS, TAX, BACKTEST, params_hash, STAGE2, STAGE2_VERSION,
-                     STAGE2_CATEGORIES, STAGE2_MIN, STAGE2_BACKTEST, FUNDAMENTALS, stage2_params_hash,
-                     AUTOPILOT_VERSION, autopilot_params_hash)
-from .autopilot import default_rule, live_plan, run_autopilot_backtest
+                     STAGE2_CATEGORIES, STAGE2_MIN, STAGE2_BACKTEST, FUNDAMENTALS, stage2_params_hash)
 from .fx import fx_on_index, load_fx
 from .prices import PriceStore, to_wide, update_prices
 from .universe import SUFFIX_COUNTRY, SUFFIX_CURRENCY, load_universe
@@ -449,7 +447,7 @@ def run(args) -> int:
     # 8) Backtest (nur bei neuem Monat, Methodikänderung oder auf Wunsch)
     bt_path_cache = cache / "backtest.json"
     bt_key = (f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}"
-              f"|{len(uni_syms)//50}|{'demo' if demo else 'live'}|{autopilot_params_hash()}")
+              f"|{len(uni_syms)//50}|{'demo' if demo else 'live'}")
     bt_res = None
     bt_ctx = None
     if not args.skip_backtest:
@@ -483,12 +481,6 @@ def run(args) -> int:
                         bt_res["stage2"] = {"available": False, "reason": f"Fehler: {exc}"}
                 if bt_res.get("available"):
                     try:
-                        bt_res["autopilot"] = run_autopilot_backtest(ctx, meta["sector"].reindex(uni_syms), log=log)
-                    except Exception as exc:  # noqa: BLE001
-                        traceback.print_exc()
-                        bt_res["autopilot"] = {"available": False, "reason": f"Fehler: {exc}"}
-                if bt_res.get("available"):
-                    try:
                         from .simulator import build_sim_data
                         sim = build_sim_data(ctx, meta, bench_eur, asof, log=log)
                         sim["key"] = bt_key
@@ -516,16 +508,6 @@ def run(args) -> int:
         if demo:
             sim_txt = sim_txt.replace('"schema":1,', '"schema":1,"demo":true,', 1)
         (out / "simulator.json").write_text(sim_txt)
-
-    # 8b) Autopilot-Monatsplan (fehlerisoliert: Stage 1 bleibt gültig)
-    try:
-        write_autopilot(out, bt_res, bt_ctx, adj, close, volume, uni_syms, cur_series, fx, dups, asof, meta, demo,
-                        archive, log)
-    except Exception as exc:  # noqa: BLE001
-        traceback.print_exc()
-        msg("warnung", f"Autopilot-Monatsplan konnte nicht erstellt werden: {exc}")
-        (out / "autopilot.json").write_text(json.dumps({"schema": 1, "status": "fehler", "reason": str(exc),
-                                                         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
 
     # 9) Schreiben
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -679,42 +661,6 @@ def stage2_block(*, demo, universe, meta, panel, fx, fx_row, cur_series, bench_f
                                                               "freigegeben – Stage 2 bewertet deshalb nichts."})
     res["live_track"] = live_track(archive / "stage2", adj, cur_series, fx, mkt, asof)
     return res
-
-
-def write_autopilot(out: Path, bt_res: dict | None, ctx, adj, close, volume, uni_syms, cur_series, fx, dups, asof,
-                    meta: pd.DataFrame, demo: bool, archive: Path, log=print) -> None:
-    ap_bt = (bt_res or {}).get("autopilot") if bt_res else None
-    if ap_bt and ap_bt.get("available"):
-        row = next(g for g in ap_bt["grid"] if g["id"] == ap_bt["chosen"])
-        rule = {"id": row["id"], "name": row["name"], "n": row["n"], "sector_cap": row["sector_cap"],
-                "market": row["market"], "provisional": False}
-    else:
-        rule = default_rule()
-    if ctx is None or len(ctx.dates) < 2 or ctx.dates[-1] not in ctx.signals:
-        upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
-        ctx = bt.Context(upanel, cur_series.reindex(uni_syms), fx, dups, asof, {}, log=log)
-        ctx.dates = ctx.dates[-2:]
-        ctx.vol_me = ctx.vol_me.reindex(ctx.dates)
-        ctx.compute_signals()
-    m, ma = ctx.market.iloc[-1], ctx.market_ma.iloc[-1]
-    market_now = {"bull": bool(not (np.isfinite(ma) and m < ma)),
-                  "dist_ma200": None if not np.isfinite(ma) or ma <= 0 else round(float(m / ma - 1), 4),
-                  "date": ctx.market.index[-1].strftime("%Y-%m-%d")}
-    plan = live_plan(ctx, rule, meta["sector"], meta["name"], asof.date(), market_now)
-    res = {"schema": 1, "status": "ok" if plan.get("available") else "warnung", "demo": demo,
-           "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "asof": asof.strftime("%Y-%m-%d"),
-           "version": AUTOPILOT_VERSION, "params_hash": autopilot_params_hash(), "rule": rule, "plan": plan,
-           "backtest": ap_bt if ap_bt else {"available": False,
-                                              "reason": "Der Autopilot-Backtest wird beim nächsten Monatswechsel berechnet."}}
-    (out / "autopilot.json").write_text(json.dumps(sanitize(res), separators=(",", ":"), ensure_ascii=False,
-                                                   allow_nan=False))
-    if plan.get("available") and not demo:
-        folder = archive / "autopilot"
-        folder.mkdir(parents=True, exist_ok=True)
-        snap = {"signal_date": plan["signal_date"], "rule": rule, "action": plan["action"],
-                "buy_list": [b["symbol"] for b in plan["buy_list"][:20]], "version": AUTOPILOT_VERSION}
-        (folder / f"{plan['signal_date'][:7]}.json").write_text(json.dumps(snap, ensure_ascii=False, indent=1))
-    log(f"[autopilot] Plan {plan.get('signal_date')} Regel {rule['id']} Aktion {plan.get('action')}")
 
 
 def write_stage2_archive(folder: Path, s2: dict, close: pd.DataFrame, cur: pd.Series, fx_row: pd.Series) -> None:

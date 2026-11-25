@@ -115,18 +115,6 @@ export async function loadSimulator(fresh = false) {
   memo.set('simulator', a);
   return a;
 }
-export async function loadAutopilot(fresh = false) {
-  if (!fresh && memo.has('autopilot')) return memo.get('autopilot');
-  let a;
-  try {
-    a = await getJSON('autopilot.json', { fresh, timeout: 30000 });
-    if (!a || typeof a !== 'object') a = null;
-  } catch (e) {
-    if (e instanceof DataError && e.kind === 'fehlt') a = null; else throw e;
-  }
-  memo.set('autopilot', a);
-  return a;
-}
 export function clearMemo() { memo.clear(); }
 
 /* Aktualität: Kalendertage zwischen Datenstand (letzter Handelstag) und heute.

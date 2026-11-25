@@ -3,6 +3,8 @@ import { computePortfolio, estimateSaleTax } from '../depot.js';
 import { fmtDate, fmtEUR, fmtPct, fmtRankPct } from '../fmt.js';
 import { bestAlternative, computeSignals } from '../screening.js';
 import { urgencyRank } from '../signals.js';
+import { holdStatus } from '../holding.js';
+import { todayISO } from '../fmt.js';
 import { latestScreening, state } from '../state.js';
 import { badge, empty, holdBand, html, note } from '../ui.js';
 
@@ -21,7 +23,7 @@ export async function render(root) {
   const hold = screen.params?.hold_max_pct ?? 0.2;
   const held = new Set(pf.open.map((i) => i.pos.symbol));
   const parts = [html`<h1>Portfolio Intelligence</h1>
-    <p class="lede">Ein Signal für jede gehaltene Aktie. Zwei Fragen werden getrennt beantwortet: Soll die Position bleiben? Sollen neue Sparraten weiter hineinfließen?</p>
+    <p class="lede">Ein Signal für jede gehaltene Aktie. Das Verkaufssignal der App (oben rechts) ist getrennt von deiner eigenen Haltedauer (eigener Kasten).</p>
     <p class="small muted">Datenstand ${fmtDate(screen.asof)} (${fr.label}), Methodik v${screen.methodology_version}${snap ? `, letztes gespeichertes Screening ${fmtDate(snap.createdAt.slice(0, 10))}` : ''}.</p>`];
   if (screen.demo) parts.push(html`<div class="demo-banner">DEMO-DATEN – Signale sind nur ein Funktionstest</div>`);
   if (!pf.open.length) {
@@ -36,6 +38,7 @@ export async function render(root) {
         <div style="min-width:0"><h3 style="font-size:17px">${s.name}</h3><div class="xs muted">${s.symbol}${row?.rank ? `, Rang ${row.rank} (${fmtRankPct(row.pct)})` : ''}</div></div>
         <div style="text-align:right">${badge(s.signal)}<div class="xs muted" style="margin-top:4px">Dringlichkeit: ${s.urgency}</div></div>
       </div>
+      ${(() => { const h = it ? holdStatus(it.pos, it, todayISO()) : null; return h ? html`<div class="note ${h.state === 'verkaufen' ? 'error' : h.state === 'warten' ? 'warn' : 'info'}" style="margin:10px 0"><div><b>Deine Haltedauer (${h.months} Monate):</b> ${h.text}</div></div>` : ''; })()}
       ${row?.Z != null ? html`<div style="margin:10px 0 4px">${holdBand(row.pct, { holdMax: hold, prevPct: row.prev_pct })}</div>` : ''}
       <h3 style="margin-top:12px">Begründung</h3>
       <ul style="margin:0 0 8px;padding-left:18px">${s.reasons.map((r) => html`<li style="margin-bottom:4px">${r}</li>`)}</ul>

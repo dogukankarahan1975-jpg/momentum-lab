@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.4.1"
+PIPELINE_VERSION = "0.5.0"
 METHODOLOGY_VERSION = "1.0.0"   # Stage 1 (Momentum-Screening) – unverändert
 STAGE2_VERSION = "1.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
 
@@ -265,38 +265,3 @@ def stage2_params_hash() -> str:
     payload = json.dumps({"s": STAGE2, "c": STAGE2_CATEGORIES, "m": STAGE2_MIN, "b": STAGE2_BACKTEST}, sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()[:12]
 
-
-# =============================================================================================
-# AUTOPILOT – fester Monatsplan (Methodik AP v1.0.0)
-# =============================================================================================
-# Nur kursbasierte, historisch testbare Regeln (Entscheidung des Nutzers vom 25.11.2026).
-# Ablauf: Das Raster unten wurde VOR dem ersten Test festgelegt. Ausgewählt wird automatisch
-# per fester Regel NUR mit Daten 2003–2014 ("Lernzeitraum"). 2015–heute dient ausschließlich als
-# unberührter Prüfzeitraum. Ziel des Nutzers: viel Rendite, Zwischenverlust höchstens etwa -45 %.
-AUTOPILOT_VERSION = "1.0.0"
-AUTOPILOT = {
-    "grid": {
-        "n": [10, 15],                     # Anzahl Aktien im Depot
-        "sector_cap": [None, 0.30],        # max. Anteil einer GICS-Branche (30 % = 3 von 10, 4 von 15)
-        "market": ["none", "soft", "hard"],  # Markt-Trendfilter (gleichgewichteter Markt vs. 200-Tage-Linie)
-    },
-    # none: kein Filter | soft: im Abwärtstrend keine Neukäufe | hard: im Abwärtstrend alles verkaufen, Geld parken
-    "selection": {
-        "insample_end": "2014-12-31",
-        "oos_start": "2015-01-01",
-        "max_drawdown_limit": -0.45,       # Vorgabe des Nutzers
-        "rule": "Höchste Rendite nach laufend gezahlten Steuern im Lernzeitraum unter allen Varianten, "
-                "deren größter Zwischenverlust im Lernzeitraum nicht tiefer als -45 % war. "
-                "Erfüllt keine Variante die Grenze: die mit dem kleinsten Zwischenverlust.",
-    },
-    "topup_tolerance": 0.25,               # untergewichtete Positionen nur auffüllen, wenn > 25 % unter Ziel
-    "min_order_eur": 50.0,
-    "cash_rate": 0.0,                      # geparktes Geld: konservativ 0 % Zins
-    "monthly_savings": 500.0,
-    "buy_list_len": 40,
-}
-
-
-def autopilot_params_hash() -> str:
-    payload = json.dumps({"a": AUTOPILOT, "v": AUTOPILOT_VERSION, "m": METHODOLOGY, "t": TAX}, sort_keys=True)
-    return hashlib.sha256(payload.encode()).hexdigest()[:12]

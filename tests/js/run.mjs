@@ -7,7 +7,7 @@ import { freshness } from '../../app/js/data.js';
 import { validateBackup } from '../../app/js/store.js';
 import { parseStage2 } from '../../app/js/data.js';
 import { decisionCounts, fmtMetric, stage2Usable } from '../../app/js/stage2.js';
-import { buildPlan } from '../../app/js/autopilot.js';
+import { holdEnd, holdStatus, buildICS, splitBuy, nextScreeningDay } from '../../app/js/holding.js';
 import { simulate as simRun, irr as simIrr, monthList } from '../../app/js/simulator.js';
 
 let passed = 0, failed = 0;
@@ -187,63 +187,6 @@ test('Stage 2: Kennzahlen formatieren', () => {
   assert.equal(fmtMetric(null, 'pct'), '–');
 });
 
-// ---------------------------------------------------------------- Autopilot
-const apPlan = (o = {}) => ({
-  rule: { n: 4, sector_cap: 2, market: 'soft' }, action: 'NORMAL',
-  status: { A: ['H', 0.05], B: ['V', 0.4], C: ['W', 0.25], D: ['P', null] },
-  buy_list: [
-    { rank: 1, symbol: 'A', name: 'A', sector: 'Energie' },
-    { rank: 2, symbol: 'E', name: 'E', sector: 'Energie' },
-    { rank: 3, symbol: 'F', name: 'F', sector: 'IT' },
-    { rank: 4, symbol: 'G', name: 'G', sector: 'IT' },
-  ], ...o,
-});
-test('Autopilot: Verkauf, Branchengrenze und Beträge', () => {
-  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }, { symbol: 'B', mvEUR: 800, sector: 'IT' }];
-  const r = buildPlan(apPlan({ status: { A: ['H', 0.05], B: ['V', 0.4] } }), hold, 1200);
-  assert.deepEqual(r.sells.map((x) => x.symbol), ['B']);
-  // 3 freie Plätze: E (Energie 2/2), F, G
-  assert.deepEqual(r.buys.map((x) => x.symbol), ['E', 'F', 'G']);
-  near(r.total, 1000 + 800 + 1200);
-  near(r.target, 750);
-  assert.deepEqual(r.buys.map((b) => Math.round(b.amount)), [750, 750, 500]);
-});
-test('Autopilot: Branchengrenze überspringt', () => {
-  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }, { symbol: 'X', mvEUR: 1000, sector: 'Energie' }];
-  const r = buildPlan(apPlan({ status: { A: ['H', 0.05], X: ['H', 0.1] } }), hold, 1000);
-  assert.deepEqual(r.buys.map((x) => x.symbol), ['F', 'G']);
-  assert.equal(r.skipped[0].symbol, 'E');
-});
-test('Autopilot: wenig Geld -> keine Mini-Orders', () => {
-  const r = buildPlan(apPlan({ status: {} }), [], 120);
-  assert.deepEqual(r.buys.map((b) => b.amount), [50, 50]);
-  assert.equal(r.waiting.length, 2);
-});
-test('Autopilot: Parken verkauft alles, keine Käufe', () => {
-  const hold = [{ symbol: 'A', mvEUR: 1000, sector: 'Energie' }];
-  const r = buildPlan(apPlan({ action: 'PARKEN' }), hold, 500);
-  assert.equal(r.sells.length, 1);
-  assert.equal(r.buys.length, 0);
-});
-test('Autopilot: Keine Neukäufe bei Abwärtstrend (soft)', () => {
-  const r = buildPlan(apPlan({ action: 'KEINE_KAEUFE' }), [], 5000);
-  assert.equal(r.buys.length, 0);
-  near(r.rest, 5000);
-});
-test('Autopilot: volle Plätze -> untergewichtete auffüllen, Gewinner nicht', () => {
-  const st = { A: ['H', 0.01], C: ['W', 0.2], F: ['H', 0.03], G: ['H', 0.04] };
-  const hold = [{ symbol: 'A', mvEUR: 3000 }, { symbol: 'C', mvEUR: 500 }, { symbol: 'F', mvEUR: 1400 }, { symbol: 'G', mvEUR: 1400 }];
-  const r = buildPlan(apPlan({ status: st }), hold, 500);
-  assert.equal(r.buys.length, 0);
-  assert.deepEqual(r.topups.map((t) => t.symbol), ['C']);
-  near(r.topups[0].amount, 500);
-});
-test('Autopilot: unbekannte Aktie -> prüfen, zählt als Platz', () => {
-  const r = buildPlan(apPlan(), [{ symbol: 'ZZZ', mvEUR: 100 }], 0);
-  assert.equal(r.rows[0].todo, 'pruefen');
-  assert.equal(r.freeSlots, 3);
-});
-
 // ---------------------------------------------------------------- Simulator
 const simData = () => {
   // 25 Monate, 3 Aktien; A steigt 2 %/Monat, B fällt, C konstant; ETF steigt 1 %/Monat
@@ -288,12 +231,6 @@ test('Simulator: IRR stimmt bei 0 % und Monatsliste', () => {
   const ml = monthList(d, 13);
   assert.equal(ml[0].name, 'Alpha'); assert.equal(ml[0].cand, true); assert.equal(ml[1].cand, false);
 });
-test('Simulator: feste Haltedauer verkauft nach 6 Monaten (nicht mehr auf der Liste)', () => {
-  const r = simRun(simData(), 's1top10', { ...simOpts, hold: '6' });
-  const sells = Object.values(r.yearly).flatMap((y) => y.sells);
-  assert.ok(sells.includes('B'));
-  assert.ok(!sells.includes('A'));   // A bleibt auf der Liste -> wird weiter gehalten
-});
 
 test('Simulator: ETF-Sparplan verkauft nie, Wert = Anteile × Kurs', () => {
   const d = simData();
@@ -325,6 +262,54 @@ test('Simulator: Protokoll stimmt mit Kontostand überein', () => {
   const inflow = r.contrib + r.log.filter((x) => x.type === 'Verkauf').reduce((s, x) => s + x.amount, 0);
   const outflow = r.log.filter((x) => x.type !== 'Verkauf').reduce((s, x) => s + x.amount, 0);
   near(r.cash, inflow - outflow, 1e-6);
+});
+
+test('Simulator: normaler ETF-Sparplan mit Dynamik (Zinseszins, nie Verlust bei steigendem Kurs)', () => {
+  const d = simData();
+  const r = simRun(d, 'world', { ...simOpts, dyn: 2 });
+  // Handrechnung: Anteile je Monat = Rate / Kurs
+  let units = 0, paid = 0;
+  for (let k = 0; k < 25; k++) { const rate = 100 * 1.02 ** Math.floor(k / 12); units += rate / d.bench.msci_world.px[k]; paid += rate; }
+  near(r.contrib, paid);
+  near(r.final, units * d.bench.msci_world.px[25]);
+  assert.ok(r.final > r.contrib);
+});
+test('Simulator: Haltedauer 6 Monate mit Warten bis ±0', () => {
+  const d = simData();
+  // B fällt stetig -> bei "6" wird mit Verlust verkauft, bei "6be" gewartet
+  const hard = simRun(d, 's1top10', { ...simOpts, hold: '6' });
+  const be = simRun(d, 's1top10', { ...simOpts, hold: '6be' });
+  assert.ok(hard.log.some((x) => x.type === 'Verkauf' && x.sym === 'B' && x.gain < 0));
+  assert.ok(!be.log.some((x) => x.type === 'Verkauf' && x.sym === 'B'));
+  assert.ok(be.log.some((x) => x.type === 'Halten' && x.sym === 'B'));
+  // A steigt -> wird nach 6 Monaten im Plus verkauft
+  assert.ok(be.log.some((x) => x.type === 'Verkauf' && x.sym === 'A' && x.gain > 0));
+});
+
+// ---------------------------------------------------------------- Haltedauer & Rechner
+test('Haltedauer: Verkaufstermin = erster Werktag nach Ablauf', () => {
+  assert.equal(holdEnd('2026-11-25', 6), '2026-06-01'.replace('2026', '2027'));   // 25.05.2027 -> 01.06.2027 (Di)
+  assert.equal(holdEnd('2026-12-01', 6), '2027-06-01');                          // genau am Screening-Tag
+  assert.equal(holdEnd('2026-01-15', 12), '2027-02-01');
+  assert.equal(nextScreeningDay('2026-11-26'), '2026-12-01');
+});
+test('Haltedauer: Plus -> verkaufen, Minus mit ±0-Regel -> halten', () => {
+  const it = { qty: 10, firstOpen: '2026-01-02', costOpen: 1000, mvEUR: 1100 };
+  assert.equal(holdStatus({ holdMonths: 6, holdBE: true }, it, '2026-07-02').state, 'verkaufen');
+  assert.equal(holdStatus({ holdMonths: 6, holdBE: true }, { ...it, mvEUR: 950 }, '2026-07-02').state, 'warten');
+  assert.equal(holdStatus({ holdMonths: 6, holdBE: false }, { ...it, mvEUR: 950 }, '2026-07-02').state, 'verkaufen');
+  assert.equal(holdStatus({ holdMonths: 6, holdBE: true }, { ...it, mvEUR: 1000.5 }, '2026-07-02').state, 'warten'); // 1 € Verkaufsgebühr
+  assert.equal(holdStatus({ holdMonths: 6, holdBE: true }, it, '2026-03-01').state, 'laeuft');
+  assert.equal(holdStatus({ holdMonths: null }, it, '2026-07-02'), null);
+});
+test('Kauf-Rechner: Gebühr je Kauf', () => {
+  const r = splitBuy(2505, 5, 1);
+  near(r.orderEach, 500); near(r.each, 501); near(r.fees, 5);
+});
+test('Kalender: gültige ICS-Datei mit Wecker', () => {
+  const t = buildICS([{ uid: 'x', date: '2027-06-01', title: 'Verkaufen: A, B', desc: 'Test; mit Komma, ok' }]);
+  assert.ok(t.startsWith('BEGIN:VCALENDAR') && t.includes('DTSTART;TZID=Europe/Berlin:20270601T080000') && t.includes('BEGIN:VALARM'));
+  assert.ok(t.includes('Verkaufen: A\\, B'));
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);

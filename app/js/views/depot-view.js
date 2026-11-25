@@ -1,10 +1,11 @@
 import { lineChart } from '../charts.js';
 import { loadMonthly, loadScreen } from '../data.js';
 import { computePortfolio, planOverview, reconstructHistory, INTERVALS } from '../depot.js';
-import { cls, fmtDate, fmtEUR, fmtPct, fmtQty } from '../fmt.js';
+import { cls, fmtDate, fmtEUR, fmtPct, fmtQty, todayISO } from '../fmt.js';
+import { buildICS, holdEvents, holdStatus, openICS } from '../holding.js';
 import { latestScreening, state } from '../state.js';
 import { db } from '../store.js';
-import { badge, chevron, empty, html, note } from '../ui.js';
+import { badge, chevron, empty, html, note, toast } from '../ui.js';
 import { openTxForm } from './forms.js';
 
 export async function render(root) {
@@ -16,15 +17,30 @@ export async function render(root) {
   const t = pf.totals;
   const parts = [html`<h1>Mein Depot</h1>
     <p class="lede">Alle Daten bleiben auf diesem iPhone. Kurse kommen aus dem täglichen Datenlauf${screen ? ` (Stand ${fmtDate(screen.asof)})` : ''}.</p>
-    <button class="btn primary block" id="add" style="margin-bottom:14px">+ Kauf, Verkauf oder Dividende erfassen</button>`];
+    <button class="btn primary block" id="add" style="margin-bottom:10px">+ Kauf, Verkauf oder Dividende erfassen</button>
+    <div class="btn-row" style="margin-bottom:14px"><a class="btn" href="#/rechner">Kauf-Rechner</a><button class="btn" id="ics-all">Verkaufstermine in den Kalender</button></div>`];
   if (!state.positions.length) {
     parts.push(empty('Noch keine Positionen', 'Erfasse deinen ersten Kauf. Mehrere Kauftranchen, Sparpläne, Teilverkäufe, Dividenden und Splits werden unterstützt.'));
     root.innerHTML = parts.join('');
     root.querySelector('#add').onclick = () => openTxForm();
+  root.querySelector('#ics-all')?.addEventListener('click', () => {
+    const ev = holdEvents(pf.open);
+    if (!ev.length) { toast('Keine Position mit 6 oder 12 Monaten Haltedauer'); return; }
+    openICS('momentum-lab-verkaufstermine.ics', buildICS(ev));
+  });
     return;
   }
   if (screen?.demo) parts.push(html`<div class="demo-banner">DEMO-KURSE – Werte sind nicht echt</div>`);
   if (t.missingPrices) parts.push(note('warn', `${t.missingPrices} Position(en) ohne Kurs. Ihr Wert fehlt in der Summe. Öffne die Position und trage den Kurs manuell ein.`));
+  const today = todayISO();
+  const holds = pf.open.map((i) => ({ i, hs: holdStatus(i.pos, i, today) })).filter((x) => x.hs);
+  const due = holds.filter((x) => x.hs.state !== 'laeuft');
+  if (due.length) {
+    parts.push(html`<section class="panel" style="border-left:4px solid var(--critical)"><h3 style="margin-top:0">Haltedauer vorbei</h3>
+      <div class="group">${due.map(({ i, hs }) => html`<a class="row" href="#/position/${encodeURIComponent(i.pos.id)}"><div class="grow"><div class="title">${i.pos.name}</div><div class="sub" style="white-space:normal">${hs.text}</div></div>
+        <div class="end"><span class="badge ${hs.state === 'verkaufen' ? 'b-sell' : 'b-stop'}">${hs.state === 'verkaufen' ? 'Verkaufen' : hs.state === 'warten' ? 'Halten bis ±0' : 'Prüfen'}</span></div>${chevron}</a>`)}</div>
+      <a class="btn block" href="#/rechner" style="margin-top:10px">Rechner: Erlös neu aufteilen</a></section>`);
+  }
   parts.push(html`<div class="grid2" style="margin-bottom:10px">
     <div class="stat"><div class="l">Marktwert</div><div class="v">${fmtEUR(t.mv, 0)}</div></div>
     <div class="stat"><div class="l">Investiert (Einstand)</div><div class="v">${fmtEUR(t.costOpen, 0)}</div></div>
@@ -40,7 +56,7 @@ export async function render(root) {
     const s = sigBy.get(i.pos.id);
     return html`<a class="row" href="#/position/${encodeURIComponent(i.pos.id)}">
       <div class="grow"><div class="title">${i.pos.name}</div>
-        <div class="sub">${fmtQty(i.qty)} Stk., ${i.weight != null ? `${fmtPct(i.weight, 1, false)} Anteil` : 'ohne Kurs'}${i.mark?.source === 'manuell' ? ', Kurs manuell' : ''}</div>
+        <div class="sub">${fmtQty(i.qty)} Stk., ${i.weight != null ? `${fmtPct(i.weight, 1, false)} Anteil` : 'ohne Kurs'}${i.mark?.source === 'manuell' ? ', Kurs manuell' : ''}${(() => { const h = holdStatus(i.pos, i, todayISO()); return h ? `, Verkaufstermin ${fmtDate(h.end)}` : ''; })()}</div>
         ${s ? html`<div style="margin-top:4px">${badge(s.signal)}${s.plan ? html` ${badge(s.plan.signal)}` : ''}</div>` : ''}</div>
       <div class="end"><div>${fmtEUR(i.mvEUR, 0)}</div><div class="xs ${cls(i.unreal)}">${fmtPct(i.unrealPct)}</div></div>${chevron}</a>`;
   })}</div>`);
@@ -60,6 +76,11 @@ export async function render(root) {
   }
   root.innerHTML = parts.join('');
   root.querySelector('#add').onclick = () => openTxForm();
+  root.querySelector('#ics-all')?.addEventListener('click', () => {
+    const ev = holdEvents(pf.open);
+    if (!ev.length) { toast('Keine Position mit 6 oder 12 Monaten Haltedauer'); return; }
+    openICS('momentum-lab-verkaufstermine.ics', buildICS(ev));
+  });
   // Historie
   try {
     const monthly = await loadMonthly();

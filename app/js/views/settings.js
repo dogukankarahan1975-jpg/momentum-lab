@@ -1,6 +1,7 @@
 import { clearMemo, freshness, getJSON, loadMethodology, loadStatus } from '../data.js';
 import { fmtDate, fmtDateTime, fmtNum, fmtPct, parseDec, todayISO } from '../fmt.js';
 import { refreshHeader } from '../main.js';
+import { buildICS, openICS, screeningEvent } from '../holding.js';
 import { reloadDepot, reloadSettings, state } from '../state.js';
 import { exportBackup, getSetting, importBackup, markBackupDone, requestPersist, setSetting, storageInfo, validateBackup, wipeAll } from '../store.js';
 import { confirmDialog, html, note, openSheet, srcTag, toast } from '../ui.js';
@@ -89,6 +90,10 @@ export async function render(root) {
   parts.push(html`<div class="group"><button class="row" id="archive"><div class="grow"><div class="title">Offizielle Monats-Screenings</div><div class="sub">Archiv des Datenlaufs (je Monatsende)</div></div></button></div>`);
 
   // Depot-Einstellungen
+  parts.push(html`<h2>Erinnerungen</h2><div class="panel small">
+    <p style="margin-top:0">Die App erinnert dich über deinen Kalender: Die Daten bleiben auf dem iPhone, und es braucht keinen Server.</p>
+    <button class="btn block" id="ics-month">Monats-Screening in den Kalender (jeden ersten Werktag, 8 Uhr)</button>
+    <p class="xs muted" style="margin:8px 0 0">Verkaufstermine aus deiner Haltedauer (6 oder 12 Monate) trägst du unter Depot → „Verkaufstermine in den Kalender“ ein. Nach jedem neuen Kauf mit Haltedauer einmal wiederholen. Ob eine Position am Termin im Plus ist oder bis ±0 gehalten wird, zeigt die App beim Öffnen.</p></div>`);
   parts.push(html`<h2>Depot-Einstellungen</h2><div class="panel">
     <label class="field"><span>Maximaler Depotanteil für "Nachkaufen" (%)</span><input id="mw" inputmode="decimal" value="${fmtNum(s.maxWeight * 100, 0)}"></label>
     <label class="field"><span>Verbleibender Sparerpauschbetrag (€, für Steuerschätzungen)</span><input id="ta" inputmode="decimal" value="${fmtNum(s.taxAllowanceLeft, 0)}"></label>
@@ -121,6 +126,7 @@ export async function render(root) {
   root.innerHTML = parts.join('');
 
   const $ = (q) => root.querySelector(q);
+  $('#ics-month').onclick = () => openICS('momentum-lab-screening.ics', buildICS([screeningEvent()]));
   $('#save-s').onclick = async () => {
     const mw = parseDec($('#mw').value) / 100, ta = parseDec($('#ta').value), br = Math.round(parseDec($('#br').value));
     if (!(mw > 0 && mw <= 1) || !(ta >= 0) || !(br >= 1)) { toast('Bitte gültige Werte eingeben'); return; }

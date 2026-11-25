@@ -7,6 +7,10 @@ import { html, note } from '../ui.js';
 
 const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2: 'var(--s5)' };
 
+function toastFee() {
+  import('../ui.js').then((u) => u.toast?.('Gebühr oder Spread unrealistisch hoch – auf Standard zurückgesetzt'));
+}
+
 export async function renderSimulator(el, data) {
   if (!data) {
     el.innerHTML = String(note('info', 'Die Simulator-Daten entstehen beim nächsten Monatswechsel bzw. nach dem nächsten Backtest-Lauf.'));
@@ -14,6 +18,10 @@ export async function renderSimulator(el, data) {
   }
   const saved = await getSetting('simOpts', null);
   const o = { ...DEFAULTS, ...(saved || {}) };
+  if (!['signal', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
+  // Schutz gegen versehentlich hohe Gebühren (z. B. Sparrate ins Gebührenfeld getippt)
+  for (const f of ['feeBuy', 'feeSell', 'feeEtf']) if (!(o[f] >= 0) || o[f] > Math.min(Math.max(0, o.budget * 0.1), 50)) o[f] = DEFAULTS[f];
+  for (const f of ['spread', 'spreadEtf']) if (!(o[f] >= 0) || o[f] > 5) o[f] = DEFAULTS[f];
   const firstYear = Number(data.signal_dates[0].slice(0, 4));
   const lastYear = Number(data.signal_dates[data.signal_dates.length - 1].slice(0, 4)) - 2;
   const benchStart = (k) => data.bench?.[k]?.start || null;
@@ -39,17 +47,17 @@ export async function renderSimulator(el, data) {
         <label class="field"><span>Dynamik pro Jahr (%)</span><input name="dyn" inputmode="decimal" value="${String(o.dyn).replace('.', ',')}"></label>
         <label class="field"><span>Gebühr je Kauf (€)</span><input name="feeBuy" inputmode="decimal" value="${String(o.feeBuy).replace('.', ',')}"></label>
         <label class="field"><span>Gebühr je Verkauf (€)</span><input name="feeSell" inputmode="decimal" value="${String(o.feeSell).replace('.', ',')}"></label>
-        <label class="field"><span>ETF-Sparplan je Ausführung (€)</span><input name="feeEtf" inputmode="decimal" value="${String(o.feeEtf).replace('.', ',')}"></label>
+        <label class="field"><span>Gebühr je ETF-Sparrate (€)</span><input name="feeEtf" inputmode="decimal" value="${String(o.feeEtf).replace('.', ',')}"></label>
         <label class="field"><span>Spread Aktien (%)</span><input name="spread" inputmode="decimal" value="${String(o.spread).replace('.', ',')}"></label>
         <label class="field"><span>Spread ETF (%)</span><input name="spreadEtf" inputmode="decimal" value="${String(o.spreadEtf).replace('.', ',')}"></label>
       </div>
       <label class="field"><span>Budget der Aktien-Strategien</span><select name="budgetMode">
         ${['reinvest', 'fixed'].map((m) => html`<option value="${m}" ${o.budgetMode === m ? 'selected' : ''}>${m === 'reinvest' ? 'Budget + Verkaufserlöse anlegen' : 'Nur festes Monatsbudget anlegen'}</option>`)}</select></label>
       <label class="field"><span>Wie lange werden Aktien gehalten?</span><select name="hold">
-        ${['signal', '6', '12'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${h === 'signal' ? 'Bis zum Verkaufssignal der App' : `Immer ${h} Monate`}</option>`)}</select></label>
+        ${['signal', '6', '6be', '12', '12be'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${{ signal: 'Bis zum Verkaufssignal der App', 6: '6 Monate, dann verkaufen', '6be': '6 Monate, im Minus warten bis ±0', 12: '12 Monate, dann verkaufen', '12be': '12 Monate, im Minus warten bis ±0' }[h]}</option>`)}</select></label>
       <label class="field"><span>Weniger Kandidaten als Plätze?</span><select name="rest">
         ${['etf', 'cash', 'top'].map((r) => html`<option value="${r}" ${o.rest === r ? 'selected' : ''}>${{ etf: 'Rest in MSCI World ETF', cash: 'Rest auf dem Konto (0 %)', top: 'Immer Top 5/10 kaufen' }[r]}</option>`)}</select></label>
-      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Bei 6 oder 12 Monaten wird danach verkauft, außer die Aktie steht dann noch auf der Liste. Bei weniger Kandidaten als Plätzen: Rest in den ETF, aufs Konto (wird im nächsten Monat mit angelegt) oder immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus. Stage 2 kauft nur Aktien, die beide Bedingungen erfüllen, auch wenn es nur eine ist; gibt es keine, wird keine Aktie gekauft (der Betrag geht in den ETF bzw. bleibt auf dem Konto). ETF-Sparpläne kaufen jeden Monat nur die Sparrate und verkaufen nie. Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
+      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Bei 6 oder 12 Monaten wird am ersten Monatsende nach Ablauf verkauft, im Plus wie im Minus; mit „warten bis ±0“ wird eine Aktie im Minus weiter gehalten und erst verkauft, wenn der Erlös nach Kosten wieder den Einstand deckt. Steht die Aktie dann noch auf der Liste, wird sie mit dem neuen Geld wieder gekauft. Bei weniger Kandidaten als Plätzen: Rest in den ETF, aufs Konto (wird im nächsten Monat mit angelegt) oder immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus. Stage 2 kauft nur Aktien, die beide Bedingungen erfüllen, auch wenn es nur eine ist; gibt es keine, wird keine Aktie gekauft (der Betrag geht in den ETF bzw. bleibt auf dem Konto). ETF-Sparpläne: jeden Monat wird das Monatsbudget (mit Dynamik) in den ETF gesteckt, nie verkauft; „Gebühr je ETF-Sparrate“ ist nur die Ausführungsgebühr (Trade Republic: 0 €). Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
       <p class="xs muted" style="margin:0">Voreinstellung Trade Republic: 1 € je Order, ETF-Sparplan kostenlos. Der Spread ist eine Annahme: Er wird je zur Hälfte beim Kauf und beim Verkauf berechnet. Steuer: 26,375 % auf realisierte Gewinne, 1.000 € Pauschbetrag pro Jahr, Verluste werden vorgetragen. ETF: 30 % Teilfreistellung, Vorabpauschale nicht berücksichtigt.</p>
     </div>
     <div id="simout"></div>`;
@@ -157,6 +165,9 @@ export async function renderSimulator(el, data) {
           ? html`<b>${fmtDate(data.points[m.k])}</b>: Sparrate ${fmtEUR(m.budget, 2)} in den ETF.`
           : html`<b>${fmtDate(data.points[m.k])}</b>: Konto vorher ${fmtEUR(z(m.carried), 2)}${m.tax ? html`, Steuer −${fmtEUR(m.tax, 2)}` : ''}, Budget +${fmtEUR(m.budget, 2)}${m.proceeds ? html`, Verkaufserlöse +${fmtEUR(m.proceeds, 2)}` : ''} → angelegt ${fmtEUR(m.invest, 2)}${m.n ? html`, je Aktie ${fmtEUR(m.each, 2)} (${m.n} auf der Liste)` : html` (keine Aktie auf der Liste)`} → Konto danach ${fmtEUR(z(m.cashAfter), 2)}.`;
         const rows = ev.map((e) => {
+          if (e.type === 'Halten') {
+            return html`<div class="row"><div class="grow"><div class="title">Halten: ${e.name}</div><div class="sub" style="white-space:normal">${e.why}</div></div><div class="end"><span class="badge b-stop">wartet</span></div></div>`;
+          }
           if (e.type === 'Steuer') {
             return html`<div class="row"><div class="grow"><div class="title">Steuer: ${e.name}</div><div class="sub" style="white-space:normal">${e.why}</div></div><div class="end"><b class="${e.amount ? 'neg' : ''}">${e.amount ? `−${fmtEUR(e.amount, 2)}` : '0 €'}</b></div></div>`;
           }
@@ -191,6 +202,11 @@ export async function renderSimulator(el, data) {
     if (t.name === 'hold' || t.name === 'rest' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
     else o[t.name] = num(t.value, DEFAULTS[t.name]);
+    const maxFee = Math.max(0, o.budget * 0.1);
+    for (const f of ['feeBuy', 'feeSell', 'feeEtf']) {
+      if (o[f] > Math.min(maxFee, 50)) { o[f] = DEFAULTS[f]; const inp = el.querySelector(`[name=${f}]`); if (inp) inp.value = String(o[f]).replace('.', ','); toastFee(); }
+    }
+    for (const f of ['spread', 'spreadEtf']) if (o[f] > 5) { o[f] = DEFAULTS[f]; el.querySelector(`[name=${f}]`).value = String(o[f]).replace('.', ','); toastFee(); }
     await setSetting('simOpts', o);
     run();
   });

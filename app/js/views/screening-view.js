@@ -54,7 +54,7 @@ export async function render(root) {
     const warn = res.steps.filter((x) => x.state === 'warn').length;
     resEl.innerHTML = String(html`${s.demo ? html`<div class="demo-banner">DEMO-DATEN – keine echten Signale</div>` : ''}
       ${note(warn ? 'warn' : 'ok', html`<b>${s.candidates.length ? `${s.candidates.length} Kandidaten gefunden` : 'Keine Kandidaten'}</b>${s.top_pick ? `, Top Pick ${res.screen.bySymbol.get(s.top_pick)?.name}` : ', kein Top Pick'}. ${s.stage2 ? (s.stage2.usable ? `Stage 2: ${s.stage2.eligible.length ? `${s.stage2.eligible.length} mit Sparplanfreigabe` : 'keine Sparplanfreigabe'}. ` : 'Stage 2: keine aktuelle Entscheidung. ') : ''}Datenstand ${fmtDate(s.asof)}${warn ? `. ${warn} Hinweise im Ablauf` : ''}.`)}
-      <div class="btn-row"><a class="btn primary" href="#/autopilot">Autopilot-Plan</a><a class="btn" href="#/top10/final">Finale Rangfolge</a><a class="btn" href="#/top10/stage1">Top 10 (Stage 1)</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
+      <div class="btn-row"><a class="btn primary" href="#/top10/final">Finale Rangfolge</a><a class="btn" href="#/top10/stage1">Top 10 (Stage 1)</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
     renderUniverse(root.querySelector('#universe'), res.screen);
     renderHistory(root.querySelector('#history'), await screenings());
   };
