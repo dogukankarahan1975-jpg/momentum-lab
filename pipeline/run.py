@@ -487,6 +487,17 @@ def run(args) -> int:
                     except Exception as exc:  # noqa: BLE001
                         traceback.print_exc()
                         bt_res["autopilot"] = {"available": False, "reason": f"Fehler: {exc}"}
+                if bt_res.get("available"):
+                    try:
+                        from .simulator import build_sim_data
+                        sim = build_sim_data(ctx, meta, bench_eur, asof, log=log)
+                        sim["key"] = bt_key
+                        sim["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                        (cache / "simulator.json").write_text(json.dumps(sanitize(sim), separators=(",", ":"),
+                                                                         ensure_ascii=False, allow_nan=False))
+                    except Exception as exc:  # noqa: BLE001
+                        traceback.print_exc()
+                        msg("warnung", f"Simulator-Daten konnten nicht erstellt werden: {exc}")
                 bt_ctx = ctx
                 bt_res["key"] = bt_key
                 bt_res["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -498,6 +509,13 @@ def run(args) -> int:
     if bt_res is not None:
         bt_res = dict(bt_res, demo=demo, methodology_version=METHODOLOGY_VERSION)
         (out / "backtest.json").write_text(json.dumps(sanitize(bt_res), default=_json_default, separators=(",", ":"), allow_nan=False))
+
+    sim_cache = cache / "simulator.json"
+    if sim_cache.exists():
+        sim_txt = sim_cache.read_text()
+        if demo:
+            sim_txt = sim_txt.replace('"schema":1,', '"schema":1,"demo":true,', 1)
+        (out / "simulator.json").write_text(sim_txt)
 
     # 8b) Autopilot-Monatsplan (fehlerisoliert: Stage 1 bleibt gültig)
     try:

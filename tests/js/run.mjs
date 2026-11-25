@@ -8,6 +8,7 @@ import { validateBackup } from '../../app/js/store.js';
 import { parseStage2 } from '../../app/js/data.js';
 import { decisionCounts, fmtMetric, stage2Usable } from '../../app/js/stage2.js';
 import { buildPlan } from '../../app/js/autopilot.js';
+import { simulate as simRun, irr as simIrr, monthList } from '../../app/js/simulator.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -241,6 +242,57 @@ test('Autopilot: unbekannte Aktie -> prüfen, zählt als Platz', () => {
   const r = buildPlan(apPlan(), [{ symbol: 'ZZZ', mvEUR: 100 }], 0);
   assert.equal(r.rows[0].todo, 'pruefen');
   assert.equal(r.freeSlots, 3);
+});
+
+// ---------------------------------------------------------------- Simulator
+const simData = () => {
+  // 25 Monate, 3 Aktien; A steigt 2 %/Monat, B fällt, C konstant; ETF steigt 1 %/Monat
+  const K = 25;
+  const pts = Array.from({ length: K + 1 }, (_, k) => new Date(Date.UTC(2010, k, 2)).toISOString().slice(0, 10));
+  const sig = pts.slice(0, K);
+  return {
+    signal_dates: sig, points: pts, syms: ['A', 'B', 'C'], names: ['Alpha', 'Beta', 'Gamma'], sectors: ['IT', 'IT', 'Energie'],
+    px: [pts.map((_, k) => 100 * 1.02 ** k), pts.map((_, k) => 100 * 0.97 ** k), pts.map(() => 50)],
+    rank: sig.map(() => [0, 1, 2]), cand: sig.map((_, k) => (k < 12 ? [0, 1] : [0])), s2: sig.map(() => [0]), s2_normal: sig.map(() => [0]),
+    hold: sig.map((_, k) => (k >= 3 ? '010' : '000')),
+    bench: { msci_world: { name: 'W', start: pts[0], px: pts.map((_, k) => 10 * 1.01 ** k) }, sp500: { name: 'S', start: pts[0], px: pts.map(() => 20) } },
+  };
+};
+const simOpts = { startYear: 2010, budget: 100, dyn: 0, feeBuy: 0, feeSell: 0, feeEtf: 0, spread: 0, spreadEtf: 0, hold: 'signal', rest: 'cash' };
+test('Simulator: ETF-Sparplan = Summe der Anteile', () => {
+  const r = simRun(simData(), 'sp500', simOpts);
+  near(r.contrib, 2500);
+  near(r.final, 2500);          // Kurs konstant
+  assert.equal(r.taxesPaid, 0);
+});
+test('Simulator: Verkauf nach zwei Signalen, Erlös neu verteilt', () => {
+  const r = simRun(simData(), 's1top10', simOpts);
+  // B hat ab Monat 3 die Bedingung -> Verkauf in Monat 4
+  assert.ok(r.yearly[2010].sells.includes('B'));
+  assert.ok(r.final > r.contrib * 0.9);
+});
+test('Simulator: Restgeld ETF statt Cash', () => {
+  const a = simRun(simData(), 's1top10', { ...simOpts, rest: 'etf' });
+  const b = simRun(simData(), 's1top10', { ...simOpts, rest: 'cash' });
+  assert.ok(a.final !== b.final);
+});
+test('Simulator: Gebühren und Dynamik', () => {
+  const r = simRun(simData(), 'world', { ...simOpts, feeEtf: 1, dyn: 10 });
+  near(r.fees, 25);
+  near(r.contrib, 12 * 100 + 12 * 110 + 1 * 121);
+});
+test('Simulator: IRR stimmt bei 0 % und Monatsliste', () => {
+  const d = simData();
+  const flows = d.signal_dates.map((_, k) => [k, -100]);
+  near(simIrr(flows, 0, d.points.length - 1, 2500, d), 0, 1e-6);
+  const ml = monthList(d, 13);
+  assert.equal(ml[0].name, 'Alpha'); assert.equal(ml[0].cand, true); assert.equal(ml[1].cand, false);
+});
+test('Simulator: feste Haltedauer verkauft nach 6 Monaten (nicht mehr auf der Liste)', () => {
+  const r = simRun(simData(), 's1top10', { ...simOpts, hold: '6' });
+  const sells = Object.values(r.yearly).flatMap((y) => y.sells);
+  assert.ok(sells.includes('B'));
+  assert.ok(!sells.includes('A'));   // A bleibt auf der Liste -> wird weiter gehalten
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);

@@ -1,7 +1,8 @@
 import { barChart, lineChart, SERIES_COLORS } from '../charts.js';
-import { loadBacktest, loadStage2 } from '../data.js';
+import { loadBacktest, loadSimulator, loadStage2 } from '../data.js';
+import { renderSimulator } from './simulator-view.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct } from '../fmt.js';
-import { html, note } from '../ui.js';
+import { html, note, raw } from '../ui.js';
 
 const DEFAULT_SEL = ['ew_universe', 'msci_world_eur', 'app_top10', 'app_top1'];
 const GROUPS = [
@@ -26,8 +27,10 @@ export async function render(root) {
   const V = new Map(bt.variants.map((v) => [v.id, v]));
   const sel = DEFAULT_SEL.filter((id) => V.has(id));
   const parts = [html`<h1>Backtesting</h1>
-    <p class="lede">${fmtDate(bt.period.start)} bis ${fmtDate(bt.period.end)}, ${bt.period.months} Monate. Startkapital ${fmtEUR(bt.assumptions.start_capital, 0)}, Kosten: ${bt.assumptions.costs[bt.assumptions.default_cost].label} je Order. Alle Varianten wurden vorab festgelegt und nicht nachträglich optimiert.</p>`];
+    <p class="lede">Was wäre aus deinem Geld geworden, wenn du die App schon früher genutzt hättest? Stell oben Budget und Regeln ein und vergleiche mit MSCI World und S&amp;P 500.</p>`];
   if (bt.demo) parts.push(html`<div class="demo-banner">DEMO-BACKTEST mit synthetischen Kursen – die Zahlen bedeuten nichts</div>`);
+  parts.push(html`<h2>Simulator: Sparplan mit echten Kursen</h2><div id="sim"></div>`);
+  parts.push(raw('<details class="more" id="expert" style="margin-top:18px"><summary>Expertenansicht: alle festen Backtest-Varianten mit 10.000 € Einmalanlage</summary>'));
   parts.push(note('error', html`<b>Die Ergebnisse sind wahrscheinlich zu gut.</b> ${bt.warnings[0]}`));
   parts.push(html`<details class="more"><summary>Alle Einschränkungen (${bt.warnings.length})</summary><ul class="small" style="padding-left:18px">${bt.warnings.slice(1).map((w) => html`<li style="margin-bottom:6px">${w}</li>`)}</ul></details>`);
 
@@ -88,7 +91,11 @@ export async function render(root) {
     <dt>Steuer</dt><dd>${fmtPct(bt.assumptions.tax.rate, 3, false)}, Pauschbetrag ${fmtEUR(bt.assumptions.tax.allowance, 0)}</dd>
     <dt>Marktproxy für Filter</dt><dd style="white-space:normal">${bt.assumptions.market_proxy}</dd>
     <dt>MSCI-Volatilitätsschocks</dt><dd style="white-space:normal">${(bt.vol_shock_months || []).length} Monate</dd></dl></div>`);
+  parts.push(raw('</details>'));
   root.innerHTML = parts.join('');
+  let sim = null;
+  try { sim = await loadSimulator(); } catch { sim = null; }
+  renderSimulator(root.querySelector('#sim'), sim);
 
   const eqEl = root.querySelector('#eq');
   const drawEq = () => {
@@ -110,6 +117,7 @@ export async function render(root) {
     drawEq();
   });
   drawEq();
+  root.querySelector('#expert').addEventListener('toggle', () => { drawEq(); drawOne(); });
   const drawOne = () => {
     const v = V.get(root.querySelector('#one').value);
     lineChart(root.querySelector('#dd'), { height: 170, area: true, zero: true, endLabels: false, label: 'Rückgang vom Hoch', yFmt: (x) => `${fmtNum(x, 0)} %`, tipFmt: (x) => `${fmtNum(x, 1)} %`,

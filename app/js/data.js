@@ -103,6 +103,18 @@ export async function loadStage2(fresh = false) {
   return s;
 }
 export function cachedStage2() { return memo.has('stage2') ? memo.get('stage2') : undefined; }
+export async function loadSimulator(fresh = false) {
+  if (!fresh && memo.has('simulator')) return memo.get('simulator');
+  let a;
+  try {
+    a = await getJSON('simulator.json', { fresh, timeout: 60000 });
+    if (!a || typeof a !== 'object' || !Array.isArray(a.signal_dates)) a = null;
+  } catch (e) {
+    if (e instanceof DataError && e.kind === 'fehlt') a = null; else throw e;
+  }
+  memo.set('simulator', a);
+  return a;
+}
 export async function loadAutopilot(fresh = false) {
   if (!fresh && memo.has('autopilot')) return memo.get('autopilot');
   let a;

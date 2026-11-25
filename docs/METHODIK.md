@@ -120,6 +120,9 @@ Vor dem Backtest festgelegt. Grundidee: **Kaufen nur die Besten, halten solange 
 
 
 <a name="stage-2"></a>
+### 7a. Simulator (App, Reiter Backtest)
+Die Pipeline stellt für jedes Monatsende seit Beginn der Kurshistorie das Stage-1-Screening nur mit damals verfügbaren Kursen nach und exportiert Rangliste, Kandidatenstatus, Halteregel-Status, Stage 2 (nur Kursteil: Risiko NORMAL aus technischen Signalen und Trend, Outperformance-Säulen P1, P2 und P5 erfüllt) und Ausführungskurse in EUR (Schluss des nächsten Handelstags). Die App rechnet daraus Sparpläne: Budget (mit Dynamik) plus Verkaufserlöse werden zu gleichen Teilen auf die aktuelle Liste verteilt; Verkauf nach App-Halteregel (zwei Monatsenden in Folge außerhalb des besten Fünftels oder 12-1-Momentum ≤ 0, sofort bei schwerer Verschlechterung) oder nach fester Haltedauer (6/12 Monate, außer die Aktie steht dann noch auf der Liste). Steuer: 26,375 % auf realisierte Gewinne je Jahr mit 1.000 € Pauschbetrag und Verlustvortrag, Zahlung im Folgejahr aus dem Depot; Endwert nach Steuern = Verkauf von allem am letzten Kurstag. ETF: thesaurierend, 30 % Teilfreistellung, Vorabpauschale vereinfacht nicht berücksichtigt. Survivorship Bias wie oben.
+
 ## 8. Stage 2 – Fortsetzungsanalyse (S2 v1.0.0)
 
 ### 8.1 Ziel und Einordnung

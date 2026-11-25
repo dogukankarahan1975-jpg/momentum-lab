@@ -146,6 +146,8 @@ def generate(asof: str = "2026-11-20", seed: int = 7):
         "URTH": (mk[mk.index >= "2012-01-12"] * 0.5 * fx["USD"].reindex(mk.index), "USD"),
         "IS3R.DE": (mk[mk.index >= "2014-10-03"] * 0.2 * np.exp(np.linspace(0, 0.25, (mk.index >= "2014-10-03").sum())), "EUR"),
         "MTUM": (mk[mk.index >= "2013-04-18"] * 0.6 * fx["USD"].reindex(mk.index), "USD"),
+        "^SP500TR": (mk * 9.0 * np.exp(np.linspace(0, 0.35, len(mk))) * fx["USD"].reindex(mk.index), "USD"),
+        "SXR8.DE": (mk[mk.index >= "2010-05-19"] * 0.4, "EUR"),
     }
     for sym, (s, cur) in bench.items():
         frames[sym] = pd.DataFrame({"close": s, "adj": s, "volume": 1e6})
