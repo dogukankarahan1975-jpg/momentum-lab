@@ -295,5 +295,37 @@ test('Simulator: feste Haltedauer verkauft nach 6 Monaten (nicht mehr auf der Li
   assert.ok(!sells.includes('A'));   // A bleibt auf der Liste -> wird weiter gehalten
 });
 
+test('Simulator: ETF-Sparplan verkauft nie, Wert = Anteile × Kurs', () => {
+  const d = simData();
+  const r = simRun(d, 'world', simOpts);
+  assert.ok(r.log.every((x) => x.type === 'ETF-Kauf'));
+  assert.equal(r.log.length, 25);
+  const units = r.log.reduce((s, x) => s + x.shares, 0);
+  near(r.final, units * d.bench.msci_world.px[d.points.length - 1]);
+  assert.ok(r.final > r.contrib);
+  assert.equal(r.taxesPaid, 0);
+});
+test('Simulator: festes Budget lässt Verkaufserlöse auf dem Konto', () => {
+  const fx = simRun(simData(), 's1top10', { ...simOpts, budgetMode: 'fixed' });
+  const re = simRun(simData(), 's1top10', { ...simOpts, budgetMode: 'reinvest' });
+  assert.ok(fx.cash > 50);           // Erlös aus B liegt auf dem Konto
+  assert.ok(re.cash < fx.cash);
+  fx.months.forEach((m) => assert.ok(m.invest <= m.budget + 1e-9));
+});
+test('Simulator: Stage 2 kauft nur Treffer, ohne Treffer nichts', () => {
+  const d = simData();
+  d.s2 = d.s2.map((x, k) => (k % 2 ? [] : [0]));
+  const r = simRun(d, 's2', { ...simOpts, rest: 'top' });
+  const buys = r.log.filter((x) => x.type === 'Kauf');
+  assert.ok(buys.every((x) => x.sym === 'A'));
+  assert.equal(buys.length, 13);
+});
+test('Simulator: Protokoll stimmt mit Kontostand überein', () => {
+  const r = simRun(simData(), 's1top5', { ...simOpts, feeBuy: 1, feeSell: 1, spread: 0.2 });
+  const inflow = r.contrib + r.log.filter((x) => x.type === 'Verkauf').reduce((s, x) => s + x.amount, 0);
+  const outflow = r.log.filter((x) => x.type !== 'Verkauf').reduce((s, x) => s + x.amount, 0);
+  near(r.cash, inflow - outflow, 1e-6);
+});
+
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);
 process.exit(failed ? 1 : 0);

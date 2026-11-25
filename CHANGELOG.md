@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.4.1 – 25.11.2026: Simulator transparenter
+- ETF-Sparpläne: reiner Sparplan (jeden Monat kaufen, nie verkaufen); angezeigt wird das Vermögen ohne Verkauf, die Steuer bei einem gedachten Verkauf nur nachrichtlich.
+- Neu: „Jede Order nachvollziehen“ – je Monat Konto vorher, Steuer, Budget, Verkaufserlöse, angelegter Betrag, Betrag je Aktie, Konto danach; jede Order mit Kurs, Stückzahl, Betrag, beim Verkauf Kaufdatum, Ø-Kaufkurs, Gewinn und Grund; Steuerabrechnungen; Bestand am Ende.
+- Neu: Budget-Einstellung „Budget + Verkaufserlöse anlegen“ oder „Nur festes Monatsbudget anlegen“ (Erlöse bleiben auf dem Konto). Gilt nur für Aktien-Strategien.
+- Stage 2 kauft nur echte Treffer (Risiko NORMAL und hohe Outperformance im Kursteil), bei keinem Treffer keine Aktie. Monatsliste zeigt je Top-10-Kandidat Risiko-Stufe und Outperformance.
+
 ## Pipeline 0.4.0 – 25.11.2026: Backtest-Simulator
 - **Neu: Simulator** im Reiter Backtest: Strategien frei kombinieren (MSCI World und S&P 500 als thesaurierender ETF-Sparplan, Stage-1-Top-5- und Top-10-Liste, Stage 2 nur Kursteil), Monatsbudget mit jährlicher Dynamik, Gebühren je Kauf und Verkauf, ETF-Sparplangebühr, Spread, Haltedauer (bis zum Verkaufssignal der App, 6 oder 12 Monate) und Regel für fehlende Kandidaten (Rest in ETF, auf Konto oder immer Top 5/10).
 - Grundlage: Für jedes Monatsende seit 2003 wird das Stage-1-Screening nur mit den Kursen bis zu diesem Tag nachgestellt; jede Monatsliste ist einsehbar. Ergebnis je Strategie: Endwert vor und nach Steuern, Rendite p. a. (interner Zinsfuß), größter Rückgang, Orders, Gebühren, Spread, laufend gezahlte Steuern; Jahr-für-Jahr-Protokoll mit Bestand.

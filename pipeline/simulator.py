@@ -26,11 +26,11 @@ def _round(x: float) -> float | None:
     return float(f"{x:.6g}")
 
 
-def _stage2_proxy(ctx, d, sig, top10: list[str], mkt: pd.Series | None) -> tuple[list[str], list[str]]:
+def _stage2_proxy(ctx, d, sig, top10: list[str], mkt: pd.Series | None):
     """Stage 2 (nur Kursteil): Risiko NORMAL (nur technische Signale und Trend) und Outperformance-Säulen
     P1 (stärker als MSCI World 3/6/12 M), P2 (>= 7 von 12 Monaten besser), P5 (risikobereinigt besser) erfüllt."""
     if not top10:
-        return [], []
+        return [], [], [], {}
     f, sc, elig = sig["f"], sig["ra"], sig["elig"]
     pool = core.select_candidates(f, sc, elig, 10 ** 6)
     peers = list(pool)
@@ -44,20 +44,23 @@ def _stage2_proxy(ctx, d, sig, top10: list[str], mkt: pd.Series | None) -> tuple
     pm, market = stage2.price_metrics_at(lw, ew, mkt, d)
     pm["trend_status"] = [stage2.trend_status(pm.loc[s]) for s in pm.index]
     thr = stage2.peer_thresholds(pm, peers)
-    ok, normal = [], []
+    ok, normal, opok, risk_lv = [], [], [], {}
     for s in top10:
         if s not in pm.index:
             continue
         r = pm.loc[s]
         risk = stage2.risk_assessment(r, thr, None, d, {})
-        if risk["level"] != "NORMAL":
-            continue
-        normal.append(s)
-        op = stage2.outperformance(r, market, risk, {})
+        risk_lv[s] = risk["level"]
+        op = stage2.outperformance(r, market, {**risk, "level": "NORMAL"}, {})
         pil = {p["code"]: p["ok"] for p in op["pillars"]}
-        if pil.get("P1") is True and pil.get("P2") is True and pil.get("P5") is True:
-            ok.append(s)
-    return ok, normal
+        op_ok = pil.get("P1") is True and pil.get("P2") is True and pil.get("P5") is True
+        if op_ok:
+            opok.append(s)
+        if risk["level"] == "NORMAL":
+            normal.append(s)
+            if op_ok:
+                ok.append(s)
+    return ok, normal, opok, risk_lv
 
 
 def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp, log=print) -> dict:
@@ -71,7 +74,7 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         world = None
     # Marktreihe für Stage-2-Kursteil: MSCI World, vorher gleichgewichteter Markt (gekennzeichnet)
     ew = ctx.market if hasattr(ctx, "market") else None
-    ranks, cands, holds, s2, s2n = [], [], [], [], []
+    ranks, cands, holds, s2, s2n, s2op, s2risk = [], [], [], [], [], [], []
     syms: dict[str, int] = {}
     raw_lists = []
     for k, d in enumerate(dates):
@@ -85,11 +88,11 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         top = list(dict.fromkeys(cand_order + order))[:TOP_K + 4]
         mkt = world if (world is not None and world.index[0] <= d - pd.DateOffset(months=13)) else ew
         try:
-            s2_ok, s2_norm = _stage2_proxy(ctx, d, sig, cand_set[:10], mkt)
+            s2_ok, s2_norm, s2_op, s2_risk = _stage2_proxy(ctx, d, sig, cand_set[:10], mkt)
         except Exception as exc:  # noqa: BLE001
             log(f"[simulator] Stage-2-Kursteil {d.date()} nicht berechenbar: {exc}")
-            s2_ok, s2_norm = [], []
-        raw_lists.append((top, order, cand_set[:TOP_K], s2_ok, s2_norm, mkt is world and world is not None))
+            s2_ok, s2_norm, s2_op, s2_risk = [], [], [], {}
+        raw_lists.append((top, order, cand_set[:TOP_K], s2_ok, s2_norm, mkt is world and world is not None, s2_op, s2_risk))
         for s in top:
             syms.setdefault(s, len(syms))
         if (k + 1) % 36 == 0:
@@ -100,12 +103,14 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
     points = exec_days + ([last_day] if last_day > exec_days[-1] else [])
     px = ctx.price_eur.reindex(columns=sym_list).reindex(points)
     for k, d in enumerate(dates):
-        top, order, cand, s2_ok, s2_norm, world_used = raw_lists[k]
+        top, order, cand, s2_ok, s2_norm, world_used, s2_op, s2_risk = raw_lists[k]
         idx = {s: syms[s] for s in top}
         ranks.append([idx[s] for s in order if s in idx])
         cands.append([idx[s] for s in cand if s in idx])
         s2.append([idx[s] for s in s2_ok if s in idx])
         s2n.append([idx[s] for s in s2_norm if s in idx])
+        s2op.append([idx[s] for s in s2_op if s in idx])
+        s2risk.append({str(idx[s]): lv for s, lv in s2_risk.items() if s in idx})
         sig = ctx.signals[d]
         hs = core.hold_state(sig["ra"]["pct"], sig["f"]["m12"], sig["q"]["data_ok"], sig["ra"]["score_valid"], p)
         code = []
@@ -151,7 +156,7 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         "points": [d.strftime("%Y-%m-%d") for d in points],
         "syms": sym_list, "names": names, "sectors": sectors,
         "px": [[_round(x) for x in px[s].values] for s in sym_list],
-        "rank": ranks, "cand": cands, "hold": holds, "s2": s2, "s2_normal": s2n,
+        "rank": ranks, "cand": cands, "hold": holds, "s2": s2, "s2_normal": s2n, "s2_op": s2op, "s2_risk": s2risk,
         "s2_world": [bool(x[5]) for x in raw_lists],
         "bench": bench_out,
         "notes": {
