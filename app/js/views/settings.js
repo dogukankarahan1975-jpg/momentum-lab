@@ -75,6 +75,17 @@ export async function render(root) {
       <dl class="kv small">${PARAM_LABELS.filter(([k]) => k in meth.params).map(([k, l, f]) => html`<dt>${l}</dt><dd>${f(meth.params[k])}</dd>`)}</dl>
       ${repo ? html`<p class="small" style="margin:10px 0 0"><a href="${repo}/blob/main/docs/METHODIK.md" target="_blank" rel="noopener">Ausführliche Methodik mit Quellen</a></p>` : ''}</div>`);
   } else parts.push(note('info', 'Methodik-Datei noch nicht verfügbar.'));
+  if (meth?.stage2) {
+    const m2 = meth.stage2;
+    const w = m2.params?.weights || {};
+    parts.push(html`<div class="panel"><p class="small">Stage 2 (Fortsetzungsanalyse) Version <b>${m2.version}</b> (Prüfsumme ${m2.params_hash}). Jede Kennzahl wird als Perzentil gegen eine feste Vergleichsgruppe gemessen: alle zulässigen MSCI-World-Aktien, der eigene Sektor (Fundamentaldaten und Bewertung) oder die Momentum-Gruppe (Überhitzung). Fehlende Werte werden nie geschätzt.</p>
+      <dl class="kv small">${Object.entries(m2.categories || {}).map(([k, c]) => html`<dt>${k} ${c.name}</dt><dd>${fmtPct(w[k], 0, false)}</dd>`)}
+      <dt>Score nur ab verfügbarem Gewicht</dt><dd>${fmtPct(m2.params?.min_weight_available, 0, false)}</dd>
+      <dt>Schwellen EXCEPTIONAL / STRONG BUY / WATCHLIST / NO ENTRY</dt><dd>${(m2.params?.thresholds || []).slice(0, 4).map((t) => fmtNum(t[0], 1)).join(' / ')}</dd>
+      <dt>Kennzahlen höchstens</dt><dd>${m2.params?.fund_max_age_days} Tage alt</dd>
+      <dt>Vergleichsgruppe nötig</dt><dd>${fmtPct(m2.params?.ref_min_coverage, 0, false)} Abdeckung</dd></dl>
+      <p class="xs muted" style="margin:10px 0 0">Gewichte und Schwellen sind deine Vorgabe und noch heuristisch. Gültig sind nur vorab festgelegte, versionierte Regeln.${repo ? html` <a href="${repo}/blob/main/docs/METHODIK.md#stage-2" target="_blank" rel="noopener">Stage 2 in der Methodik</a>` : ''}</p></div>`);
+  }
   parts.push(html`<div class="group"><button class="row" id="archive"><div class="grow"><div class="title">Offizielle Monats-Screenings</div><div class="sub">Archiv des Datenlaufs (je Monatsende)</div></div></button></div>`);
 
   // Depot-Einstellungen

@@ -33,7 +33,10 @@ Der erste Lauf startet sofort (Reiter **Actions**). Er dauert 20–40 Minuten, w
 4. In der App: Zahnrad → **Dauerhaften Speicher anfordern**.
 
 ## Alltag
-- **SCREENING STARTEN** prüft den neuesten Datenstand (werktags nachts aktualisiert) und bewertet dein Depot.
+- **SCREENING STARTEN** prüft den neuesten Datenstand (werktags nachts aktualisiert), zeigt Stage 1 und Stage 2 und bewertet dein Depot.
+- **Top 10 → Finale Rangfolge**: die Stage-1-Kandidaten, neu sortiert nach dem Stage-2-Score (0 bis 10), mit Entscheidung, Risiko-Stufe, Datenqualität und Outperformance-Einschätzung. **Top 10 → Stage 1** zeigt die ursprüngliche Momentum-Liste. Die App merkt sich die zuletzt gewählte Ansicht.
+- **Aktie antippen**: Stage-2-Details mit aufklappbaren Abschnitten (Momentum, Gewinne, Trend, Fundamentaldaten, Bewertung und Risiko), Begründungen und Quellen.
+- **Erste Tage nach dem Stage-2-Update**: Der Datenlauf baut die Vergleichsdaten für rund 1.200 Aktien schrittweise auf (1 bis 3 Nächte). Bis dahin zeigt Stage 2 „INSUFFICIENT DATA“ statt einer Freigabe. Das ist gewollt.
 - **Backup**: Zahnrad → **Backup exportieren** → **In Dateien sichern** (iCloud Drive). Die App erinnert dich.
 - **Wiederherstellen**: Zahnrad → **Backup importieren**.
 

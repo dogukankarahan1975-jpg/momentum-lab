@@ -247,3 +247,30 @@ def test_parse_new_ishares_format_converts_usd_prices():
 def test_html_instead_of_csv_is_reported():
     with pytest.raises(ValueError, match="HTML"):
         universe.parse_ishares_csv("<!DOCTYPE html><html><head></head></html>")
+
+
+def test_crosscheck_uses_trading_day_of_list_not_later():
+    """Regression: iShares-Liste vom Montag (in Japan Feiertag) darf nicht mit Dienstagskursen verglichen werden."""
+    from pipeline.run import crosscheck
+    idx = pd.to_datetime(["2026-11-19", "2026-11-20", "2026-11-23", "2026-11-24"])
+    close = pd.DataFrame({
+        "7203.T": [2900.0, 3000.0, np.nan, 3240.0],      # Mo Feiertag in Japan, Di +8 %
+        "AAPL": [190.0, 195.0, 200.0, 210.0],            # Di +5 %
+        "WRONG": [50.0, 50.0, 50.0, 50.0],               # falscher Ticker: 20 % daneben
+        "BP.L": [4.0, 4.1, 4.2, 4.2],                    # Liste in Pence
+    }, index=idx)
+    uni = pd.DataFrame({"symbol": ["7203.T", "AAPL", "WRONG", "BP.L"], "ref_price": [3000.0, 200.0, 60.0, 420.0]})
+    dev = crosscheck(close, uni, pd.Timestamp("2026-11-23"))
+    assert abs(dev["7203.T"]) < 1e-9
+    assert abs(dev["AAPL"]) < 1e-9
+    assert abs(dev["WRONG"]) > 0.03
+    assert abs(dev["BP.L"]) < 1e-9
+
+
+def test_crosscheck_tolerates_one_day_list_convention():
+    from pipeline.run import crosscheck
+    idx = pd.to_datetime(["2026-11-20", "2026-11-23"])
+    close = pd.DataFrame({"MSFT": [400.0, 420.0]}, index=idx)
+    # Liste trägt das Datum 23.11., enthält aber den Kurs vom 20.11.
+    dev = crosscheck(close, pd.DataFrame({"symbol": ["MSFT"], "ref_price": [400.0]}), pd.Timestamp("2026-11-23"))
+    assert abs(dev["MSFT"]) < 1e-9

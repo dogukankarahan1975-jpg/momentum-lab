@@ -1,6 +1,8 @@
 import { fundamentals, riskFlags, whyBetter, whySelected } from '../analysis.js';
 import { lineChart } from '../charts.js';
-import { loadDetail, loadScreen, reasonText } from '../data.js';
+import { freshness, loadDetail, loadScreen, loadStage2, reasonText } from '../data.js';
+import { stage2Usable } from '../stage2.js';
+import { stage2CompactHTML, stage2DetailHTML } from './stage2-detail.js';
 import { cls, fmtCompact, fmtDate, fmtEUR, fmtMoney, fmtNum, fmtPct, fmtPrice, fmtRankPct } from '../fmt.js';
 import { state } from '../state.js';
 import { badge, holdBand, html, note, raw, safeUrl, srcTag } from '../ui.js';
@@ -31,6 +33,13 @@ export async function render(root, symbol) {
       <div style="margin-top:10px">${holdBand(r.pct, { holdMax: hold, prevPct: r.prev_pct })}</div>
       ${r.prev_pct != null ? html`<p class="xs muted" style="margin:6px 0 0">Kreis = Position am letzten Monatsende (${fmtDate(screen.prev_month_end)})</p>` : ''}</div>`);
   }
+  // Stage 2 (Fortsetzungsanalyse): volle Analyse für Kandidaten, Kurzfassung für alle anderen mit Score
+  let s2 = null;
+  try { s2 = await loadStage2(); } catch { s2 = null; }
+  const e2 = s2?.bySymbol?.get(symbol);
+  const c2 = s2?.allBySymbol?.get(symbol);
+  if (e2) parts.push(stage2DetailHTML(e2, s2, stage2Usable(s2, screen, freshness(screen.asof))));
+  else if (c2) parts.push(stage2CompactHTML(c2, s2));
   // Kurs
   parts.push(html`<h2>Kursentwicklung</h2><div class="panel"><div id="pchart"></div>
     <p class="xs muted" style="margin:6px 0 0">Dividenden- und splitbereinigt, Landeswährung (${r.currency}). Gestrichelt: 200-Tage-Linie. Quelle: Yahoo Finance ${srcTag('database')}</p></div>`);

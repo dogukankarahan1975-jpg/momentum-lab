@@ -5,6 +5,8 @@ import { evaluateHolding } from '../../app/js/signals.js';
 import { addMonths, parseDec } from '../../app/js/fmt.js';
 import { freshness } from '../../app/js/data.js';
 import { validateBackup } from '../../app/js/store.js';
+import { parseStage2 } from '../../app/js/data.js';
+import { decisionCounts, fmtMetric, stage2Usable } from '../../app/js/stage2.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -152,6 +154,35 @@ test('Backup-Prüfung', () => {
   assert.equal(validateBackup({ app: 'andere-app', schema: 1, data: {} }).ok, false);
   assert.equal(validateBackup({ app: 'momentum-lab', schema: 99, data: {} }).ok, false);
   assert.equal(validateBackup({ app: 'momentum-lab', schema: 1, data: { positions: [], transactions: [{ id: 't', positionId: 'x', type: 'BUY', date: '2024-01-01' }] } }).ok, false);
+});
+
+// ---------------------------------------------------------------- Stage 2
+const s2raw = { schema: 1, asof: '2026-11-20', status: 'ok', eligible: ['AAA'], messages: [],
+  ranking: [{ symbol: 'AAA', decision: { code: 'STRONG_BUY' } }, { symbol: 'BBB', decision: { code: 'HARD_RISK' } }],
+  all: { fields: ['symbol', 'score', 'A'], rows: [['AAA', 8.7, 9.1], ['CCC', 5.2, 4.0]] } };
+test('Stage 2: Daten einlesen', () => {
+  const s = parseStage2(s2raw);
+  assert.equal(s.bySymbol.get('BBB').decision.code, 'HARD_RISK');
+  assert.equal(s.allBySymbol.get('CCC').score, 5.2);
+  assert.throws(() => parseStage2({ ...s2raw, schema: 99 }));
+  assert.deepEqual(decisionCounts(s), { STRONG_BUY: 1, HARD_RISK: 1 });
+});
+test('Stage 2: keine Entscheidung bei alten oder abweichenden Daten', () => {
+  const s = parseStage2(s2raw);
+  assert.equal(stage2Usable(s, { asof: '2026-11-20' }, fresh).ok, true);
+  assert.equal(stage2Usable(s, { asof: '2026-11-21' }, fresh).ok, false);
+  assert.equal(stage2Usable(s, { asof: '2026-11-20' }, { ok: false, label: '8 Tage alt' }).ok, false);
+  assert.equal(stage2Usable(null, { asof: '2026-11-20' }, fresh).ok, false);
+  assert.equal(stage2Usable({ ...s, status: 'fehler' }, { asof: '2026-11-20' }, fresh).ok, false);
+});
+test('Stage 2: Kennzahlen formatieren', () => {
+  assert.equal(fmtMetric(0.1234, 'pct'), '+12,3 %');
+  assert.equal(fmtMetric(0.75, 'share'), '75 %');
+  assert.equal(fmtMetric(0.4, 'share_signed'), '+0,40');
+  assert.equal(fmtMetric(2.5, 'x'), '2,5×');
+  assert.equal(fmtMetric(0.012, 'pp'), '+1,2 Pp.');
+  assert.equal(fmtMetric(0.97, 'ratio'), '-3,0 % vom Hoch');
+  assert.equal(fmtMetric(null, 'pct'), '–');
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);

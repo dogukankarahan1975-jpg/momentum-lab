@@ -1,4 +1,5 @@
-import { cachedStatus, freshness, loadScreen, loadStatus } from '../data.js';
+import { cachedStatus, freshness, loadScreen, loadStage2, loadStatus } from '../data.js';
+import { decisionBadge, stage2Usable } from '../stage2.js';
 import { computePortfolio } from '../depot.js';
 import { cls, fmtDate, fmtDateTime, fmtEUR, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
 import { latestScreening, state } from '../state.js';
@@ -45,6 +46,20 @@ export async function render(root) {
     </a>`);
   } else if (screen && screen.candidates?.length === 0) {
     parts.push(note('info', 'Aktuell erfüllt keine Aktie alle Kriterien. Die App empfiehlt deshalb nichts.'));
+  }
+
+  // Stage 2 (finale Rangfolge)
+  let s2 = null;
+  try { s2 = await loadStage2(); } catch { s2 = null; }
+  if (screen && s2 && s2.ranking?.length) {
+    const use = stage2Usable(s2, screen, freshness(screen.asof));
+    parts.push(html`<a class="panel" href="#/top10/final" style="display:block;color:inherit">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3 style="margin:0">Finale Rangfolge (Stage 2)</h3>${chevron}</div>
+      <p class="small muted" style="margin:6px 0 8px">${use.ok ? (s2.eligible.length ? `${s2.eligible.length} von ${s2.ranking.length} Kandidaten mit Sparplanfreigabe.` : `Keine Sparplanfreigabe unter ${s2.ranking.length} Kandidaten. Das ist ein gültiges Ergebnis.`) : use.reason}</p>
+      ${s2.ranking.slice(0, 3).map((r) => html`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line-soft)">
+        <div class="small" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.stage2?.rank ?? '–'}. ${r.name} <span class="muted">${r.stage2?.score_display != null ? fmtNum(r.stage2.score_display, 1) : ''}</span></div>
+        <div>${use.ok ? decisionBadge(r.decision?.code) : ''}</div></div>`)}
+    </a>`);
   }
 
   // Depot

@@ -3,6 +3,7 @@
 Persönliche, kostenlose Momentum-Investing-App fürs iPhone (Web-App für den Home-Bildschirm).
 
 - **Screening:** rund 1.300 Aktien des MSCI World, risikoadjustiertes 6- und 12-Monats-Momentum (MSCI-Stil), strenge Datenprüfung, höchstens 10 Kandidaten und ein Top Pick nur bei voller Erfüllung aller Regeln.
+- **Stage 2 – Fortsetzungsanalyse:** prüft jede Stage-1-Aktie zusätzlich in sechs Kategorien (Momentum-Persistenz, Gewinnrevisionen, relative Stärke zum MSCI World und Sektor, Trendqualität, Unternehmensqualität, Bewertung und Überhitzung). Daraus entstehen ein Score von 0 bis 10, Datenqualität, Anti-Peak-Risikostufe, Outperformance-Einschätzung, Sparplan-Entscheidung und eine finale Rangfolge. Stage 1 bleibt unverändert.
 - **Mein Depot:** Kauftranchen, Teilverkäufe, Dividenden, Splits, Sparpläne, FIFO-Gewinne, Fremdwährungen. Die Daten liegen **nur auf deinem iPhone** und lassen sich als Backup-Datei sichern.
 - **Portfolio Intelligence:** HALTEN, NACHKAUFEN, SPARPLAN FORTSETZEN/STOPPEN, VERKAUF PRÜFEN, VERKAUF, jeweils mit Begründung, Kriterien, Dringlichkeit und nächster Prüfung.
 - **Backtesting:** vorab festgelegte Varianten mit Kosten, deutschen Steuern, Marktphasen und klar ausgewiesenen Verzerrungen.
@@ -10,12 +11,12 @@ Persönliche, kostenlose Momentum-Investing-App fürs iPhone (Web-App für den H
 ## Aufbau
 ```
 app/        Web-App (HTML/CSS/JavaScript, ohne Fremdbibliotheken, offline-fähig)
-pipeline/   Täglicher Datenlauf (Python): Universum, Kurse, Qualität, Momentum, Details, Backtest
+pipeline/   Täglicher Datenlauf (Python): Universum, Kurse, Qualität, Momentum (Stage 1), Kennzahlen + Stage 2, Details, Backtest
 tests/      Python- und JavaScript-Tests (laufen vor jeder Veröffentlichung)
 tools/      Site-Build, Symbole
 docs/       Methodik, Datenquellen, Anleitung, Workflow-Vorlage
 config/     watchlist.txt – zusätzliche Symbole (z. B. Aktien außerhalb des MSCI World)
-archive/    vom Datenlauf gepflegt: Monats-Screenings, Universums-Historie, Laufprotokoll
+archive/    vom Datenlauf gepflegt: Monats-Screenings, Universums-Historie, Stage-2-Entscheidungen, Kennzahlen-Wochenarchiv, Laufprotokoll
 ```
 
 ## Ablauf

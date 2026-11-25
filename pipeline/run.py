@@ -22,7 +22,8 @@ import pandas as pd
 from . import backtest as bt
 from . import core
 from .config import (BENCHMARKS, METHODOLOGY, METHODOLOGY_VERSION, PIPELINE_VERSION, REGIME_SYMBOL_ORDER,
-                     BACKTEST_VARIANTS, COST_SCENARIOS, TAX, BACKTEST, params_hash)
+                     BACKTEST_VARIANTS, COST_SCENARIOS, TAX, BACKTEST, params_hash, STAGE2, STAGE2_VERSION,
+                     STAGE2_CATEGORIES, STAGE2_MIN, STAGE2_BACKTEST, FUNDAMENTALS, stage2_params_hash)
 from .fx import fx_on_index, load_fx
 from .prices import PriceStore, to_wide, update_prices
 from .universe import SUFFIX_COUNTRY, SUFFIX_CURRENCY, load_universe
@@ -128,6 +129,14 @@ def parse_ishares_date(s: str | None) -> pd.Timestamp | None:
 
 
 def crosscheck(close: pd.DataFrame, universe: pd.DataFrame, ref_date: pd.Timestamp | None) -> pd.Series:
+    """Abweichung des Yahoo-Schlusskurses vom iShares-Kurs desselben Handelstags.
+
+    Verglichen wird nur mit Kursen bis einschließlich Stichtag der iShares-Liste (nie danach, sonst
+    würde ein Tagesgewinn als Datenfehler gelten). Feiertage: letzter Kurs davor, wie beim Fonds.
+    Weil die Datumskonvention der Liste um einen Handelstag abweichen kann, zählt die kleinere
+    Abweichung von Stichtagskurs und Vortageskurs. Ein falsch zugeordneter Ticker oder eine falsche
+    Einheit fällt trotzdem auf.
+    """
     dev = pd.Series(np.nan, index=close.columns)
     if "ref_price" not in universe or universe["ref_price"].isna().all():
         return dev
@@ -138,16 +147,24 @@ def crosscheck(close: pd.DataFrame, universe: pd.DataFrame, ref_date: pd.Timesta
         s = close[sym].dropna()
         if s.empty:
             continue
+        cands = [float(s.iloc[-1])]
         if ref_date is not None:
-            s = s[s.index <= ref_date + pd.Timedelta(days=1)]
+            s = s[s.index <= ref_date]
             if s.empty or (ref_date - s.index[-1]).days > 4:
                 continue
-        px = float(s.iloc[-1])
-        ratio = px / ref
-        for unit in (100.0, 0.01):  # Pence/Pfund o. Ä.
-            if abs(ratio / unit - 1) < 0.03:
-                ratio = ratio / unit
-        dev[sym] = ratio - 1
+            cands = [float(s.iloc[-1])]
+            if len(s) >= 2 and (ref_date - s.index[-2]).days <= 6:
+                cands.append(float(s.iloc[-2]))
+        best = None
+        for px in cands:
+            ratio = px / ref
+            for unit in (100.0, 0.01):  # Pence/Pfund o. Ä.
+                if abs(ratio / unit - 1) < 0.03:
+                    ratio = ratio / unit
+            d = ratio - 1
+            if best is None or abs(d) < abs(best):
+                best = d
+        dev[sym] = best
     return dev
 
 
@@ -394,6 +411,29 @@ def run(args) -> int:
         det_stats = write_details(out, detail_set, panel, meta, f, cur_series, demo, cache, asof)
         sources.update(det_stats.get("sources", {}))
 
+    # 5b) Stage 2 – Fortsetzungsanalyse der Kandidaten. Eigener Fehlerbereich: Stage 1 bleibt in jedem Fall gültig.
+    s2 = None
+    try:
+        s2 = stage2_block(demo=demo, universe=universe, meta=meta, panel=panel, fx=fx, fx_row=fx_row,
+                          cur_series=cur_series, bench_frames=bench_frames, currency=currency, asof=asof, today=today,
+                          f=f, sc=sc, q=q, elig=elig, cands=cands, top_pick=top_pick, verified=verified,
+                          watch_only=watch_only, frames=frames, cache=cache, archive=archive, sources=sources,
+                          stage1_failed=(overall == "fehler"))
+        for m in s2.get("messages", []):
+            if m["level"] in ("warnung", "fehler"):
+                msg("warnung", f"Stage 2: {m['text']}")
+    except Exception as exc:  # noqa: BLE001
+        traceback.print_exc()
+        msg("warnung", f"Stage 2 fehlgeschlagen ({exc}). Stage 1 ist davon nicht betroffen.")
+        s2 = {"schema": 1, "stage2_version": STAGE2_VERSION, "status": "fehler", "asof": iso(asof), "demo": demo,
+              "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "messages": [{"level": "fehler", "text": f"Stage 2 konnte nicht berechnet werden: {str(exc)[:240]}"}],
+              "ranking": [], "eligible": []}
+        if overall == "ok":
+            overall = "warnung"
+    (out / "stage2.json").write_text(json.dumps(sanitize(s2), default=_json_default, ensure_ascii=False,
+                                                separators=(",", ":"), allow_nan=False))
+
     # 6) Monatsreihen für Depot-Historie (10 Jahre, splitbereinigte Schlusskurse)
     write_monthly(out, close, fx_idx, cur_series, bench_frames, fx, asof)
 
@@ -406,7 +446,8 @@ def run(args) -> int:
 
     # 8) Backtest (nur bei neuem Monat, Methodikänderung oder auf Wunsch)
     bt_path_cache = cache / "backtest.json"
-    bt_key = f"{PIPELINE_VERSION}|{params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}|{len(uni_syms)//50}|{'demo' if demo else 'live'}"
+    bt_key = (f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}"
+              f"|{len(uni_syms)//50}|{'demo' if demo else 'live'}")
     bt_res = None
     if not args.skip_backtest:
         if bt_path_cache.exists() and not args.force_backtest:
@@ -430,6 +471,13 @@ def run(args) -> int:
                 upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
                 ctx = bt.Context(upanel, cur_series.reindex(uni_syms), fx, dups, asof, bench_eur, log=log)
                 bt_res = bt.run_backtest(ctx, log=log)
+                if bt_res.get("available"):
+                    try:
+                        from .stage2_backtest import run_stage2_validation
+                        bt_res["stage2"] = run_stage2_validation(ctx, meta, bench_eur, log=log)
+                    except Exception as exc:  # noqa: BLE001
+                        traceback.print_exc()
+                        bt_res["stage2"] = {"available": False, "reason": f"Fehler: {exc}"}
                 bt_res["key"] = bt_key
                 bt_res["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                 bt_path_cache.write_text(json.dumps(bt_res, default=_json_default))
@@ -439,7 +487,7 @@ def run(args) -> int:
                 bt_res = {"available": False, "reason": f"Fehler: {exc}"}
     if bt_res is not None:
         bt_res = dict(bt_res, demo=demo, methodology_version=METHODOLOGY_VERSION)
-        (out / "backtest.json").write_text(json.dumps(bt_res, default=_json_default, separators=(",", ":")))
+        (out / "backtest.json").write_text(json.dumps(sanitize(bt_res), default=_json_default, separators=(",", ":"), allow_nan=False))
 
     # 9) Schreiben
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -461,7 +509,7 @@ def run(args) -> int:
         "prev_candidates": prev_cands, "params": METHODOLOGY, "reason_text": core.REASON_TEXT | {"watchlist": "Nicht im Universum (Beobachtungsliste)"},
         "fields": fields, "rows": rows,
     }
-    (out / "screen.json").write_text(json.dumps(screen, default=_json_default, separators=(",", ":"), ensure_ascii=False))
+    (out / "screen.json").write_text(json.dumps(sanitize(screen), default=_json_default, separators=(",", ":"), ensure_ascii=False))
     status = {
         "schema": 1, "demo": demo, "generated_at": now, "asof": iso(asof), "data_age_days": int(data_age),
         "overall": overall, "messages": messages, "sources": sources,
@@ -470,6 +518,10 @@ def run(args) -> int:
         "candidates": len(cands), "top_pick": top_pick, "methodology_version": METHODOLOGY_VERSION,
         "pipeline_version": PIPELINE_VERSION, "runtime_s": round(time.time() - t0, 1),
         "backtest_available": bool(bt_res and bt_res.get("available")),
+        "stage2": {"version": STAGE2_VERSION, "status": (s2 or {}).get("status"),
+                   "sparplan_freigabe": (s2 or {}).get("eligible", []),
+                   "scored": sum(1 for r in (s2 or {}).get("ranking", []) if (r.get("stage2") or {}).get("score") is not None),
+                   "fundamentals_coverage": ((s2 or {}).get("reference") or {}).get("fundamentals_coverage")},
     }
     (out / "status.json").write_text(json.dumps(status, default=_json_default, ensure_ascii=False, indent=1))
     write_methodology(out)
@@ -491,6 +543,8 @@ def run(args) -> int:
                       "top50": [[s, int(sc_prev.at[s, 'rank']), r5(sc_prev.at[s, 'Z'])] for s in
                                 sc_prev["rank"].dropna().sort_values().index[:50]]}
                 month_file.write_text(json.dumps(ms, ensure_ascii=False, indent=1))
+        if s2 and s2.get("ranking") is not None and s2.get("status") != "fehler":
+            write_stage2_archive(archive / "stage2", s2, close, cur_series, fx_row)
         with (archive / "runs.log").open("a", encoding="utf-8") as fh:
             fh.write(f"{now} asof={iso(asof)} status={overall} priced={n_priced}/{n_uni} eligible={n_elig} "
                      f"candidates={len(cands)} top={top_pick} v={METHODOLOGY_VERSION}\n")
@@ -508,6 +562,150 @@ def run(args) -> int:
         shutil.copytree(out, lg)
     log(f"Fertig: Status={overall}, Kandidaten={len(cands)}, Top Pick={top_pick}, Laufzeit {time.time() - t0:.0f}s")
     return 0 if overall != "fehler" else 3
+
+
+def eur_prices(adj: pd.DataFrame, cur: pd.Series, fx: pd.DataFrame) -> pd.DataFrame:
+    """Kurse in EUR (EZB-Referenzkurse, Vortageskurs an EZB-Feiertagen)."""
+    fx_idx = fx_on_index(fx, adj.index)
+    out = pd.DataFrame(np.nan, index=adj.index, columns=adj.columns)
+    c = cur.reindex(adj.columns)
+    for code, syms in c.groupby(c).groups.items():
+        syms = list(syms)
+        if code == "EUR":
+            out[syms] = adj[syms]
+        elif code in fx_idx.columns:
+            out[syms] = adj[syms].div(fx_idx[code], axis=0)
+    return out
+
+
+def stage2_block(*, demo, universe, meta, panel, fx, fx_row, cur_series, bench_frames, currency, asof, today, f, sc, q,
+                 elig, cands, top_pick, verified, watch_only, frames, cache, archive, sources, stage1_failed) -> dict:
+    """Kennzahlen aktualisieren und Stage 2 berechnen. Wirft bei unerwarteten Fehlern (wird oben abgefangen)."""
+    from . import fundamentals as fund
+    from . import stage2
+    adj = panel.adj
+    win = adj.loc[adj.index > asof - pd.DateOffset(years=3, months=4)]
+    eur = eur_prices(win, cur_series, fx)
+    mdf = bench_frames.get("EUNL.DE")
+    mkt = None
+    if mdf is not None:
+        mkt = mdf["adj"].dropna()
+        mc = currency.get("EUNL.DE", "EUR")
+        if mc and mc != "EUR":
+            mkt = (mkt / fx_on_index(fx, mkt.index)[mc]).dropna()
+    pool = core.select_candidates(f, sc, elig, 10 ** 6) if not stage1_failed else []
+    elig_syms = [s for s in elig.index if bool(elig.get(s))]
+    if demo:
+        from .synthetic import demo_fundamentals
+        store = fund.FundamentalsStore(demo_fundamentals(universe, frames, iso(asof), cands=list(cands)))
+        stats = {"demo": True}
+    else:
+        store = fund.FundamentalsStore.load(cache / "fundamentals.json.gz")
+        qs_list, ts_list, boot = fund.plan_refresh(store, today, list(cands) + list(watch_only), pool, elig_syms, FUNDAMENTALS)
+        log(f"[stage2] Kennzahlen fällig: {len(qs_list)}, Jahreswerte fällig: {len(ts_list)}{' (Aufbauphase)' if boot else ''}")
+        stats = fund.refresh(store, qs_list, ts_list, today, FUNDAMENTALS, boot, log=log)
+        store.save(cache / "fundamentals.json.gz")
+        snap = fund.write_weekly_snapshot(store, elig_syms, archive / "fundamentals", today)
+        if snap:
+            log(f"[stage2] Wochen-Schnappschuss {snap.name} archiviert")
+    snap90, snap_date = fund.load_snapshot_near(archive / "fundamentals", today - pd.Timedelta(days=90))
+    cov = fund.coverage(store, elig_syms, today, STAGE2["fund_max_age_days"])
+    stats["coverage"] = round(cov, 3)
+    if demo:
+        sources["fundamentals_stage2"] = {"name": "DEMO (synthetisch)", "ok": True, "type": "demo"}
+    else:
+        detail = (f"{stats.get('qs_ok', 0)} Kennzahlen- und {stats.get('ts_ok', 0)} Jahreswert-Abrufe ok, "
+                  f"{stats.get('qs_fail', 0) + stats.get('ts_fail', 0)} Fehler, Abdeckung {cov:.0%}"
+                  + (", Aufbauphase" if stats.get("boot") else "")
+                  + (", gedrosselt – der Rest folgt im nächsten Lauf" if stats.get("blocked") else ""))
+        sources["fundamentals_stage2"] = {"name": "Yahoo Finance (Kennzahlen, Analystenschätzungen; inoffiziell)",
+                                          "ok": bool(cov >= STAGE2["ref_min_coverage"] and not stats.get("error")),
+                                          "detail": detail, "type": "database"}
+    stage1 = pd.DataFrame({"rank": sc["rank"], "Z": sc["Z"], "pct": sc["pct"], "data_ok": q["data_ok"],
+                           "m6": f["m6"], "m12": f["m12"], "vol": f["vol"]})
+    mname = next((b["name"] for b in BENCHMARKS.values() if b["symbol"] == "EUNL.DE"), "MSCI World")
+    s2src = {"prices": {"name": "Yahoo Finance (Kurse)", "type": "database", "asof": iso(asof)},
+             "fundamentals": {"name": "Yahoo Finance (quoteSummary, Fundamentals-Zeitreihen)", "type": "database"},
+             "estimates": {"name": "Analystenschätzungen über Yahoo Finance", "type": "secondary"},
+             "fx": {"name": "EZB-Referenzkurse", "type": "official"},
+             "sector": {"name": "GICS-Sektor laut iShares-Bestandsliste", "type": "database"},
+             "benchmark": {"name": mname, "type": "database"}}
+    res = stage2.run_stage2(loc=win, eur=eur, mkt=mkt, market_name=mname, asof=asof, today=today, meta=meta,
+                            eligible=elig, stage1=stage1, cands=[] if stage1_failed else list(cands), pool=pool,
+                            top_pick=None if stage1_failed else top_pick, verified=verified, store=store, fx_row=fx_row,
+                            snap90=snap90, snap90_date=snap_date, demo=demo, sources=s2src, fund_stats=stats,
+                            currency=cur_series)
+    if stage1_failed:
+        res["status"] = "fehler"
+        res["messages"].insert(0, {"level": "fehler", "text": "Stage 1 hat wegen Datenproblemen keine Kandidaten "
+                                                              "freigegeben – Stage 2 bewertet deshalb nichts."})
+    res["live_track"] = live_track(archive / "stage2", adj, cur_series, fx, mkt, asof)
+    return res
+
+
+def write_stage2_archive(folder: Path, s2: dict, close: pd.DataFrame, cur: pd.Series, fx_row: pd.Series) -> None:
+    """Live-Protokoll: Stage-2-Entscheidungen je Monat (letzter Lauf des Monats bleibt stehen)."""
+    folder.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for r in s2.get("ranking", []):
+        rows.append({"symbol": r["symbol"], "name": r.get("name"), "stage1_rank": (r.get("stage1") or {}).get("rank"),
+                     "stage2_rank": (r.get("stage2") or {}).get("rank"), "score": (r.get("stage2") or {}).get("score"),
+                     "decision": (r.get("decision") or {}).get("code"), "risk": (r.get("risk") or {}).get("level"),
+                     "dq": (r.get("data_quality") or {}).get("level"),
+                     "outperformance": (r.get("outperformance") or {}).get("level")})
+    snap = {"asof": s2.get("asof"), "stage2_version": s2.get("stage2_version"), "params_hash": s2.get("params_hash"),
+            "status": s2.get("status"), "eligible": s2.get("eligible", []), "ranking": rows}
+    txt = json.dumps(sanitize(snap), ensure_ascii=False, indent=1, default=_json_default)
+    (folder / "latest.json").write_text(txt)
+    if s2.get("asof"):
+        (folder / f"{s2['asof'][:7]}.json").write_text(txt)
+
+
+def live_track(folder: Path, adj: pd.DataFrame, cur: pd.Series, fx: pd.DataFrame, mkt: pd.Series | None,
+               asof: pd.Timestamp) -> dict:
+    """Echte Out-of-Sample-Bilanz: Wie entwickelten sich frühere Stage-2-Entscheidungen bis heute (EUR, ggü. MSCI World)?"""
+    files = sorted(folder.glob("20[0-9][0-9]-[0-9][0-9].json")) if folder.exists() else []
+    rows, months = [], 0
+    for fp in files:
+        try:
+            js = json.loads(fp.read_text())
+            d = pd.Timestamp(js.get("asof"))
+        except Exception:  # noqa: BLE001
+            continue
+        if (asof - d).days < 28:
+            continue
+        months += 1
+        m0 = core.price_at(mkt.to_frame("m"), d, 12)["m"] if mkt is not None else np.nan
+        m1 = core.price_at(mkt.to_frame("m"), asof, 12)["m"] if mkt is not None else np.nan
+        mret = m1 / m0 - 1 if np.isfinite(m0) and np.isfinite(m1) else np.nan
+        for e in js.get("ranking", []):
+            sym, c = e.get("symbol"), cur.get(e.get("symbol"))
+            ret = np.nan
+            if sym in adj.columns and c:
+                p0 = core.price_at(adj[[sym]], d, 12)[sym]
+                p1 = core.price_at(adj[[sym]], asof, 40)[sym]
+                f0 = 1.0 if c == "EUR" else fx_on_index(fx, pd.DatetimeIndex([d])).iloc[0].get(c, np.nan)
+                f1 = 1.0 if c == "EUR" else fx_on_index(fx, pd.DatetimeIndex([asof])).iloc[0].get(c, np.nan)
+                if all(np.isfinite(x) for x in (p0, p1, f0, f1)) and p0 > 0:
+                    ret = (p1 / f1) / (p0 / f0) - 1
+            rows.append({"month": fp.stem, "symbol": sym, "decision": e.get("decision"), "ret": ret, "mkt": mret})
+    groups = []
+    spec = [("Sparplanfreigabe (EXCEPTIONAL / STRONG BUY)", {"EXCEPTIONAL", "STRONG_BUY"}), ("WATCHLIST", {"WATCHLIST"}),
+            ("Keine Freigabe (NO ENTRY, REJECT, HARD RISK)", {"NO_ENTRY", "REJECT", "HARD_RISK"}), ("Alle Stage-1-Kandidaten", None)]
+    for label, codes in spec:
+        sub = [r for r in rows if np.isfinite(r["ret"]) and np.isfinite(r["mkt"]) and (codes is None or r["decision"] in codes)]
+        if not sub:
+            groups.append({"label": label, "n": 0})
+            continue
+        exc = np.array([r["ret"] - r["mkt"] for r in sub])
+        groups.append({"label": label, "n": len(sub), "avg_return": r5(float(np.mean([r["ret"] for r in sub]))),
+                       "avg_excess": r5(float(exc.mean())), "hit_rate": r5(float((exc > 0).mean()))})
+    note = ("Echte Out-of-Sample-Beobachtung: Rendite von jeder Monatsentscheidung bis heute in EUR, verglichen mit dem "
+            "MSCI World im selben Zeitraum. Noch zu wenige Beobachtungen für statistische Aussagen."
+            if months else "Noch keine abgeschlossene Beobachtung. Die erste Auswertung erscheint etwa einen Monat nach "
+                           "dem ersten Stage-2-Lauf und wird jeden Monat aussagekräftiger.")
+    return {"months": months, "first": files[0].stem if files else None, "groups": groups, "note": note,
+            "rows": [{k: (r5(v) if isinstance(v, float) else v) for k, v in r.items()} for r in rows[-80:]]}
 
 
 def write_details(out: Path, detail_set: list, panel: core.Panel, meta: pd.DataFrame, f: pd.DataFrame,
@@ -543,7 +741,8 @@ def write_details(out: Path, detail_set: list, panel: core.Panel, meta: pd.DataF
     srcs = {}
     if fetcher is not None:
         st = fetcher.summary()
-        srcs = {"sec": {"name": "SEC EDGAR (XBRL, Filings)", "ok": "Fehler" not in st["sec"] or st["sec"].startswith("0 ok") is False,
+        sec_ok = st["sec"] in ("nicht genutzt", "ok") or bool(re.match(r"^[1-9]\d* ok", st["sec"]))
+        srcs = {"sec": {"name": "SEC EDGAR (XBRL, Filings)", "ok": sec_ok,
                         "detail": st["sec"], "type": "official", "url": "https://www.sec.gov/edgar/search/"},
                 "fundamentals_yahoo": {"name": "Yahoo Finance (Unternehmensdaten)", "ok": not st["yahoo_info"].startswith("0 ok"),
                                        "detail": st["yahoo_info"], "type": "database"},
@@ -577,6 +776,11 @@ def write_methodology(out: Path) -> None:
     (out / "methodology.json").write_text(json.dumps({
         "version": METHODOLOGY_VERSION, "params_hash": params_hash(), "params": METHODOLOGY,
         "variants": BACKTEST_VARIANTS, "tax": TAX, "costs": COST_SCENARIOS, "backtest": BACKTEST,
+        "stage2": {"version": STAGE2_VERSION, "params_hash": stage2_params_hash(), "params": STAGE2,
+                   "categories": {c: {"name": v["name"], "metrics": [{"key": m[0], "label": m[1], "dir": m[2], "ref": m[3],
+                                                                       "block": m[4], "rule": m[5]} for m in v["metrics"]],
+                                      **({"blocks": v["blocks"]} if "blocks" in v else {})} for c, v in STAGE2_CATEGORIES.items()},
+                   "min": STAGE2_MIN, "backtest": STAGE2_BACKTEST, "fetch": FUNDAMENTALS},
         "changelog": changelog,
     }, ensure_ascii=False, indent=1))
 
@@ -612,6 +816,23 @@ def _fail(out: Path, messages, sources, demo, reason, cache: Path | None = None)
     }, ensure_ascii=False, indent=1, default=_json_default))
     log(f"ABBRUCH: {reason}")
     return 2
+
+
+def sanitize(o):
+    """Rekursiv: NaN/Unendlich -> None, numpy-Typen -> Python. Ein einziges NaN macht JSON für Browser unlesbar."""
+    if isinstance(o, dict):
+        return {str(k): sanitize(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [sanitize(v) for v in o]
+    if isinstance(o, (np.bool_, bool)):
+        return bool(o)
+    if isinstance(o, (np.integer,)):
+        return int(o)
+    if isinstance(o, (float, np.floating)):
+        return float(o) if math.isfinite(float(o)) else None
+    if o is pd.NaT:
+        return None
+    return o
 
 
 def _json_default(o):

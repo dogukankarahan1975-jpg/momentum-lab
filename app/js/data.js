@@ -77,6 +77,32 @@ export async function loadMethodology() {
   memo.set('meth', m);
   return m;
 }
+/* Stage 2 (Fortsetzungsanalyse). Fehlt die Datei (älterer Datenlauf), liefert die Funktion null statt eines Fehlers. */
+export function parseStage2(raw) {
+  if (!raw || typeof raw !== 'object') throw new DataError('Stage-2-Daten fehlen.', 'format');
+  if (raw.schema > SUPPORTED_SCHEMA) throw new DataError(`Stage-2-Format ${raw.schema} ist neuer als diese App – bitte App aktualisieren.`, 'format');
+  const ranking = Array.isArray(raw.ranking) ? raw.ranking : [];
+  const bySymbol = new Map(ranking.map((r) => [r.symbol, r]));
+  const all = new Map();
+  const F = raw.all?.fields || [];
+  for (const row of raw.all?.rows || []) {
+    const o = Object.fromEntries(F.map((f, i) => [f, row[i]]));
+    all.set(o.symbol, o);
+  }
+  return { ...raw, ranking, bySymbol, allBySymbol: all, eligible: raw.eligible || [], messages: raw.messages || [] };
+}
+export async function loadStage2(fresh = false) {
+  if (!fresh && memo.has('stage2')) return memo.get('stage2');
+  let s;
+  try {
+    s = parseStage2(await getJSON('stage2.json', { fresh, timeout: 30000 }));
+  } catch (e) {
+    if (e instanceof DataError && e.kind === 'fehlt') s = null; else throw e;
+  }
+  memo.set('stage2', s);
+  return s;
+}
+export function cachedStage2() { return memo.has('stage2') ? memo.get('stage2') : undefined; }
 export function clearMemo() { memo.clear(); }
 
 /* Aktualität: Kalendertage zwischen Datenstand (letzter Handelstag) und heute.

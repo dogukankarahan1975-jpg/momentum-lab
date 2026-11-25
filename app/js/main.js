@@ -9,6 +9,7 @@ const ROUTES = [
   [/^#?\/?$/, 'dashboard', 'dashboard'],
   [/^#\/screening$/, 'screening', 'screening'],
   [/^#\/top10$/, 'top10', 'top10'],
+  [/^#\/top10\/(final|stage1)$/, 'top10', 'top10'],
   [/^#\/aktie\/(.+)$/, 'stock', 'top10'],
   [/^#\/depot$/, 'depot', 'depot'],
   [/^#\/position\/(.+)$/, 'position', 'depot'],

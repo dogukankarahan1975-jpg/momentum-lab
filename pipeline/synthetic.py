@@ -173,3 +173,80 @@ def demo_details(sym: str, name: str, rng: np.random.Generator) -> dict:
         }, "yahoo": {"longBusinessSummary": f"{name} ist ein frei erfundenes Demo-Unternehmen zum Testen der App."}},
         "fund_date": None, "news": [], "news_date": None,
     }
+
+
+def demo_fundamentals(uni: pd.DataFrame, frames: dict, asof: str = "2026-11-20", seed: int = 11, cands: list | None = None) -> dict:
+    """Erfundene Kennzahlen/Analystendaten im Format des Fundamentaldaten-Speichers (nur DEMO/Tests).
+
+    Enthält absichtlich Problemfälle: Aktien ohne Daten, ohne Analystenabdeckung, mit sinkenden Gewinnschätzungen
+    bei steigendem Kurs und sehr hoher Bewertung (=> HARD RISK), Banken mit eigenem Kennzahlensatz.
+    """
+    rng = np.random.default_rng(seed)
+    day = pd.Timestamp(asof).strftime("%Y-%m-%d")
+    out, moms = {}, {}
+    for _, r in uni.iterrows():
+        sym = r["symbol"]
+        df = frames.get(sym)
+        if df is None or len(df) < 300:
+            continue
+        a = df["adj"].dropna()
+        mom = float(a.iloc[-22] / a.iloc[-253] - 1) if len(a) > 260 else 0.0
+        moms[sym] = mom
+        if rng.random() < 0.08:
+            continue                                  # keine Daten
+        last = float(df["close"].dropna().iloc[-1])
+        cur = r["currency_hint"]
+        fin_cur = "GBP" if cur == "GBp" else cur
+        price_q = last * (100 if cur == "GBp" else 1)
+        is_fin = r["sector"] == "Finanzen"
+        pe_fwd = float(np.clip(rng.lognormal(np.log(17), 0.35), 6, 70))
+        growth = float(np.clip(rng.normal(0.06 + 0.12 * np.tanh(mom), 0.07), -0.3, 0.5))
+        eps_fwd = last / pe_fwd
+        eps_ttm = eps_fwd / (1 + growth)
+        drift = float(np.tanh(mom) * 0.05 + rng.normal(0, 0.03))
+        n = int(rng.integers(4, 28))
+        up = int(max(0, round(n * max(0.0, drift) * 4 + rng.normal(0, 0.8))))
+        down = int(max(0, round(n * max(0.0, -drift) * 4 + rng.normal(0, 0.8))))
+
+        def per(end, g, now):
+            return {"end": end, "eps_avg": now, "eps_n": n, "eps_growth": g, "rev_avg": float(rng.uniform(1e9, 5e10)),
+                    "rev_n": n, "rev_growth": float(rng.normal(0.05, 0.05)), "eps_now": now,
+                    "eps_7d": now / (1 + drift / 12), "eps_30d": now / (1 + drift / 3), "eps_60d": now / (1 + drift * 2 / 3),
+                    "eps_90d": now / (1 + drift), "up7": min(up, 2), "up30": up, "down30": down, "down7": min(down, 1)}
+        trend = {"0y": per("2026-12-31", growth / 2, eps_ttm * (1 + growth / 2)), "+1y": per("2027-12-31", growth, eps_fwd)}
+        sur = [float(np.clip(rng.normal(0.03 + drift, 0.05), -0.3, 0.4)) for _ in range(4)]
+        hist = [{"quarter": q, "eps_actual": 1.0 + s_, "eps_est": 1.0, "surprise": s_}
+                for q, s_ in zip(["2025-12-31", "2026-03-31", "2026-06-30", "2026-09-30"], sur)]
+        rev = float(rng.uniform(1e9, 8e10))
+        qs = {"currency": cur, "fin_currency": fin_cur, "name": r["name"], "price": price_q, "market_cap": rev * 3,
+              "pe_ttm": last / eps_ttm if eps_ttm > 0 else None, "pe_fwd": pe_fwd, "eps_ttm": eps_ttm, "eps_fwd": eps_fwd,
+              "ev": rev * 3.2, "ev_ebitda": None if is_fin else float(np.clip(rng.lognormal(np.log(11), 0.35), 3, 60)),
+              "ps": None if is_fin else float(np.clip(rng.lognormal(np.log(2.5), 0.6), 0.2, 30)),
+              "pb": float(np.clip(rng.lognormal(np.log(2.0 if not is_fin else 1.1), 0.4), 0.3, 15)),
+              "revenue": rev, "ebitda": rev * 0.2, "total_debt": rev * 0.4, "total_cash": rev * 0.1,
+              "fcf": None if is_fin else rev * float(rng.normal(0.1, 0.07)), "ocf": None,
+              "de_pct": None if is_fin else float(np.clip(rng.lognormal(np.log(60), 0.6), 0, 400)),
+              "current_ratio": None if is_fin else float(rng.uniform(0.7, 2.8)),
+              "roe": float(rng.normal(0.14, 0.07)), "roa": float(rng.normal(0.05 if not is_fin else 0.011, 0.02 if not is_fin else 0.004)),
+              "gross_margin": None if is_fin else float(rng.uniform(0.2, 0.7)), "op_margin": float(rng.normal(0.15, 0.08)),
+              "profit_margin": float(rng.normal(0.10, 0.06)), "rev_growth": float(rng.normal(0.05 + 0.08 * np.tanh(mom), 0.06)),
+              "eps_growth": float(rng.normal(0.07 + 0.15 * np.tanh(mom), 0.15)), "analysts": n, "rec_mean": 2.2,
+              "target_mean": last * 1.1, "last_fy_end": "2025-12-31", "mrq": "2026-09-30", "trend": trend, "history": hist,
+              "next_earnings": "2027-02-10", "ex_dividend": None}
+        ts = {"currency": fin_cur, "fy_end": "2025-12-31",
+              "roic_pre": None if is_fin else float(rng.normal(0.14, 0.07)),
+              "interest_cov": None if is_fin else float(np.clip(rng.lognormal(np.log(10), 0.8), 0.5, 200)),
+              "dilution": float(rng.normal(0.0, 0.02)), "margin_change": None if is_fin else float(rng.normal(0.0, 0.02)),
+              "op_margin_fy": qs["op_margin"], "rev_fy": rev, "fcf_fy": qs["fcf"]}
+        out[sym] = {"qs": qs, "qs_at": day, "qs_err": None, "qs_try": day, "ts": ts, "ts_at": day, "ts_err": None, "ts_try": day}
+    # Problemfälle unter den stärksten Momentum-Aktien (werden mit hoher Wahrscheinlichkeit Stage-1-Kandidaten)
+    strong = [s for s in (cands or []) if s in out] or [s for s, _ in sorted(moms.items(), key=lambda kv: -kv[1]) if s in out]
+    if len(strong) > 3:
+        bad = out[strong[1]]["qs"]                    # sinkende Schätzungen + sehr teuer + verfehlte Zahlen
+        for t in bad["trend"].values():
+            t["eps_30d"], t["eps_90d"], t["up30"], t["down30"] = t["eps_now"] * 1.04, t["eps_now"] * 1.12, 0, 6
+        bad["pe_fwd"], bad["eps_fwd"] = 85.0, bad["price"] / 85.0 / (100 if bad["currency"] == "GBp" else 1)
+        bad["history"][-1]["surprise"] = -0.08
+        out[strong[3]]["qs"]["trend"] = {}           # keine Analystenabdeckung
+        out[strong[3]]["qs"]["history"] = []
+    return out

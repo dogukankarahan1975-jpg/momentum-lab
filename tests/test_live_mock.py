@@ -9,7 +9,7 @@ import pandas as pd
 
 from pipeline import details, prices, universe
 from pipeline import run as runmod
-from pipeline.synthetic import generate
+from pipeline.synthetic import demo_fundamentals, generate
 
 SUFFIX_EXCHANGE = {"": ("NASDAQ", "United States"), ".DE": ("Xetra", "Germany"), ".PA": ("Nyse Euronext - Euronext Paris", "France"),
                    ".L": ("London Stock Exchange", "United Kingdom"), ".T": ("Tokyo Stock Exchange", "Japan"),
@@ -52,18 +52,84 @@ def build_fixtures():
 
 
 class Resp:
-    def __init__(self, code, js=None):
-        self.status_code, self._js = code, js
+    def __init__(self, code, js=None, text=""):
+        self.status_code, self._js, self.text = code, js, text
 
     def json(self):
+        if self._js is None:
+            raise ValueError("kein JSON")
         return self._js
 
 
-def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
+def _w(v):
+    return {"raw": v} if v is not None else {}
+
+
+def qs_json(rec):
+    """Demo-Kennzahlen im Antwortformat von Yahoo quoteSummary."""
+    trend = [{"period": per, "endDate": t["end"],
+              "earningsEstimate": {"avg": _w(t["eps_avg"]), "numberOfAnalysts": _w(t["eps_n"]), "growth": _w(t["eps_growth"])},
+              "revenueEstimate": {"avg": _w(t["rev_avg"]), "numberOfAnalysts": _w(t["rev_n"]), "growth": _w(t["rev_growth"])},
+              "epsTrend": {"current": _w(t["eps_now"]), "7daysAgo": _w(t["eps_7d"]), "30daysAgo": _w(t["eps_30d"]),
+                           "60daysAgo": _w(t["eps_60d"]), "90daysAgo": _w(t["eps_90d"])},
+              "epsRevisions": {"upLast7days": _w(t["up7"]), "upLast30days": _w(t["up30"]), "downLast30days": _w(t["down30"]),
+                               "downLast7Days": _w(t["down7"])}} for per, t in rec["trend"].items()]
+    hist = [{"quarter": {"raw": int(pd.Timestamp(h["quarter"]).timestamp())}, "epsActual": _w(h["eps_actual"]),
+             "epsEstimate": _w(h["eps_est"]), "surprisePercent": _w(h["surprise"])} for h in rec["history"]]
+    return {"quoteSummary": {"error": None, "result": [{
+        "price": {"currency": rec["currency"], "regularMarketPrice": _w(rec["price"]), "marketCap": _w(rec["market_cap"]),
+                  "longName": rec["name"]},
+        "financialData": {"financialCurrency": rec["fin_currency"], "currentPrice": _w(rec["price"]),
+                          "totalRevenue": _w(rec["revenue"]), "ebitda": _w(rec["ebitda"]), "freeCashflow": _w(rec["fcf"]),
+                          "debtToEquity": _w(rec["de_pct"]), "currentRatio": _w(rec["current_ratio"]),
+                          "returnOnEquity": _w(rec["roe"]), "returnOnAssets": _w(rec["roa"]),
+                          "operatingMargins": _w(rec["op_margin"]), "profitMargins": _w(rec["profit_margin"]),
+                          "revenueGrowth": _w(rec["rev_growth"]), "earningsGrowth": _w(rec["eps_growth"]),
+                          "numberOfAnalystOpinions": _w(rec["analysts"])},
+        "defaultKeyStatistics": {"forwardPE": _w(rec["pe_fwd"]), "forwardEps": _w(rec["eps_fwd"]), "trailingEps": _w(rec["eps_ttm"]),
+                                 "priceToBook": _w(rec["pb"]), "enterpriseToEbitda": _w(rec["ev_ebitda"])},
+        "summaryDetail": {"trailingPE": _w(rec["pe_ttm"]), "priceToSalesTrailing12Months": _w(rec["ps"])},
+        "earningsTrend": {"trend": trend}, "earningsHistory": {"history": hist},
+        "calendarEvents": {"earnings": {"earningsDate": [{"raw": int(pd.Timestamp(rec["next_earnings"]).timestamp())}]}},
+    }]}}
+
+
+def ts_json(t):
+    """Demo-Jahreswerte im Antwortformat der Yahoo-Fundamentals-Zeitreihen (so gebaut, dass die Kennzahlen stimmen)."""
+    def item(name, vals):
+        return {"meta": {"type": [name]}, name: [{"asOfDate": d, "currencyCode": "USD", "reportedValue": {"raw": v}} for d, v in vals]}
+    res = [item("annualDilutedAverageShares", [("2024-12-31", 1e9), ("2025-12-31", 1e9 * (1 + t["dilution"]))])]
+    if t.get("roic_pre") is not None:
+        rev, m = 1e10, t["op_margin_fy"]
+        ebit = t["roic_pre"] * 5e9
+        res += [item("annualTotalRevenue", [("2024-12-31", rev), ("2025-12-31", rev)]),
+                item("annualOperatingIncome", [("2024-12-31", rev * (m - t["margin_change"])), ("2025-12-31", rev * m)]),
+                item("annualEBIT", [("2025-12-31", ebit)]), item("annualInvestedCapital", [("2025-12-31", 5e9)]),
+                item("annualInterestExpense", [("2025-12-31", ebit / t["interest_cov"])])]
+    return {"timeseries": {"error": None, "result": res}}
+
+
+def _setup(tmp_path, monkeypatch):
     csv_text, ecb_zip, charts = build_fixtures()
+    uni, frames, _, _ = generate("2026-11-20")
+    fund_recs = demo_fundamentals(uni, frames, "2026-11-20")
+    seen = {"crumb": 0, "qs": 0, "ts": 0}
 
     class FakeSession:
         def get(self, url, params=None, timeout=None):
+            if "fc.yahoo.com" in url:
+                return Resp(404)
+            if "getcrumb" in url:
+                return Resp(200, text="crumb123")
+            if "quoteSummary/" in url:
+                assert params and params.get("crumb") == "crumb123"
+                seen["qs"] += 1
+                sym = url.rsplit("/", 1)[-1].replace("%2E", ".")
+                return Resp(200, qs_json(fund_recs[sym]["qs"])) if sym in fund_recs else Resp(404)
+            if "fundamentals-timeseries" in url:
+                seen["ts"] += 1
+                sym = url.rsplit("/", 1)[-1].replace("%2E", ".")
+                return Resp(200, ts_json(fund_recs[sym]["ts"])) if sym in fund_recs else Resp(404)
             sym = url.rsplit("/", 1)[-1].replace("%2E", ".")
             return Resp(200, charts[sym]) if sym in charts else Resp(404)
 
@@ -98,10 +164,15 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     monkeypatch.setattr(details.time, "sleep", lambda s: None)
     monkeypatch.setattr(details, "fetch_yahoo_info", lambda sym: {"longBusinessSummary": "Test", "trailingPE": 20.0})
     monkeypatch.setattr(runmod.pd.Timestamp, "utcnow", classmethod(lambda cls: pd.Timestamp("2026-11-21", tz="UTC")))
+    monkeypatch.setattr(prices.time, "time", lambda: 1_800_000_000.0)
     out, cache, archive = tmp_path / "site" / "data", tmp_path / "cache", tmp_path / "archive"
     args = argparse.Namespace(mode="live", out=str(out), cache=str(cache), archive=str(archive), asof=None,
                               full_refresh=False, skip_backtest=True, force_backtest=False, skip_details=False)
-    monkeypatch.setattr(prices.time, "time", lambda: 1_800_000_000.0)
+    return args, out, cache, archive, seen
+
+
+def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
+    args, out, cache, archive, seen = _setup(tmp_path, monkeypatch)
     rc = runmod.run(args)
     assert rc == 0
     status = json.loads((out / "status.json").read_text())
@@ -120,6 +191,22 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     assert det["news"][0]["title"] == "Demo meldet Rekord"
     assert (archive / "universe" / "latest.csv").exists() and (archive / "runs.log").exists()
     assert (cache / "last_good" / "screen.json").exists()
+    # Stage 2: automatisch berechnet, über den echten Parser-Pfad (Crumb, quoteSummary, Zeitreihen)
+    s2 = json.loads((out / "stage2.json").read_text())
+    assert seen["qs"] > 250 and seen["ts"] > 100
+    assert s2["status"] == "ok", s2["messages"]
+    assert [r["symbol"] for r in s2["ranking"]] and {r["symbol"] for r in s2["ranking"]} == set(screen["candidates"])
+    assert all(r["decision"]["code"] in ("EXCEPTIONAL", "STRONG_BUY", "WATCHLIST", "NO_ENTRY", "REJECT", "HARD_RISK",
+                                         "INSUFFICIENT_DATA") for r in s2["ranking"])
+    scores = [r["stage2"]["score"] for r in s2["ranking"] if r["stage2"]["score"] is not None]
+    assert scores == sorted(scores, reverse=True)                    # finale Rangfolge nach Stage-2-Score
+    assert s2["reference"]["fundamentals_coverage"] >= 0.6
+    assert status["sources"]["fundamentals_stage2"]["ok"] is True
+    assert status["stage2"]["scored"] == len(scores)
+    assert (cache / "fundamentals.json.gz").exists()
+    assert list((archive / "fundamentals").glob("*.csv.gz")), "Wochen-Schnappschuss fehlt"
+    assert (archive / "stage2" / "latest.json").exists()
+    assert json.loads((out / "methodology.json").read_text())["stage2"]["version"]
     # Zweiter Lauf: Yahoo komplett gesperrt -> Cache wird genutzt, ehrliche Kennzeichnung
     class Blocked:
         def get(self, url, params=None, timeout=None):
@@ -132,4 +219,22 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     assert status2["overall"] == "fehler" and rc2 != 0
     screen2 = json.loads((out / "screen.json").read_text())
     assert screen2["candidates"] == [] and screen2["top_pick"] is None   # keine Empfehlungen mit alten Daten
+    s2b = json.loads((out / "stage2.json").read_text())
+    assert s2b["status"] == "fehler" and s2b["ranking"] == [] and s2b["eligible"] == []
     assert np.isfinite(1.0)
+
+
+def test_stage2_failure_does_not_break_stage1(tmp_path, monkeypatch):
+    args, out, cache, archive, _ = _setup(tmp_path, monkeypatch)
+
+    def boom(**kw):
+        raise RuntimeError("absichtlicher Testfehler")
+    monkeypatch.setattr(runmod, "stage2_block", boom)
+    rc = runmod.run(args)
+    assert rc == 0
+    status = json.loads((out / "status.json").read_text())
+    screen = json.loads((out / "screen.json").read_text())
+    s2 = json.loads((out / "stage2.json").read_text())
+    assert screen["candidates"] and screen["top_pick"]               # Stage 1 vollständig
+    assert s2["status"] == "fehler" and "Testfehler" in s2["messages"][0]["text"]
+    assert status["overall"] == "warnung" and any("Stage 2" in m["text"] for m in status["messages"])

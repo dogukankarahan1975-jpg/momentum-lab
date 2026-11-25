@@ -1,5 +1,5 @@
 import { barChart, lineChart, SERIES_COLORS } from '../charts.js';
-import { loadBacktest } from '../data.js';
+import { loadBacktest, loadStage2 } from '../data.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct } from '../fmt.js';
 import { html, note } from '../ui.js';
 
@@ -82,6 +82,7 @@ export async function render(root) {
     parts.push(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Ø Monatsrendite</th><th class="n">Markt im Plus (12 M)</th><th class="n">Markt im Minus</th></tr></thead><tbody>
       ${cols.filter((c) => bb[c]).map((c) => html`<tr><td class="sticky">${short(V.get(c))}</td><td class="n">${fmtPct(bb[c].bull_avg_month, 2)}</td><td class="n">${fmtPct(bb[c].bear_avg_month, 2)}</td></tr>`)}</tbody></table></div>`);
   }
+  parts.push(html`<div id="s2bt"></div>`);
   parts.push(html`<h2>Annahmen</h2><div class="panel small"><dl class="kv">
     <dt>Handelszeitpunkt</dt><dd style="white-space:normal">${bt.assumptions.execution}</dd>
     <dt>Steuer</dt><dd>${fmtPct(bt.assumptions.tax.rate, 3, false)}, Pauschbetrag ${fmtEUR(bt.assumptions.tax.allowance, 0)}</dd>
@@ -118,6 +119,9 @@ export async function render(root) {
   };
   root.querySelector('#one').onchange = drawOne;
   drawOne();
+  let s2 = null;
+  try { s2 = await loadStage2(); } catch { s2 = null; }
+  renderStage2Validation(root.querySelector('#s2bt'), bt.stage2, s2);
   const spEl = root.querySelector('#sp');
   if (spEl) lineChart(spEl, { height: 220, label: 'Sparplan-Depotwert', yFmt: (v) => fmtNum(v / 1000, 0) + ' T', tipFmt: (v) => fmtEUR(v, 0),
     series: bt.savings.slice(0, 4).map((s, i) => ({ name: s.name, short: s.id === 'sp_etf' ? 'ETF' : s.id === 'sp_top1' ? 'Top 1' : 'Top 10', points: s.curve, color: SERIES_COLORS[i] })) });
@@ -149,4 +153,64 @@ function conclusions(V) {
   const ew = g('ew_universe');
   if (Number.isFinite(a10.cagr) && Number.isFinite(ew.cagr)) out.push(`Gegenüber dem fairsten Maßstab, dem gleichgewichteten Universum mit derselben Verzerrung (${fmtPct(ew.cagr)} p. a.), lagen die App-Regeln mit Top 10 bei ${fmtPct(a10.cagr)} p. a. nach Kosten.`);
   return out;
+}
+
+
+// ---------------------------------------------------------------- Stage 2: Teilvalidierung + echtes Live-Protokoll
+const S2_SHORT = { s1_top10: 'Stage 1 Top 10', s1_top5: 'Stage 1 Top 5', s12_top5: 'Stage 1+2 beste 5', s12_top10_sw: 'S1+2 T10 gew.', s12_top5_sw: 'S1+2 T5 gew.' };
+
+function renderStage2Validation(el, v, s2) {
+  if (!el) return;
+  const parts = [html`<h2>Stage 2: Teilvalidierung</h2>`];
+  if (!v) {
+    parts.push(note('info', 'Die Stage-2-Teilvalidierung wird beim nächsten monatlichen Backtest berechnet (nach dem ersten Datenlauf mit Stage 2).'));
+  } else if (!v.available) {
+    parts.push(note('warn', `Stage-2-Teilvalidierung nicht verfügbar: ${v.reason || 'unbekannt'}`));
+  } else {
+    parts.push(note('warn', html`<b>Nur ein Teiltest.</b> Getestet: ${v.tested.join(', ')}. Nicht testbar: ${v.not_tested.join(', ')}. Dafür gibt es keine kostenlosen zeitpunktgenauen Historien. Die App sammelt diese Daten ab jetzt selbst.`));
+    parts.push(html`<p class="lede small">${fmtDate(v.period.start)} bis ${fmtDate(v.period.end)}, ${v.period.months} Monate. Vor Steuern, nach Kosten (1 € + 0,20 % je Order). Stage-1-Kandidaten werden nach dem kursbasierten Stage-2-Score neu sortiert.</p>`);
+    parts.push(html`<div class="panel small">${(v.conclusion || []).map((t) => html`<p>${t}</p>`)}<p class="muted" style="margin:0">Automatisch aus den Zahlen erzeugt. Kleine Unterschiede sind Zufall.</p></div>`);
+    const hs = [...new Set(v.strategies.map((x) => x.holding_months))].sort((a, b) => a - b);
+    parts.push(html`<div class="seg" role="group" aria-label="Haltedauer" id="s2h">${hs.map((h, i) => html`<button data-h="${h}" aria-pressed="${i === 0}">${h} ${h === 1 ? 'Monat' : 'Monate'}</button>`)}</div>
+      <div id="s2tab"></div><div class="panel"><div id="s2eq"></div><p class="xs muted" style="margin:6px 0 0">Logarithmische Skala, Start = 100. Gleiche Haltedauer für alle Linien.</p></div>`);
+    const ic = v.ic?.rows || [];
+    if (ic.length) {
+      parts.push(html`<h3 style="margin-top:14px">Prognosegüte innerhalb der Momentum-Gruppe</h3><p class="xs muted">${v.ic.explanation}</p>
+        <div class="table-wrap"><table><thead><tr><th class="sticky">Faktor</th>${v.ic.horizons.map((h) => html`<th class="n">${h} M</th>`)}</tr></thead><tbody>
+        ${ic.map((r) => html`<tr><td class="sticky">${r.label}</td>${v.ic.horizons.map((h) => { const c = r[`h${h}`] || {}; return html`<td class="n">${c.mean != null ? fmtNum(c.mean, 3) : '–'}<div class="xs muted">t ${c.t != null ? fmtNum(c.t, 1) : '–'}</div></td>`; })}</tr>`)}
+        </tbody></table></div>`);
+    }
+    if (v.cost_sensitivity?.length) {
+      const keys = Object.keys(v.cost_sensitivity[0]).filter((k) => !['id', 'name'].includes(k));
+      parts.push(html`<h3 style="margin-top:14px">Einfluss der Kosten (1 Monat)</h3><div class="table-wrap"><table><thead><tr><th class="sticky">Variante</th>${keys.map((k) => html`<th class="n">${v.cost_sensitivity[0][k].label}</th>`)}</tr></thead><tbody>
+        ${v.cost_sensitivity.map((r) => html`<tr><td class="sticky">${r.name}</td>${keys.map((k) => html`<td class="n">${fmtPct(r[k]?.cagr)}</td>`)}</tr>`)}</tbody></table></div>`);
+    }
+    parts.push(html`<details class="more"><summary>Einschränkungen (${v.warnings.length})</summary><ul class="small" style="padding-left:18px">${v.warnings.map((w) => html`<li style="margin-bottom:6px">${w}</li>`)}</ul></details>`);
+  }
+  // Echtes Live-Protokoll (Out-of-Sample)
+  const lt = s2?.live_track;
+  parts.push(html`<h3 style="margin-top:14px">Live-Protokoll (echt, ohne Rückschau)</h3>`);
+  if (!lt || !lt.months) {
+    parts.push(html`<p class="small muted">${lt?.note || 'Noch keine abgeschlossene Beobachtung. Die erste Auswertung erscheint etwa einen Monat nach dem ersten Stage-2-Lauf.'}</p>`);
+  } else {
+    parts.push(html`<p class="xs muted">${lt.note} Seit ${lt.first}, ${lt.months} Monat(e).</p><div class="table-wrap"><table><thead><tr><th class="sticky">Gruppe</th><th class="n">Anzahl</th><th class="n">Ø Rendite</th><th class="n">Ø ggü. MSCI World</th><th class="n">Trefferquote</th></tr></thead><tbody>
+      ${lt.groups.map((g) => html`<tr><td class="sticky">${g.label}</td><td class="n">${g.n}</td><td class="n">${fmtPct(g.avg_return)}</td><td class="n">${fmtPct(g.avg_excess)}</td><td class="n">${fmtPct(g.hit_rate, 0, false)}</td></tr>`)}
+      </tbody></table></div>`);
+  }
+  el.innerHTML = parts.join('');
+  if (!v?.available) return;
+  const draw = (h) => {
+    const rows = v.strategies.filter((x) => x.holding_months === h);
+    const bm = v.benchmark?.metrics || {};
+    el.querySelector('#s2tab').innerHTML = String(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Variante</th><th class="n">Rendite p. a.</th><th class="n">ggü. MSCI World</th><th class="n">Sharpe</th><th class="n">Volatilität</th><th class="n">Max. Verlust</th><th class="n">Trefferquote</th><th class="n">Ø Gewinner</th><th class="n">Ø Verlierer</th><th class="n">Entscheidungen</th><th class="n">Umschlag p. a.</th></tr></thead><tbody>
+      ${rows.map((x) => { const m = x.metrics, sl = x.selection || {}; return html`<tr><td class="sticky">${x.name}</td><td class="n">${fmtPct(m.cagr)}</td><td class="n">${fmtPct(m.excess_cagr)}</td><td class="n">${fmtNum(m.sharpe, 2)}</td><td class="n">${fmtPct(m.volatility, 1, false)}</td><td class="n">${fmtPct(m.max_drawdown)}</td><td class="n">${fmtPct(sl.hit_rate, 0, false)}</td><td class="n">${fmtPct(sl.avg_return_winners)}</td><td class="n">${fmtPct(sl.avg_return_losers)}</td><td class="n">${sl.decisions ?? '–'}</td><td class="n">${m.turnover != null ? `${fmtNum(m.turnover * 100, 0)} %` : '–'}</td></tr>`; })}
+      <tr><td class="sticky">${v.benchmark?.name || 'MSCI World'}</td><td class="n">${fmtPct(bm.cagr)}</td><td class="n">–</td><td class="n">${fmtNum(bm.sharpe, 2)}</td><td class="n">${fmtPct(bm.volatility, 1, false)}</td><td class="n">${fmtPct(bm.max_drawdown)}</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">–</td></tr>
+      </tbody></table></div><p class="xs muted">Trefferquote = Anteil der einzelnen Auswahlentscheidungen, die in der Haltedauer besser als der MSCI World waren. Ø Gewinner/Verlierer = durchschnittliche Rendite dieser beiden Gruppen.</p>`);
+    const pick = ['s1_top10', 's1_top5', 's12_top5'].map((id) => rows.find((x) => x.id === id)).filter(Boolean);
+    const series = pick.map((x, i) => ({ name: x.name, short: S2_SHORT[x.id] || x.id, points: x.curve, color: SERIES_COLORS[i] }));
+    if (v.benchmark?.curve?.length) series.push({ name: v.benchmark.name, short: 'MSCI World', points: v.benchmark.curve, color: SERIES_COLORS[3] });
+    lineChart(el.querySelector('#s2eq'), { height: 220, log: true, label: 'Stage 2 Teilvalidierung', yFmt: (x) => fmtNum(x, 0), tipFmt: (x) => fmtNum(x, 0), series });
+  };
+  el.querySelectorAll('#s2h button').forEach((b) => { b.onclick = () => { el.querySelectorAll('#s2h button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); draw(Number(b.dataset.h)); }; });
+  draw(Number(el.querySelector('#s2h button')?.dataset.h || 1));
 }

@@ -1,6 +1,8 @@
-# Momentum Lab – Methodik v1.0.0
+# Momentum Lab – Methodik
 
-Stand: 24.11.2026 · Parameter-Datei: `pipeline/config.py` · Jede Änderung erhöht die Version und wird im `CHANGELOG.md` dokumentiert.
+Stage 1 (Momentum-Screening) **v1.0.0** · Stage 2 (Fortsetzungsanalyse) **S2 v1.0.0** · Stand: 25.11.2026 · Parameter-Datei: `pipeline/config.py` · Jede Änderung erhöht die jeweilige Version und wird im `CHANGELOG.md` dokumentiert.
+
+Abschnitte 1–7 beschreiben Stage 1, Abschnitt 8 Stage 2.
 
 ## 1. Ziel und Grundsätze
 
@@ -36,7 +38,7 @@ Eine Aktie ist nur zulässig, wenn **alle** Prüfungen bestanden sind. Datenprob
 | Lücken | mindestens 225 Kurse in den letzten 365 Tagen | Datenproblem |
 | Unplausibler Sprung | kein Tagesfaktor > 2,5 bzw. < 1/2,5 in 400 Tagen | Datenproblem |
 | Anpassungsfehler | Verhältnis bereinigter/unbereinigter Kurs springt nicht um > 25 % | Datenproblem |
-| Gegenprüfung | Abweichung zum iShares-Schlusskurs ≤ 3 % (falls verfügbar) | Datenproblem |
+| Gegenprüfung | Abweichung zum iShares-Schlusskurs **desselben Handelstags** ≤ 3 % (Stichtag der Liste oder Vortag, falls verfügbar) | Datenproblem |
 | Währung | muss in EZB-Referenzkursen vorkommen | Datenproblem |
 | Historie | mindestens 2 Jahre | Regel |
 | Liquidität | Median-Tagesumsatz ≥ 1 Mio. € (ca. 3 Monate) | Regel |
@@ -116,7 +118,222 @@ Vor dem Backtest festgelegt. Grundidee: **Kaufen nur die Besten, halten solange 
 3. **Datenqualität:** Yahoo-Kurse sind inoffiziell; einzelne historische Fehler sind möglich.
 4. **Mehrfachtests:** Es werden 13 Varianten verglichen. Die beste Variante ist auch zufällig die beste (Harvey, Liu & Zhu 2016). Unterschiede von wenigen Zehntelprozent sind nicht belastbar.
 
-## 8. Quellen
+
+<a name="stage-2"></a>
+## 8. Stage 2 – Fortsetzungsanalyse (S2 v1.0.0)
+
+### 8.1 Ziel und Einordnung
+
+Stage 1 bleibt unverändert und liefert höchstens zehn Kandidaten. Stage 2 prüft **jede dieser Aktien** zusätzlich und
+beantwortet eine Frage: *Ist die bisherige Stärke durch mehrere unabhängige Faktoren gestützt, sodass eine Fortsetzung
+nachvollziehbar ist, oder trägt sie vor allem ein kurzer Kursschub?* Ergebnis je Kandidat: ein Score von 0 bis 10,
+Datenqualität, Risiko-Stufe (Anti-Peak), Outperformance-Einschätzung gegenüber dem MSCI World, Sparplan-Entscheidung und
+Begründungen. Stage 2 wird automatisch im nächtlichen Datenlauf berechnet (`pipeline/stage2.py`). Es gibt keine
+Garantie für eine Outperformance. Die Gewichte und Entscheidungsschwellen sind Vorgaben des Nutzers und **heuristisch**.
+Sie sind nicht als Erfolgswahrscheinlichkeiten zu lesen (Abschnitt 8.9).
+
+### 8.2 Skalierung: Perzentile gegen feste Vergleichsgruppen
+
+Jede Kennzahl wird als Perzentil gegen ihre Vergleichsgruppe gemessen:
+`p = (Anzahl schlechterer Werte + ½ · Anzahl gleicher Werte) / Anzahl Werte`. Bei Kennzahlen, bei denen weniger besser
+ist (z. B. Verschuldung), wird das Vorzeichen umgedreht. Perzentile sind robust gegen Ausreißer. Keine einzelne extreme
+Kennzahl kann eine Kategorie dominieren, und Aktien aus verschiedenen Märkten werden vergleichbar.
+
+| Vergleichsgruppe | Frage | verwendet für |
+|---|---|---|
+| alle zulässigen MSCI-World-Aktien (Stage-1-Datenprüfung bestanden) | Ist die Aktie besser als der Markt? | A, B, C, D |
+| Aktien desselben GICS-Sektors (mindestens 15 Werte, sonst alle) | Branchen fair vergleichen (Banken ≠ Software) | E, Bewertungsblock von F |
+| Momentum-Vergleichsgruppe = Stage-1-Kandidatengruppe (bestes Zehntel, 6M und 12M positiv; unter 30 Aktien: beste 20 %) | Ist sie überhitzter als *andere* Momentum-Aktien? | Überhitzungsblock von F |
+
+Die Überhitzung wird bewusst nur gegen andere Momentum-Aktien gemessen. Gegen das ganze Universum wäre jede
+Momentum-Aktie „überhitzt“, und starkes Momentum würde allein wegen der Performance bestraft.
+
+**Kategorie-Score** = 10 × Mittel der verfügbaren Perzentile. A und F bestehen aus zwei gleich gewichteten Blöcken
+(A: Niveau und Konsistenz; F: Bewertung und Überhitzung). Innerhalb einer Kategorie bzw. eines Blocks sind alle
+Kennzahlen gleich gewichtet. Das ist die am wenigsten willkürliche Wahl ohne validierte Gewichte.
+
+**Gesamtscore** = gewichtetes Mittel der Kategorien: A 20 %, B 20 %, C 20 %, D 15 %, E 10 %, F 15 %. Er wird nur
+berechnet, wenn Kategorien mit mindestens 80 % des Gewichts verfügbar sind. Fehlt eine Kategorie, werden die übrigen
+neu gewichtet. Das steht dann sichtbar beim Score, die Datenqualität sinkt auf LOW, und es gibt keine
+Sparplanfreigabe.
+
+**Aktivierung einer Kennzahl:** Sie zählt nur, wenn in ihrer Vergleichsgruppe mindestens 60 % der Aktien einen Wert
+haben (und mindestens 30 Werte). Sonst ist sie für **alle** Aktien ausgesetzt, damit für alle dieselben Regeln gelten.
+Ausgesetzte Kennzahlen werden angezeigt.
+
+### 8.3 Kennzahlen je Kategorie
+
+Alle Kursdaten sind dividendenbereinigt. Momentum in Landeswährung wie in Stage 1, Vergleiche mit dem MSCI World in Euro.
+Der MSCI World ist der iShares Core MSCI World UCITS ETF (EUNL, inklusive Fondskosten).
+
+**A Momentum-Persistenz (20 %)**: Block *Niveau*: 12-1-, 6-1-, 3-1- und 12-2-Monats-Momentum (Jegadeesh & Titman 1993;
+die Lücke zum jüngsten Monat meidet das Kurzfrist-Reversal). Block *Konsistenz*: Anteil positiver Monate im 12-1-Fenster
+(Grinblatt & Moskowitz 2004) und die Sprunghaftigkeit der Kursgewinne nach Da, Gurun & Warachka (2014):
+`ID = Vorzeichen(12-1-Rendite) × (Anteil Minus-Tage − Anteil Plus-Tage)`. Kontinuierliche Gewinne (niedriger ID) setzen
+sich häufiger fort als Gewinne aus wenigen Sprüngen. Damit wird nicht automatisch die höchste 12-Monats-Rendite bevorzugt.
+
+**B Gewinn- und Revisionsmomentum (20 %)**: Revisionsbreite (Erhöhungen minus Senkungen der Gewinnschätzungen in 30 Tagen
+je Analyst, Mittel aus laufendem und nächstem Geschäftsjahr), Änderung der Gewinnschätzung gegenüber vor 30 und 90 Tagen
+(Chan, Jegadeesh & Lakonishok 1996: Gewinnrevisionen erklären einen Teil des Kursmomentums), durchschnittliche
+Gewinnüberraschung der letzten vier Quartale (Bernard & Thomas 1989), Umsatz- und Gewinnwachstum je Aktie (Quartal ggü.
+Vorjahr), Veränderung der operativen Marge (Geschäftsjahr) und Änderung der Umsatzschätzung gegenüber vor ca. 90 Tagen.
+Die letzte Kennzahl stammt aus der **eigenen** Wochen-Historie der App (gleiches Geschäftsjahr). Sie wird automatisch
+aktiv, sobald genug Historie vorliegt (ab etwa drei Monaten nach Einführung). Mindestens drei Kennzahlen, davon eine aus
+Revisionen oder Überraschungen. Die Unternehmensprognose (Guidance) gibt es nicht kostenlos in strukturierter Form; sie
+fließt nicht ein.
+
+**C Relative Stärke und Outperformance (20 %)**: marktbereinigtes Momentum (Monatsrenditen der letzten 36 Monate gegen
+den MSCI World regressiert; Summe von `Rendite − Beta × MSCI World` in den Monaten t−12 bis t−2, geteilt durch die
+Restschwankung). Es misst den Teil der Stärke, den der steigende Gesamtmarkt nicht erklärt (verwandt mit dem
+idiosynkratischen Momentum bei Gutierrez & Prinsky 2007 und Blitz, Huij & Martens 2011). Dazu: Anteil der letzten
+12 Monate, in denen die Aktie den MSCI World schlug, relative Stärke zum eigenen Sektor über 6-1 Monate
+(Branchen-Momentum: Moskowitz & Grinblatt 1999) und zum Heimatmarkt (Land mit mindestens 20 zulässigen Aktien, sonst
+MSCI-Region). Sektor- und Heimatmarktvergleich: gleichgewichteter Durchschnitt der zulässigen Aktien der Gruppe. Offizielle
+MSCI-Sektorindizes sind nicht kostenlos.
+
+**D Trendqualität und Kursstärke (15 %)**: Nähe zum 52-Wochen-Hoch (George & Hwang 2004: Aktien nahe ihrem Hoch setzen
+den Trend eher fort), Abstand der 50- zur 200-Tage-Linie, Trendstabilität (R² des logarithmierten Kurses über 6 Monate
+mit dem Vorzeichen der Steigung, damit ein stabiler Abwärtstrend nicht als Qualität zählt), maximaler Rückgang über
+12 Monate, durchschnittliche Überrendite in den Monaten mit fallendem MSCI World (36 Monate, mindestens 6 solche Monate)
+sowie der Anteil der Monate mit höherem Hoch **und** höherem Tief (12 Monate, Monatshochs und -tiefs aus Schlusskursen).
+
+**E Unternehmensqualität und Fundamentaldaten (10 %)**: Eigenkapitalrendite, Kapitalrendite ROIC vor Steuern
+(EBIT ÷ investiertes Kapital, wie bei Greenblatts Kapitalrendite; ohne frei gewählten Steuersatz), operative Marge,
+Free-Cashflow-Marge, Verschuldung (Finanzschulden ÷ Eigenkapital, niedriger besser), Zinsdeckung (EBIT ÷ Zinsaufwand)
+und Veränderung der Aktienanzahl (Verwässerung, niedriger besser; Pontiff & Woodgate 2008). Profitabilität und
+Qualität: Novy-Marx (2013), Asness, Frazzini & Pedersen (2019). **Banken und Versicherer** (Sektor Finanzen) haben einen
+eigenen Satz: Eigenkapitalrendite, Gesamtkapitalrendite, Nettomarge und Verwässerung. Free Cashflow, Margen und
+Verschuldung sind für sie nicht sinnvoll. Alle Perzentile werden innerhalb des Sektors gebildet. Wettbewerbsposition,
+Marktposition und Geschäftsmodell lassen sich ohne subjektive Urteile nicht automatisch bewerten. Sie fließen nicht ein;
+die App verlinkt die Quellen.
+
+**F Bewertung, Volatilität und Überhitzung (15 %)**: Block *Bewertung* (innerhalb des Sektors): Gewinnrendite forward
+und für 12 Monate (Kehrwert des KGV; Verluste ergeben eine negative Gewinnrendite und damit einen schlechten Rang),
+EBITDA ÷ Unternehmenswert und Umsatz ÷ Börsenwert (nicht für Finanzwerte), Buchwert ÷ Börsenwert (nur Finanzwerte) und
+PEG (Forward-KGV ÷ erwartetes Gewinnwachstum des nächsten Jahres, nur bei positivem Wachstum). Gewinnrenditen statt KGV,
+weil sie Verluste sinnvoll einordnen (Fama & French 1992; Asness, Moskowitz & Pedersen 2013). Block *Überhitzung*
+(gegen die Momentum-Gruppe): Abstand zur 50- und 200-Tage-Linie in Standardabweichungen
+(`(Kurs ÷ Linie − 1) ÷ (σ_täglich × √Tage)`), Kursbewegung des letzten Monats in Standardabweichungen und Volatilität
+über 3 Monate (Ang et al. 2006). Die Nähe zum 52-Wochen-Hoch zählt bewusst **nicht** als Risiko (siehe D).
+
+**Kontrolle widersprüchlicher Daten:** Die Gewinnrendite wird aus Gewinn je Aktie und Kurs in derselben Währung berechnet
+(EZB-Kurse; Pence werden in Pfund umgerechnet). Weicht sie um mehr als den Faktor 3 vom KGV des Datenanbieters ab,
+deutet das auf einen Währungs- oder Einheitenfehler hin. Der Wert wird dann nicht verwendet und als widersprüchlich
+markiert.
+
+### 8.4 Datenqualität
+
+| Stufe | Regel |
+|---|---|
+| HIGH | alle sechs Kategorien berechenbar, mindestens 90 % der anwendbaren Kennzahlen vorhanden, Kennzahlen höchstens 7 Tage alt |
+| MEDIUM | alle sechs Kategorien berechenbar, Kennzahlen höchstens 21 Tage alt |
+| LOW | Score berechenbar (≥ 80 % Gewicht), aber eine Kategorie fehlt oder ältere Daten → **keine Sparplanfreigabe** |
+| INSUFFICIENT | kein Score möglich oder Datenproblem aus Stage 1 → keine Entscheidung |
+
+Fehlende Werte werden nie geschätzt oder aufgefüllt. Ein fehlender Wert ist kein negatives Signal. Er wird ausgelassen
+und als fehlend aufgelistet. Ein negativer Wert (z. B. sinkende Gewinnschätzung) ist dagegen ein echtes Signal.
+Kennzahlen, die älter als 21 Tage sind, gelten als fehlend. Mindestanforderungen je Kategorie: A je Block 2 bzw.
+1 Kennzahl, B 3 (davon eine aus Revisionen/Überraschungen), C 2, D 3, E die Hälfte der anwendbaren, F je Block 1 bzw. 2.
+
+### 8.5 Anti-Peak- und Anti-Chasing-Modul
+
+Es gibt keine pauschale Regel gegen Aktien nahe ihrem Hoch. Geprüft wird eine Kombination. Je Konzept zählt höchstens
+**ein** Warnsignal, damit korrelierte Werte nicht doppelt zählen:
+
+| Signal | Auslöser (Grenze) |
+|---|---|
+| technisch: weit über dem Trend | Abstand zur 50- **oder** 200-Tage-Linie im obersten Zehntel der Momentum-Gruppe |
+| technisch: Kursbeschleunigung | Rendite des letzten Monats > 2 Standardabweichungen (extrem: > 3) |
+| technisch: Volatilität | 3-Monats-Volatilität im obersten Zehntel der Momentum-Gruppe |
+| technisch, ergänzend: RSI | RSI(14) ≥ 80; zählt nur zusammen mit einem anderen technischen Signal |
+| Trend | Trendstatus „schwächer werdend“ oder „Trendbruch“ |
+| fundamental: Erwartungen sinken | Gewinnschätzung niedriger als vor 90 Tagen **oder** mehr Senkungen als Erhöhungen (Divergenz, wenn der Kurs gleichzeitig steigt) |
+| fundamental: verfehlt | letzte Quartalszahlen unter der Erwartung |
+| Bewertung | Forward-Gewinnrendite im teuersten Zehntel des Sektors **oder** erwarteter Verlust |
+| Ereignis (nur Hinweis) | Quartalszahlen in den nächsten 14 Tagen |
+
+Die Grenzen sind Konventionen: das oberste Zehntel und 2 bzw. 3 Standardabweichungen, statistische Ausnahme-Grenzen.
+Für RSI gilt in starken Trends die Konvention 80 statt 70.
+
+| Stufe | Regel |
+|---|---|
+| CRITICAL | fundamentales Signal **und** (mindestens 2 technische Signale **oder** Bewertungssignal **oder** Trendbruch) |
+| HIGH | extreme Beschleunigung, erhöhte Volatilität oder mindestens 2 Warnsignale |
+| ELEVATED | genau ein Warnsignal |
+| NORMAL | keines |
+
+Die Kennzahlen der Überhitzung stecken außerdem im Score (Kategorie F). Die Stufen wirken zusätzlich auf die Entscheidung
+(8.6). Zu jeder Warnung zeigt die App die auslösenden Kennzahlen und Grenzen.
+
+### 8.6 Sparplan-Entscheidung
+
+Die Schwellen gelten für den angezeigten Score (eine Nachkommastelle): ab 9,0 **EXCEPTIONAL**, ab 8,5 **STRONG BUY
+CANDIDATE** (beide: Sparplanstart grundsätzlich möglich), ab 7,5 **WATCHLIST**, ab 6,0 **NO ENTRY**, darunter **REJECT**.
+Deckel (sie heben nie an):
+
+- Risiko CRITICAL → **HARD RISK**, keine Freigabe unabhängig vom Score.
+- Risiko HIGH → höchstens WATCHLIST, bei mindestens 3 Warnsignalen höchstens NO ENTRY („je nach Ausprägung“).
+- Datenqualität LOW → höchstens WATCHLIST. INSUFFICIENT → INSUFFICIENT DATA.
+- Kurs nicht von der Zweitquelle (iShares) bestätigt → höchstens WATCHLIST, wie beim Top Pick.
+- Veraltete Daten (App-Aktualitätsregeln) → keine Entscheidung.
+
+Die App muss keine Aktie freigeben. „Keine Freigabe“ ist ein gültiges Ergebnis. Die bestehenden Depot-Signale
+(Sparplan fortsetzen/stoppen) folgen weiter den Regeln aus Abschnitt 6. Stage 2 betrifft den **Start** neuer Sparpläne.
+
+### 8.7 Outperformance-Einschätzung gegenüber dem MSCI World
+
+Sechs Säulen mit natürlichen Schwellen (meist 0), gezählt wie beim F-Score von Piotroski (2000):
+(1) stärker als der MSCI World über 3, 6 **und** 12 Monate; (2) in mindestens 7 der letzten 12 Monate besser (Mehrheit);
+(3) Gewinnerwartungen steigen; (4) Umsatz und Gewinn wachsen; (5) risikobereinigt besser (12-Monats-Rendite je
+Schwankungseinheit höher als beim MSCI World); (6) keine Bewertungswarnung und Risiko höchstens ELEVATED.
+Ab 5 von 6 erfüllten Säulen **HIGH**, ab 4 **MODERATE**, ab 3 **MARKET-LIKE**, darunter **LOW**. Weniger als 5 prüfbare
+Säulen ergeben **INSUFFICIENT DATA**. Bei CRITICAL immer LOW, bei HIGH höchstens MODERATE. Das sind relative
+Research-Einschätzungen und **keine** Wahrscheinlichkeiten, solange kein validiertes Prognosemodell mit
+Out-of-Sample-Ergebnissen vorliegt.
+
+### 8.8 Trendstatus
+
+Trendbruch: Kurs unter der 200-Tage-Linie. Schwächer werdend: Kurs unter der fallenden 50-Tage-Linie oder das letzte
+Quartal liegt mehr als 2 Standardabweichungen unter dem Tempo der drei Quartale davor. Aufwärtstrend: 50- über
+200-Tage-Linie und 200-Tage-Linie steigend. Beschleunigend: zusätzlich Kurs über der 50-Tage-Linie und das letzte
+Quartal mehr als 2 Standardabweichungen über dem Tempo davor. Sonst: Seitwärtsbewegung.
+
+### 8.9 Validierung: was getestet ist und was nicht
+
+- **Teil-Backtest** (`pipeline/stage2_backtest.py`, monatlich im Datenlauf): Nur die kursbasierten Bausteine (A, C, D,
+  Überhitzungsblock von F) lassen sich zeitpunktgenau rekonstruieren. Sie werden mit denselben Funktionen wie live
+  berechnet. Vorab festgelegte Varianten: Stage 1 Top 10 und Top 5, Stage 1+2 beste 5 der Top 10, Stage 1+2 Top 10 bzw.
+  beste 5 nach Score gewichtet. Haltedauer 1, 3, 6 und 12 Monate (überlappende Tranchen nach Jegadeesh & Titman 1993).
+  Kosten wie im Haupt-Backtest, Kostenszenarien. Kennzahlen: Rendite p. a., Gesamtrendite, Mehrrendite gegenüber dem
+  MSCI World, Sharpe, Volatilität, maximaler Verlust, Trefferquote der einzelnen Auswahlentscheidungen gegenüber dem
+  MSCI World, durchschnittliche Rendite der Gewinner und Verlierer, Zahl der Entscheidungen, Umschlag. Dazu kommt die
+  **Prognosegüte**: monatliche Rang-Korrelation (IC) zwischen Score und späterer Rendite innerhalb der
+  Stage-1-Kandidatengruppe mit t-Wert nach Newey-West. Zeitraum: ab 36 Monaten MSCI-World-Daten in EUR (ETF seit
+  09/2009), also ohne Finanzkrise und ohne den Momentum-Crash 2009.
+- **Nicht testbar und bewusst nicht ersetzt:** B, E und die Bewertung in F, außerdem die Schwellen und Regeln der
+  Datenqualität. Für Analystenrevisionen, Überraschungen und Kennzahlen gibt es keine kostenlosen zeitpunktgenauen
+  Historien. Heutige Werte rückwirkend zu verwenden wäre Look-ahead.
+- **Eigene Point-in-Time-Historie:** Ab Pipeline 0.2.0 archiviert der Datenlauf wöchentlich die Kennzahlen aller Aktien
+  (`archive/fundamentals/`) und monatlich die Stage-2-Entscheidungen (`archive/stage2/`).
+- **Live-Protokoll:** Die App wertet ihre eigenen früheren Entscheidungen aus (Rendite bis heute gegenüber dem MSCI World
+  je Entscheidungsgruppe). Das ist die einzige echte Out-of-Sample-Prüfung. Für belastbare Aussagen braucht sie Jahre.
+- **Für eine wissenschaftliche Validierung nötig:** (1) 2 bis 3 Jahre eigene Point-in-Time-Daten, dann ein Backtest aller
+  Kategorien über diese Zeit; (2) zeitpunktgenaue Indexmitgliedschaften gegen den Survivorship Bias; (3) Vergleich mit
+  Stage 1 allein bei gleicher Aktienzahl; (4) Prüfung der Schwellen nur auf Daten, die bei der Festlegung unbekannt waren;
+  (5) Korrektur für Mehrfachtests (Harvey, Liu & Zhu 2016). Änderungen an Gewichten oder Schwellen erfolgen nur als neue,
+  dokumentierte Version.
+
+### 8.10 Bekannte Grenzen von Stage 2
+
+1. **Datenquelle:** Kennzahlen und Analystenschätzungen kommen von Yahoo Finance (inoffiziell, kostenlos, ohne Vertrag).
+   Außerhalb der USA ist die Analystenabdeckung lückenhafter. Fehlt sie, fehlt Kategorie B.
+2. **Guidance und qualitative Faktoren** fließen nicht ein (Abschnitt 8.3).
+3. **Gewichte und Schwellen** sind Vorgaben des Nutzers und nicht validiert.
+4. **Teil-Backtest:** nur Kursbausteine, Survivorship Bias, Zeitraum ab 2012, Mehrfachtests.
+5. **Aufbauphase:** In den ersten Läufen werden die Vergleichsdaten aufgebaut. Bis mindestens 60 % des Universums
+   Kennzahlen haben, sind die fundamentalen Kategorien ausgesetzt, und Stage 2 gibt keine Freigabe.
+
+## 9. Quellen
 
 - MSCI Inc. (2025): *MSCI Momentum Indexes Methodology*, Juli 2025. https://www.msci.com/indexes/documents/methodology/2_MSCI_Momentum_Indexes_Methodology_20250725.pdf
 - Jegadeesh, N., Titman, S. (1993): Returns to Buying Winners and Selling Losers. *Journal of Finance* 48(1).
@@ -134,5 +351,21 @@ Vor dem Backtest festgelegt. Grundidee: **Kaufen nur die Besten, halten solange 
 - Novy-Marx, R., Velikov, M. (2016): A Taxonomy of Anomalies and Their Trading Costs. *Review of Financial Studies* 29(1).
 - Harvey, C., Liu, Y., Zhu, H. (2016): … and the Cross-Section of Expected Returns. *Review of Financial Studies* 29(1).
 - Shumway, T. (1997): The Delisting Bias in CRSP Data. *Journal of Finance* 52(1).
+
+Zusätzlich für Stage 2:
+
+- Bernard, V., Thomas, J. (1989): Post-Earnings-Announcement Drift: Delayed Price Response or Risk Premium? *Journal of Accounting Research* 27.
+- Fama, E., French, K. (1992): The Cross-Section of Expected Stock Returns. *Journal of Finance* 47(2).
+- Chan, L., Jegadeesh, N., Lakonishok, J. (1996): Momentum Strategies. *Journal of Finance* 51(5).
+- Piotroski, J. (2000): Value Investing: The Use of Historical Financial Statement Information to Separate Winners from Losers. *Journal of Accounting Research* 38.
+- Grinblatt, M., Moskowitz, T. (2004): Predicting Stock Price Movements from Past Returns: The Role of Consistency and Tax-Loss Selling. *Journal of Financial Economics* 71(3).
+- Gutierrez, R., Prinsky, C. (2007): Momentum, Reversal, and the Trading Behaviors of Institutions. *Journal of Financial Markets* 10(1).
+- Pontiff, J., Woodgate, A. (2008): Share Issuance and Cross-sectional Returns. *Journal of Finance* 63(2).
+- Blitz, D., Huij, J., Martens, M. (2011): Residual Momentum. *Journal of Empirical Finance* 18(3).
+- Novy-Marx, R. (2012): Is Momentum Really Momentum? *Journal of Financial Economics* 103(3).
+- Novy-Marx, R. (2013): The Other Side of Value: The Gross Profitability Premium. *Journal of Financial Economics* 108(1).
+- Da, Z., Gurun, U., Warachka, M. (2014): Frog in the Pan: Continuous Information and Momentum. *Review of Financial Studies* 27(7).
+- Asness, C., Frazzini, A., Pedersen, L. (2019): Quality Minus Junk. *Review of Accounting Studies* 24.
+- Newey, W., West, K. (1987): A Simple, Positive Semi-Definite, Heteroskedasticity and Autocorrelation Consistent Covariance Matrix. *Econometrica* 55(3).
 
 *Momentum Lab ist ein privates Analysewerkzeug und keine Anlageberatung.*

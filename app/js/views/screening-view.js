@@ -1,6 +1,6 @@
 import { loadScreen, reasonText } from '../data.js';
 import { fmtDate, fmtDateTime, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
-import { runScreening, STEPS } from '../screening.js';
+import { runScreening, STEP_DEFS, STEP_GROUPS } from '../screening.js';
 import { screenings, state } from '../state.js';
 import { badge, chevron, empty, esc, html, note, openSheet } from '../ui.js';
 import { refreshHeader } from '../main.js';
@@ -9,20 +9,26 @@ const ICON = { ok: '✓', warn: '!', err: '×', run: '…', wait: '', skip: '–
 const ICLS = { ok: 'ok', warn: 'warn', err: 'err', run: 'run', wait: '', skip: '' };
 
 function stepsHTML(steps) {
-  return html`<ol class="steps">${steps.map((s) => html`<li>
+  let prev = null;
+  return html`<ol class="steps">${steps.map((s) => {
+    const head = s.group && s.group !== prev ? html`<li class="grp" aria-hidden="true">${STEP_GROUPS[s.group] || ''}</li>` : '';
+    prev = s.group || prev;
+    return html`${head}<li>
     <span class="step-ic ${ICLS[s.state] || ''}">${s.state === 'run' ? html`<span class="spinner" style="width:12px;height:12px"></span>` : ICON[s.state] ?? ''}</span>
-    <div><div class="t">${s.label}</div>${s.detail ? html`<div class="d">${s.detail}</div>` : ''}</div></li>`)}</ol>`;
+    <div><div class="t">${s.label}</div>${s.detail ? html`<div class="d">${s.detail}</div>` : ''}</div></li>`;
+  })}</ol>`;
 }
 
 export async function render(root) {
   const history = await screenings();
   const last = history[0] || null;
+  const showLast = last?.steps?.length === STEP_DEFS.length;
   root.innerHTML = String(html`<h1>Screening</h1>
-    <p class="lede">Lädt den neuesten geprüften Datenstand, prüft ihn auf Aktualität und Fehler, wendet die Momentum-Regeln an und bewertet dein Depot. Ergebnisse werden mit Datum und Methodik-Version gespeichert.</p>
+    <p class="lede">Lädt den neuesten geprüften Datenstand, prüft ihn auf Aktualität und Fehler, wendet die Momentum-Regeln an (Stage 1), zeigt die Fortsetzungsanalyse der Kandidaten (Stage 2) und bewertet dein Depot. Ergebnisse werden mit Datum und Methodik-Version gespeichert.</p>
     <button class="screen-btn" id="run">SCREENING STARTEN</button>
     <div id="result" style="margin-top:14px"></div>
-    <section class="panel" id="steps-panel"><h3>Ablauf</h3><div id="steps">${stepsHTML(last?.steps || STEPS.map((label) => ({ label, state: 'wait' })))}</div>
-      ${last ? html`<p class="xs muted" style="margin-top:8px">Angezeigt: letztes Screening vom ${fmtDateTime(last.createdAt)}</p>` : ''}</section>
+    <section class="panel" id="steps-panel"><h3>Ablauf</h3><div id="steps">${stepsHTML(showLast ? last.steps : STEP_DEFS.map(([, group, label]) => ({ label, group, state: 'wait' })))}</div>
+      ${showLast ? html`<p class="xs muted" style="margin-top:8px">Angezeigt: letztes Screening vom ${fmtDateTime(last.createdAt)}</p>` : ''}</section>
     <h2>Universum und Ausschlüsse</h2>
     <div id="universe"><p class="muted small">Wird nach dem Laden der Daten angezeigt.</p></div>
     <h2>Frühere Screenings</h2>
@@ -47,8 +53,8 @@ export async function render(root) {
     const s = res.snapshot;
     const warn = res.steps.filter((x) => x.state === 'warn').length;
     resEl.innerHTML = String(html`${s.demo ? html`<div class="demo-banner">DEMO-DATEN – keine echten Signale</div>` : ''}
-      ${note(warn ? 'warn' : 'ok', html`<b>${s.candidates.length ? `${s.candidates.length} Kandidaten gefunden` : 'Keine Kandidaten'}</b>${s.top_pick ? `, Top Pick ${res.screen.bySymbol.get(s.top_pick)?.name}` : ', kein Top Pick'}. Datenstand ${fmtDate(s.asof)}${warn ? `. ${warn} Hinweise im Ablauf` : ''}.`)}
-      <div class="btn-row"><a class="btn primary" href="#/top10">Top 10 ansehen</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
+      ${note(warn ? 'warn' : 'ok', html`<b>${s.candidates.length ? `${s.candidates.length} Kandidaten gefunden` : 'Keine Kandidaten'}</b>${s.top_pick ? `, Top Pick ${res.screen.bySymbol.get(s.top_pick)?.name}` : ', kein Top Pick'}. ${s.stage2 ? (s.stage2.usable ? `Stage 2: ${s.stage2.eligible.length ? `${s.stage2.eligible.length} mit Sparplanfreigabe` : 'keine Sparplanfreigabe'}. ` : 'Stage 2: keine aktuelle Entscheidung. ') : ''}Datenstand ${fmtDate(s.asof)}${warn ? `. ${warn} Hinweise im Ablauf` : ''}.`)}
+      <div class="btn-row"><a class="btn primary" href="#/top10/final">Finale Rangfolge</a><a class="btn" href="#/top10/stage1">Top 10 (Stage 1)</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
     renderUniverse(root.querySelector('#universe'), res.screen);
     renderHistory(root.querySelector('#history'), await screenings());
   };
@@ -117,6 +123,7 @@ function showSnapshot(s) {
     ${s.candidates.length ? html`<div class="group">${s.candidates.map((c, i) => html`<div class="row"><div class="grow"><div class="title">${i + 1}. ${c.name}${c.symbol === s.top_pick ? ' (Top Pick)' : ''}</div><div class="sub">${c.symbol}, Score ${fmtNum(c.Z, 2)}, 12 M ${fmtPct(c.m12)}</div></div></div>`)}</div>` : html`<p class="muted">Keine Kandidaten.</p>`}
     <h3>Depot-Signale</h3>
     ${s.signals.length ? html`<div class="group">${s.signals.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.name}</div><div class="sub">${x.reasons?.[0] || ''}</div></div><div class="end">${badge(x.signal)}${x.plan ? html`<div style="margin-top:4px">${badge(x.plan.signal)}</div>` : ''}</div></div>`)}</div>` : html`<p class="muted">Keine Positionen.</p>`}
+    ${s.stage2 ? html`<h3>Stage 2</h3><div class="group">${s.stage2.ranking.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.rank ?? '–'}. ${x.name}</div><div class="sub">Score ${x.score ?? '–'}, Risiko ${x.risk || '–'}, Daten ${x.dq || '–'}</div></div><div class="end small">${s.stage2.usable ? x.decision || '–' : '–'}</div></div>`)}</div>` : ''}
     <h3>Ablauf</h3>${stepsHTML(s.steps || [])}`) });
   void esc;
 }
