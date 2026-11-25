@@ -1,0 +1,35 @@
+{
+ "signal_date": "2026-10-30",
+ "rule": {
+  "id": "ap_n10_cap_hard",
+  "name": "10 Aktien, max. 3 je Branche, Trendfilter: im Abwärtstrend alles verkaufen und Geld parken",
+  "n": 10,
+  "sector_cap": 3,
+  "market": "hard",
+  "provisional": false
+ },
+ "action": "NORMAL",
+ "buy_list": [
+  "MU",
+  "O39.SI",
+  "AMD",
+  "STX",
+  "DELL",
+  "4062.T",
+  "HPE",
+  "RVMD",
+  "MRVL",
+  "LITE",
+  "6098.T",
+  "INTC",
+  "ILMN",
+  "6752.T",
+  "NTRA",
+  "BNS.TO",
+  "GWO.TO",
+  "PANW",
+  "TWLO",
+  "CRWD"
+ ],
+ "version": "1.0.0"
+}

@@ -2,7 +2,7 @@
  "asof": "2026-11-24",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.2.0",
+ "pipeline_version": "0.3.0",
  "status": "ok",
  "candidates": [
   "6098.T",
@@ -31,18 +31,17 @@
   "vol_shock_threshold": 0.35323,
   "vol_shock": true,
   "bear_state": false,
-  "breadth_above_ma200": 0.54963
+  "breadth_above_ma200": 0.54717
  },
  "universe": {
   "source": "iShares MSCI World (URTH)",
-  "as_of": "Nov 23, 2026",
+  "as_of": "Nov 24, 2026",
   "size": 1251,
   "priced": 1247,
   "eligible": 1219,
   "excluded_by_reason": {
    "duplicate": 7,
    "short_history": 18,
-   "crosscheck": 1,
    "penny": 4,
    "no_data": 4
   },
