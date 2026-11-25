@@ -2,7 +2,7 @@
  "asof": "2026-11-25",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.4.1",
+ "pipeline_version": "0.5.0",
  "status": "ok",
  "candidates": [
   "6098.T",
