@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.9.1 – 26.11.2026
+- Simulator: „Wie oft wird gescreent und gekauft?“ – monatlich, vierteljährlich, halbjährlich oder jährlich. Dazwischen sammeln sich Budget und Verkaufserlöse auf dem Konto und werden beim nächsten Screening verteilt.
+- ACWI: Kursprüfung verglich vierteljährliche Meldekurse mit jedem Monatsende (Fehlalarm bei 733 Aktien). Jetzt nur an den echten Meldestichtagen. Nicht zuordenbare ISIN zählen als fehlende Mitglieder.
+- DAX-Familie: Leser an den echten Aufbau des STOXX-PDFs angepasst (Anfangsliste steht vor der Überschrift, Seitenkopf wird übersprungen); Streichungen werden auch bei leicht abweichender Schreibweise erkannt.
+- S&P 500: zweiter Abrufweg über die Wikipedia-Schnittstelle; Fehlermeldungen werden in der App angezeigt.
+
 ## Pipeline 0.9.0 – 26.11.2026: Backtests mit damaliger Indexzusammensetzung
 - Im Simulator wählbar: „S&P 500“, „DAX-Familie (DAX, MDAX, SDAX, TecDAX)“, „S&P 500 + DAX-Familie“ und „MSCI ACWI“. In jedem Monat zählen nur die Aktien, die damals im Index waren.
   - S&P 500: aktuelle Liste und alle Aufnahmen/Streichungen von Wikipedia, rückwärts rekonstruiert; nur Monate mit 480–520 Mitgliedern.

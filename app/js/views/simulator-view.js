@@ -2,7 +2,7 @@
 import { lineChart } from '../charts.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct, parseDec } from '../fmt.js';
 import { getHidden } from '../hidden.js';
-import { BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, simulate, startIndex } from '../simulator.js';
+import { FREQ_LABEL, BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, simulate, startIndex } from '../simulator.js';
 import { getSetting, setSetting } from '../store.js';
 import { html, note } from '../ui.js';
 
@@ -21,6 +21,7 @@ export async function renderSimulator(el, data) {
   const o = { ...DEFAULTS, ...(saved || {}) };
   if (!['signal', '1', '1be', '3', '3be', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
   o.biasCorr = o.biasCorr === true;
+  if (!FREQ_LABEL[o.freq]) o.freq = 'monthly';
   if (!(Number.isInteger(o.endYear))) o.endYear = null;
   o.rest = 'top'; // feste Regel: Top 5/Top 10/Stage 2 Top 5 kaufen immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score
   o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
@@ -64,11 +65,12 @@ export async function renderSimulator(el, data) {
       </div>
       <label class="field"><span>Budget der Aktien-Strategien</span><select name="budgetMode">
         ${['reinvest', 'fixed'].map((m) => html`<option value="${m}" ${o.budgetMode === m ? 'selected' : ''}>${m === 'reinvest' ? 'Budget + Verkaufserlöse anlegen' : 'Nur festes Monatsbudget anlegen'}</option>`)}</select></label>
+      <label class="field"><span>Wie oft wird gescreent und gekauft?</span><select name="freq">${Object.entries(FREQ_LABEL).map(([k, v]) => html`<option value="${k}" ${o.freq === k ? 'selected' : ''}>${v[0].toUpperCase() + v.slice(1)}</option>`)}</select></label>
       <label class="field"><span>Wie lange werden Aktien gehalten?</span><select name="hold">
         ${['signal', '1', '1be', '3', '3be', '6', '6be', '12', '12be'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${{ signal: 'Bis zum Verkaufssignal der App', 1: '1 Monat, dann verkaufen', '1be': '1 Monat, im Minus warten bis ±0', 3: '3 Monate, dann verkaufen', '3be': '3 Monate, im Minus warten bis ±0', 6: '6 Monate, dann verkaufen', '6be': '6 Monate, im Minus warten bis ±0', 12: '12 Monate, dann verkaufen', '12be': '12 Monate, im Minus warten bis ±0' }[h]}</option>`)}</select></label>
       <label class="field"><span>Mindest-Score für „Minimum Score“ (Stage 1)</span><input name="minScore" inputmode="decimal" value="${String(o.minScore).replace('.', ',')}">
         <div class="hint">Strategie „Minimum Score“: Gekauft werden nur Stage-1-Kandidaten mit mindestens diesem Momentum-Score (wie in der Top-10-Liste, z. B. 4,52), zu gleichen Teilen. Gibt es keinen, wird nicht gehandelt und das Budget bleibt auf dem Konto.${data.cand_z ? '' : ' Diese Daten entstehen beim nächsten Datenlauf.'}</div></label>
-      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Bei 1, 3, 6 oder 12 Monaten wird am ersten Monatsende nach Ablauf verkauft, im Plus wie im Minus; mit „warten bis ±0“ wird eine Aktie im Minus weiter gehalten und erst verkauft, wenn der Erlös nach Kosten wieder den Einstand deckt. Steht die Aktie dann noch auf der Liste, wird sie mit dem neuen Geld wieder gekauft. Top 5, Top 10 und Stage 2 Top 5 kaufen jeden Monat immer 5 bzw. 10 Aktien zu gleichen Teilen, unabhängig vom Momentum-Score: Gibt es weniger Kandidaten, wird mit den nächsten der Momentum-Rangliste aufgefüllt. Nur „Minimum Score“ kauft ausschließlich Kandidaten ab dem Mindest-Score. Stage 2 Top 5: die 5 besten der Top-10-Kandidaten nach der Fortsetzungs-Rangfolge (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke gegenüber dem Markt). ETF-Sparpläne: jeden Monat wird das Monatsbudget (mit Dynamik) in den ETF gesteckt, nie verkauft; „Gebühr je ETF-Sparrate“ ist nur die Ausführungsgebühr (Trade Republic: 0 €). Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
+      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Screening seltener als monatlich: gekauft wird nur am ersten Handelstag von Januar (jährlich), Januar und Juli (halbjährlich) bzw. Januar, April, Juli und Oktober (vierteljährlich); dazwischen sammeln sich Monatsbudget und Verkaufserlöse auf dem Konto und werden beim nächsten Screening auf die Liste verteilt. Verkaufssignale der App werden nur an diesen Terminen gelesen, feste Haltedauern dagegen pünktlich verkauft. Bei 1, 3, 6 oder 12 Monaten wird am ersten Monatsende nach Ablauf verkauft, im Plus wie im Minus; mit „warten bis ±0“ wird eine Aktie im Minus weiter gehalten und erst verkauft, wenn der Erlös nach Kosten wieder den Einstand deckt. Steht die Aktie dann noch auf der Liste, wird sie mit dem neuen Geld wieder gekauft. Top 5, Top 10 und Stage 2 Top 5 kaufen jeden Monat immer 5 bzw. 10 Aktien zu gleichen Teilen, unabhängig vom Momentum-Score: Gibt es weniger Kandidaten, wird mit den nächsten der Momentum-Rangliste aufgefüllt. Nur „Minimum Score“ kauft ausschließlich Kandidaten ab dem Mindest-Score. Stage 2 Top 5: die 5 besten der Top-10-Kandidaten nach der Fortsetzungs-Rangfolge (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke gegenüber dem Markt). ETF-Sparpläne: jeden Monat wird das Monatsbudget (mit Dynamik) in den ETF gesteckt, nie verkauft; „Gebühr je ETF-Sparrate“ ist nur die Ausführungsgebühr (Trade Republic: 0 €). Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
       <p class="xs muted" style="margin:0">Voreinstellung Trade Republic: 1 € je Order, ETF-Sparplan kostenlos. Der Spread ist eine Annahme: Er wird je zur Hälfte beim Kauf und beim Verkauf berechnet. Steuer: 26,375 % (Abgeltungsteuer + Soli, ohne Kirchensteuer). Aktien: Verluste nur mit Aktiengewinnen verrechnet und vorgetragen. ETF: 30 % Teilfreistellung, Vorabpauschale ab 2018 mit dem Basiszins des BMF, wird beim Verkauf angerechnet. Sparer-Pauschbetrag pro Jahr (801 € bis 2022, 1.000 € ab 2023), gemeinsam für Aktiengewinne und Vorabpauschale; ETF-Verluste dürfen mit Aktiengewinnen verrechnet werden, Aktienverluste nicht mit ETF-Gewinnen, je Strategie eigenständig gerechnet. Steuer wird wie beim Broker sofort bei jedem Verkauf einbehalten (Verluste im selben Jahr führen zu Erstattung), die Vorabpauschale Anfang Januar.</p>
     </div>
     <div id="simout"></div>`;
@@ -104,7 +106,7 @@ export async function renderSimulator(el, data) {
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
     parts.push(html`<h3>Ergebnis${data.universe ? ` (${data.universe.label})` : ''}: ${fmtEUR(opts.budget, 0)} pro Monat ab ${fmtDate(data.points[k0])}${opts.endYear ? ` bis ${fmtDate(res[0]?.end || data.points[data.points.length - 1])}` : ''}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
-      <p class="xs muted">Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
+      <p class="xs muted">Screening: ${FREQ_LABEL[opts.freq] || 'monatlich'}. Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
       <div class="panel"><div id="simchart"></div><p class="xs muted" style="margin:6px 0 0">Depotwert in Euro vor Steuern. Graue Linie = eingezahltes Geld.</p></div>`);
     for (const r of res) {
       const isEtf = r.kind === 'etf';
@@ -221,6 +223,7 @@ export async function renderSimulator(el, data) {
     const t = e.target;
     if (!t.name) return;
     if (t.name === 'biasCorr') o.biasCorr = !!t.checked;
+    else if (t.name === 'freq') o.freq = t.value;
     else if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
     else if (t.name === 'endYear') o.endYear = t.value ? Number(t.value) : null;

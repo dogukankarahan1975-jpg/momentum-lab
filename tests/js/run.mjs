@@ -383,5 +383,14 @@ test('Simulator: Enddatum begrenzt den Zeitraum', () => {
   assert.ok(part.end <= `${yEnd}-12-31` && part.contrib <= full.contrib);
 });
 
+test('Simulator: halbjährliches Screening kauft nur im Januar und Juli, Erlöse warten bis dahin', () => {
+  const d = simData();
+  const r = simRun(d, 's1top5', { ...simOpts, freq: 'semiannual', hold: '3' });
+  const buyKs = [...new Set(r.log.filter((x) => x.type === 'Kauf').map((x) => x.k))];
+  const k0 = Math.min(...buyKs);
+  assert.ok(buyKs.every((k) => k === k0 || [1, 7].includes(Number(d.points[k].slice(5, 7)))));
+  assert.ok(r.log.some((x) => x.type === 'Verkauf'));
+});
+
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);
 process.exit(failed ? 1 : 0);

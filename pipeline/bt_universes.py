@@ -37,6 +37,9 @@ MIN_COVERAGE = 0.85
 MIN_MONTHS = 24
 
 WIKI_SP500 = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+WIKI_SP500_API = ("https://en.wikipedia.org/w/api.php?action=parse&page=List_of_S%26P_500_companies&prop=text"
+                  "&format=json&formatversion=2")
+WIKI_UA = {"User-Agent": "MomentumLab/0.9 (https://github.com/dogukankarahan1975-jpg/momentum-lab; private backtest)"}
 STOXX_PDF = "https://www.stoxx.com/document/Indices/Common/Indexguide/Historical_Index_Compositions.pdf"
 SEC_MF = "https://www.sec.gov/files/company_tickers_mf.json"
 SEC_SERIES_ATOM = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={series}&type=NPORT-P"
@@ -199,7 +202,7 @@ def _lines(words: list[dict], tol: float = 3.0) -> list[list[dict]]:
     return lines
 
 
-def _cells(ln: list[dict], gap: float = 14.0) -> list[str]:
+def _cells(ln: list[dict], gap: float = 8.0) -> list[str]:
     """Teilt eine Zeile an großen Lücken in Zellen (mehrspaltige Namenslisten)."""
     out, cur, x_end = [], [], None
     for w in ln:
@@ -214,29 +217,48 @@ def _cells(ln: list[dict], gap: float = 14.0) -> list[str]:
     return out
 
 
+INITIAL_RE = re.compile(r"(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s*:\s*Initial Composition", re.I)
+HEADING_RE = re.compile(r"^\d+\.\s+(.+?)\s+INDEX COMPOSITION\s*$")
+LABELS = {"DAX", "TECDAX", "MDAX", "SDAX"}
+
+
 def parse_stoxx_words(pages: list[list[dict]]) -> dict:
-    """pages: je Seite Wörter (text, x0, top) wie von pdfplumber. Ergebnis je Index:
-    {"initial": (Datum, [Namen]), "changes": [(Datum, [gestrichen], [aufgenommen])]}"""
+    """pages: je Seite Wörter (text, x0, x1, top) wie von pdfplumber.
+    Aufbau des STOXX-PDFs: „30 December 1987: Initial Composition“, danach die Namen in mehreren Spalten, dann die
+    Überschrift „1. DAX® INDEX COMPOSITION“, dann die Änderungstabelle (Date of change | Date of announcement |
+    Deletion | Addition). Seitenkopf „HISTORICAL INDEX COMPOSITIONS …“ und Seitenzahlen werden übersprungen.
+    Ergebnis je Index: {"initial": (Datum, [Namen]), "changes": [(Datum, [gestrichen], [aufgenommen])]}"""
     res: dict = {}
-    section = None
-    mode = None
-    cols = None
-    rec = None
+    section, pending, cols, rec = None, None, None, None
     for words in pages:
         for ln in _lines(words):
             text = " ".join(w["text"] for w in ln).strip()
-            up = text.upper().replace("®", "")
-            if "CONTENTS" in up:
-                section = None
+            up = text.upper().replace("®", "").strip()
+            if not text or up.startswith("HISTORICAL INDEX COMPOSITIONS") or re.fullmatch(r"\d+\s*/\s*\d+", text) \
+                    or "CONTENTS" in up or up.startswith("STOXX.COM"):
                 continue
-            m = re.match(r"^(?:\d+\.\s*)?(DAX|TECDAX|MDAX|SDAX)\s+INDEX COMPOSITION\s*$", up)
-            if m:
-                section = SECTIONS[m.group(1)]
-                res.setdefault(section, {"initial": None, "changes": []})
-                mode, cols, rec = "initial", None, None
+            mi = INITIAL_RE.search(text)
+            if mi:
+                pending = (mi.group(1), [])
+                section, cols, rec = None, None, None
                 continue
-            if re.search(r"INDEX COMPOSITION", up):      # andere Indizes (ESG usw.)
-                section = None
+            mh = HEADING_RE.match(up)
+            if mh:
+                name = mh.group(1).strip()
+                section = SECTIONS.get(name)
+                if section and pending:
+                    res[section] = {"initial": pending, "changes": []}
+                elif section:
+                    section = None          # ohne Anfangszusammensetzung nicht verwendbar
+                pending, cols, rec = None, None, None
+                continue
+            if pending is not None:
+                if up in LABELS:
+                    continue
+                for part in _cells(ln):
+                    part = part.strip()
+                    if part and len(part) > 1 and not DATE_RE.match(part):
+                        pending[1].append(part)
                 continue
             if section is None:
                 continue
@@ -244,36 +266,24 @@ def parse_stoxx_words(pages: list[list[dict]]) -> dict:
                 xd = next(w["x0"] for w in ln if w["text"].upper().startswith("DELETION"))
                 xa = next(w["x0"] for w in ln if w["text"].upper().startswith("ADDITION"))
                 cols = (xd - 4, xa - 4)
-                mode = "changes"
                 continue
-            if mode == "initial":
-                dm = re.search(r"(\d{2}\.\d{2}\.\d{4})", text)
-                if res[section]["initial"] is None:
-                    if dm:
-                        res[section]["initial"] = (dm.group(1), [])
-                    continue
-                if dm and not res[section]["initial"][1]:
-                    continue
-                for part in _cells(ln):
-                    if part and not DATE_RE.match(part) and len(part) > 1 and not part.lower().startswith("page"):
-                        res[section]["initial"][1].append(part.strip())
+            if not cols:
                 continue
-            if mode == "changes" and cols:
-                first = ln[0]["text"]
-                dele = " ".join(w["text"] for w in ln if cols[0] <= w["x0"] < cols[1]).strip()
-                add = " ".join(w["text"] for w in ln if w["x0"] >= cols[1]).strip()
-                if DATE_RE.match(first):
-                    rec = [first, [], []]
-                    res[section]["changes"].append(rec)
-                elif rec is None:
+            first = ln[0]["text"]
+            dele = " ".join(w["text"] for w in ln if cols[0] <= w["x0"] < cols[1]).strip()
+            add = " ".join(w["text"] for w in ln if w["x0"] >= cols[1]).strip()
+            if DATE_RE.match(first):
+                rec = [first, [], []]
+                res[section]["changes"].append(rec)
+            elif rec is None:
+                continue
+            for txt, lst in ((dele, rec[1]), (add, rec[2])):
+                if not txt or txt == "-":
                     continue
-                for txt, lst in ((dele, rec[1]), (add, rec[2])):
-                    if not txt or txt == "-":
-                        continue
-                    if lst and (txt[:1].islower() or lst[-1].endswith(("-", "&", " und", ",")) or txt.startswith(("&", "("))):
-                        lst[-1] = (lst[-1] + ("" if lst[-1].endswith("-") else " ") + txt).strip()
-                    else:
-                        lst.append(txt)
+                if lst and (txt[:1].islower() or lst[-1].endswith(("-", "&", " und", ",")) or txt.startswith(("&", "("))):
+                    lst[-1] = (lst[-1] + ("" if lst[-1].endswith("-") else " ") + txt).strip()
+                else:
+                    lst.append(txt)
     for v in res.values():
         v["changes"] = [(d, a, b) for d, a, b in v["changes"]]
     return res
@@ -313,7 +323,14 @@ def stoxx_history(parsed: dict, today: pd.Timestamp) -> dict:
             e = _me(ym)
             while j < len(chg) and chg[j][0] <= e:
                 for x in chg[j][1]:
-                    members.discard(x)
+                    if x in members:
+                        members.discard(x)
+                        continue
+                    nx = norm_name(x)
+                    hit = [m for m in members if norm_name(m)[:6] == nx[:6]] or \
+                          [m for m in members if norm_name(m)[:4] == nx[:4]]
+                    if len(hit) == 1:
+                        members.discard(hit[0])
                 for x in chg[j][2]:
                     members.add(x)
                 j += 1
@@ -473,7 +490,7 @@ def map_isins_openfigi(http_post_json, isins: list[str], countries: dict, log=pr
 
 
 # ------------------------------------------------------------------ Prüfung und Abdeckung
-def validate_rows(months: dict, close: dict, fx_local_per_usd=None) -> tuple[set, dict]:
+def validate_rows(months: dict, close: dict, fx_local_per_usd=None, ref_months: dict | None = None) -> tuple[set, dict]:
     """Ein Symbol gilt, wenn Kurse im Mitgliedszeitraum vorhanden sind; mit Referenzkursen (USD) zusätzlich,
     wenn das Verhältnis Yahoo/Referenz über die Stichtage stabil ist (Sprünge nur bei Splits)."""
     member_months: dict[str, list] = {}
@@ -481,8 +498,12 @@ def validate_rows(months: dict, close: dict, fx_local_per_usd=None) -> tuple[set
     for m, rows in months.items():
         e = _me(m)
         for r in rows:
-            member_months.setdefault(r[0], []).append(e)
-            if r[4] and r[4] > 0 and fx_local_per_usd is not None:
+            if r[0]:
+                member_months.setdefault(r[0], []).append(e)
+    for m, rows in (ref_months if ref_months is not None else months).items():
+        e = _me(m)
+        for r in rows:
+            if r[0] and r[4] and r[4] > 0 and fx_local_per_usd is not None:
                 refs.setdefault(r[0], []).append((e, r[4], r[5]))
     ok, st = set(), {"checked": 0, "no_prices": 0, "mismatch": 0, "ok": 0}
     for s, ms in member_months.items():
@@ -520,7 +541,7 @@ def validate_rows(months: dict, close: dict, fx_local_per_usd=None) -> tuple[set
 
 
 def coverage_start(months: dict, valid: set) -> tuple[str | None, dict]:
-    cov = {m: (sum(1 for r in rows if r[0] in valid) / len(rows) if rows else 0.0) for m, rows in months.items()}
+    cov = {m: (sum(1 for r in rows if r[0] and r[0] in valid) / len(rows) if rows else 0.0) for m, rows in months.items()}
     start = None
     for m in sorted(cov, reverse=True):
         if cov[m] >= MIN_COVERAGE:
@@ -531,7 +552,7 @@ def coverage_start(months: dict, valid: set) -> tuple[str | None, dict]:
 
 
 def monthly_membership(months: dict, valid: set, start: str) -> dict:
-    return {m: {r[0] for r in rows if r[0] in valid} for m, rows in months.items() if m >= start}
+    return {m: {r[0] for r in rows if r[0] and r[0] in valid} for m, rows in months.items() if m >= start}
 
 
 def fill_quarterly(months: dict, last: str) -> dict:

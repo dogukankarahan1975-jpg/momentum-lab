@@ -32,15 +32,28 @@ def load_sp500(http_get, archive: Path, today, log) -> dict:
     st = bu.load_store(p)
     if _age_ok(st, REFRESH_DAYS["sp500"], today):
         return st
+    errs = []
+    cur = chg = None
+    for getter in (lambda: http_get(bu.WIKI_SP500, bu.WIKI_UA),
+                   lambda: json.loads(http_get(bu.WIKI_SP500_API, bu.WIKI_UA))["parse"]["text"]):
+        try:
+            cur, chg = bu.parse_sp500(getter())
+            break
+        except Exception as exc:  # noqa: BLE001
+            errs.append(f"{type(exc).__name__}: {str(exc)[:120]}")
     try:
-        cur, chg = bu.parse_sp500(http_get(bu.WIKI_SP500))
+        if cur is None:
+            raise RuntimeError(" | ".join(errs))
         h = bu.sp500_history(cur, chg, today)
+        if not h["months"]:
+            raise RuntimeError(f"Rekonstruktion unplausibel (Größe {h['info']})")
         st = {"fetched": today.strftime("%Y-%m-%d"), **h, "error": None}
         bu.save_store(p, st)
         log(f"[bt-sp500] {len(h['months'])} Monate ab {h['info']['plausible_from']}, {len(chg)} Änderungen")
     except Exception as exc:  # noqa: BLE001
         log(f"[bt-sp500] Fehler: {exc}")
-        st = dict(st or {}, error=str(exc)[:200])
+        st = dict(st or {}, error=str(exc)[:240])
+        bu.save_store(p, dict(st, fetched=None))
     return st
 
 
@@ -57,9 +70,11 @@ def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.
             log(f"[bt-dax] PDF gelesen: {json.dumps(info, ensure_ascii=False)}")
         except Exception as exc:  # noqa: BLE001
             log(f"[bt-dax] Fehler: {exc}")
-            st["error"] = str(exc)[:200]
+            st["error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
     if not names_hist:
-        return {"months": {}, "error": st.get("error") or "keine Daten", "source": "STOXX"}
+        bu.save_store(p, dict(st, fetched=None))
+        return {"months": {}, "error": st.get("error") or f"PDF ohne erkennbare Indexlisten ({json.dumps(info or {})[:160]})",
+                "source": "STOXX"}
     # Namen -> Symbole: Korrekturdatei, heutige Liste (deutsche Werte), Yahoo-Suche
     nmap = st.get("name_map", {})
     overrides = bu.read_name_map(root / "config" / "name_map.txt")
@@ -150,18 +165,21 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         log(f"[bt-acwi] OpenFIGI: {len(got)} von {len(todo)} ISIN abgefragt, {sum(1 for v in got.values() if v)} zugeordnet")
     st["isin_map"] = imap
     bu.save_store(p, st)
-    months = {m: [[imap[i], n, c, "", px, cur] for i, n, c, cur, px in rows if imap.get(i)
-                  and not imap[i].endswith((".SS", ".SZ"))] for m, rows in by_date.items()}
-    months = bu.fill_quarterly(months, bu.last_month(today))
+    # nicht zuordenbare ISIN zählen als fehlende Mitglieder (außer vermutlich China-A, die bewusst ausgeschlossen sind)
+    ref = {m: [[imap.get(i), n, c, "", px, cur] for i, n, c, cur, px in rows
+               if not (imap.get(i) or "").endswith((".SS", ".SZ")) and (imap.get(i) or c != "CN")]
+           for m, rows in by_date.items()}
+    months = bu.fill_quarterly(ref, bu.last_month(today))
     n_isin = len({r[0] for v in by_date.values() for r in v})
-    return {"months": months, "source": "SEC Formular N-PORT (iShares MSCI ACWI ETF)", "error": st.get("error"),
+    return {"months": months, "ref_months": ref, "source": "SEC Formular N-PORT (iShares MSCI ACWI ETF)", "error": st.get("error"),
             "info": {"filings": len(by_date), "isins": n_isin, "isins_mapped": sum(1 for v in imap.values() if v)}}
 
 
 # ------------------------------------------------------------------ Backtests
-def combine(parts: list[dict]) -> dict:
-    keys = set.intersection(*[set(p["months"]) for p in parts]) if parts else set()
-    return {m: [r for p in parts for r in p["months"][m]] for m in sorted(keys)}
+def combine(parts: list[dict], key: str = "months") -> dict:
+    ms = [p.get(key) if p.get(key) is not None else p.get("months", {}) for p in parts]
+    keys = set.intersection(*[set(m) for m in ms]) if ms else set()
+    return {m: [r for x in ms for r in x[m]] for m in sorted(keys)}
 
 
 def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, out: Path, root: Path,
@@ -175,7 +193,7 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
             "acwi": load_acwi(http_get, http_json, http_post_json, archive, universe, today, log),
         }
     # Kurse für alle (auch ehemalige) Mitglieder
-    need = sorted({r[0] for s in sources.values() for rows in s.get("months", {}).values() for r in rows} - set(frames))
+    need = sorted({r[0] for s in sources.values() for rows in s.get("months", {}).values() for r in rows if r[0]} - set(frames))
     hints = {x: SUFFIX_CURRENCY.get("." + x.split(".", 1)[1] if "." in x else "", "USD") for x in need}
     dead_p = archive / "bt-dead.json"
     dead = json.loads(dead_p.read_text()) if dead_p.exists() else {}
@@ -206,13 +224,14 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
         entry = {"key": name, "label": spec["label"], "available": False}
         try:
             parts = [sources[p] for p in spec["providers"]]
-            errs = [p.get("error") for p in parts if p.get("error") and not p.get("months")]
+            errs = [p.get("error") or "keine Daten" for p in parts if not p.get("months")]
             months = combine(parts)
             if not months:
                 entry["reason"] = errs[0] if errs else "Keine historischen Listen geladen."
                 index.append(entry)
                 continue
-            valid, vstats = bu.validate_rows(months, close_local, local_per_usd)
+            refm = combine(parts, "ref_months") if any(p.get("ref_months") for p in parts) else None
+            valid, vstats = bu.validate_rows(months, close_local, local_per_usd, ref_months=refm)
             start, cov = bu.coverage_start(months, valid)
             n_months = sum(1 for m in months if start and m >= start)
             entry.update(source=" + ".join(p.get("source", "") for p in parts), validation=vstats,

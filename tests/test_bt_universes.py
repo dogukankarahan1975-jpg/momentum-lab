@@ -40,34 +40,39 @@ def test_sp500_reconstruction():
 
 
 def make_pdf() -> bytes:
+    """Nachbau des STOXX-Layouts: Anfangsliste vor der Überschrift, Seitenkopf, Änderungen mit Folgezeilen."""
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen import canvas
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
+    c.drawString(50, 800, "CONTENTS"); c.drawString(50, 780, "1. DAX® INDEX COMPOSITION 3"); c.showPage()
     y = 800
-    c.drawString(50, y, "CONTENTS"); y -= 20
-    c.drawString(50, y, "1. DAX® INDEX COMPOSITION 3"); c.showPage()
-    y = 800
-    c.drawString(50, y, "1. DAX® INDEX COMPOSITION"); y -= 25
-    c.drawString(50, y, "Initial composition as of 30.12.1987"); y -= 20
-    names = [f"Firma {i}" for i in range(30)]
+    c.drawString(50, y, "HISTORICAL INDEX COMPOSITIONS OF EQUITY AND STRATEGY INDICES"); y -= 15
+    c.drawString(50, y, "3/59"); y -= 20
+    c.drawString(50, y, "30 December 1987: Initial Composition"); y -= 20
+    names = ["Bayer. Hypo.- und Wechsel-Bank", "Feldmühle Nobel", "Nixdorf"] + [f"Firma {i}" for i in range(27)]
     for i in range(0, 30, 3):
         for j, n in enumerate(names[i:i + 3]):
-            c.drawString(50 + j * 170, y, n)
+            c.drawString(40 + j * 190, y, n)
         y -= 15
-    y -= 10
-    for x, t in ((50, "Date of change"), (150, "Date of announcement"), (300, "Deletion"), (430, "Addition")):
-        c.drawString(x, y, t)
-    y -= 15
-    rows = [("18.09.1995", "18.07.1995", "Firma 3", "SAP"),
-            ("22.07.1996", "06.01.1996", "Firma 4*", "Metro"),
+    c.drawString(50, y, "DAX®"); y -= 15
+    c.drawString(50, y, "1. DAX® INDEX COMPOSITION"); y -= 25
+    c.drawString(50, y, "Date of"); y -= 12
+    c.drawString(50, y, "change"); c.drawString(150, y, "Date of"); y -= 12
+    c.drawString(150, y, "announcement"); c.drawString(300, y, "Deletion"); c.drawString(430, y, "Addition"); y -= 15
+    rows = [("18.09.1989", "-", "-", "-"), ("03.09.1990", "22.05.1990", "Feldmühle Nobel", "Metallgesellschaft"),
+            (None, None, "Nixdorf *", "Preussag"), ("18.09.1995", "18.07.1995", "Firma 3", "SAP"),
             ("20.09.2021", "03.09.2021", "-", "Neu A")]
     for d1, d2, de, ad in rows:
-        c.drawString(50, y, d1); c.drawString(150, y, d2); c.drawString(300, y, de); c.drawString(430, y, ad)
+        if d1:
+            c.drawString(50, y, d1); c.drawString(150, y, d2)
+        c.drawString(300, y, de); c.drawString(430, y, ad)
         y -= 15
-    for k in range(9):          # 2021: 10 zusätzliche Aufnahmen (eine oben, 9 als Folgezeilen)
+    for k in range(9):
         c.drawString(430, y, f"Neu {k}"); y -= 15
-    c.drawString(50, y, "2. TECDAX® INDEX COMPOSITION"); y -= 15
+    c.showPage()
+    c.drawString(50, 800, "HISTORICAL INDEX COMPOSITIONS OF EQUITY AND STRATEGY INDICES")
+    c.drawString(50, 780, "11 April 1994: Initial Composition"); c.drawString(50, 760, "Alpha"); c.drawString(50, 740, "3. MDAX® INDEX COMPOSITION")
     c.showPage(); c.save()
     return buf.getvalue()
 
@@ -77,13 +82,28 @@ def test_stoxx_pdf_parse_and_history():
     pytest.importorskip("pdfplumber")
     parsed = bu.parse_stoxx_words(bu.pdf_words(make_pdf()))
     dax = parsed["DAX"]
-    assert dax["initial"][0] == "30.12.1987" and len(dax["initial"][1]) == 30
-    assert dax["changes"][0] == ("18.09.1995", ["Firma 3"], ["SAP"])
-    assert dax["changes"][2][2][:2] == ["Neu A", "Neu 0"] and len(dax["changes"][2][2]) == 10
+    assert dax["initial"][0] == "30 December 1987" and len(dax["initial"][1]) == 30
+    assert "Bayer. Hypo.- und Wechsel-Bank" in dax["initial"][1]
+    assert dax["changes"][1] == ("03.09.1990", ["Feldmühle Nobel", "Nixdorf *"], ["Metallgesellschaft", "Preussag"])
+    assert dax["changes"][3][2][:2] == ["Neu A", "Neu 0"] and len(dax["changes"][3][2]) == 10
+    assert parsed["MDAX"]["initial"] == ("11 April 1994", ["Alpha"])
     h = bu.stoxx_history({"DAX": dax}, pd.Timestamp("2022-01-15"))
+    assert "Preussag" in h["names"]["1990-09"] and "Nixdorf" not in h["names"]["1990-09"]
     assert "SAP" in h["names"]["1995-12"] and "Firma 3" not in h["names"]["1995-12"]
-    assert "Metro" in h["names"]["1996-08"] and "Firma 4" not in h["names"]["1996-08"]
     assert len(h["names"]["2021-10"]) == 40 and h["info"]["DAX"]["months_bad_size"] == 0
+
+
+def test_stoxx_words_parse_without_pdf():
+    w = lambda t, x, y: {"text": t, "x0": x, "x1": x + 6 * len(t), "top": y}
+    page = [w("30", 50, 10), w("December", 65, 10), w("1987:", 120, 10), w("Initial", 155, 10), w("Composition", 195, 10)]
+    page += [w(f"Firma{i}", 50 + (i % 3) * 170, 30 + (i // 3) * 15) for i in range(30)]
+    y = 30 + 10 * 15
+    page += [w("1.", 50, y), w("DAX®", 62, y), w("INDEX", 100, y), w("COMPOSITION", 140, y)]
+    y += 20
+    page += [w("announcement", 150, y), w("Deletion", 300, y), w("Addition", 430, y)]
+    page += [w("18.09.1995", 50, y + 15), w("18.07.1995", 150, y + 15), w("Firma3", 300, y + 15), w("SAP", 430, y + 15)]
+    parsed = bu.parse_stoxx_words([page])
+    assert len(parsed["DAX"]["initial"][1]) == 30 and parsed["DAX"]["changes"] == [("18.09.1995", ["Firma3"], ["SAP"])]
 
 
 NPORT = """<?xml version="1.0"?>
@@ -126,14 +146,3 @@ def test_validation_coverage_and_quarterly_fill():
     q = bu.fill_quarterly(months, "2020-12")
     assert q["2020-05"] == months["2020-04"] and q["2020-12"] == months["2020-10"]
 
-
-def test_stoxx_words_parse_without_pdf():
-    w = lambda t, x, y: {"text": t, "x0": x, "x1": x + 6 * len(t), "top": y}
-    page = [w("1.", 50, 10), w("DAX®", 62, 10), w("INDEX", 100, 10), w("COMPOSITION", 140, 10),
-            w("Initial", 50, 30), w("composition", 90, 30), w("30.12.1987", 170, 30)]
-    page += [w(f"Firma{i}", 50 + (i % 3) * 170, 50 + (i // 3) * 15) for i in range(30)]
-    y = 50 + 10 * 15 + 10
-    page += [w("Date", 50, y), w("Deletion", 300, y), w("Addition", 430, y)]
-    page += [w("18.09.1995", 50, y + 15), w("18.07.1995", 150, y + 15), w("Firma3", 300, y + 15), w("SAP", 430, y + 15)]
-    parsed = bu.parse_stoxx_words([page])
-    assert len(parsed["DAX"]["initial"][1]) == 30 and parsed["DAX"]["changes"] == [("18.09.1995", ["Firma3"], ["SAP"])]

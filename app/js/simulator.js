@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'top', biasCorr: false, endYear: null, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -42,6 +42,14 @@ const ETF_EXEMPT = 0.3;
 const yearOf = (iso) => Number(iso.slice(0, 4));
 const eur = (x) => `${x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const dmy = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+
+/** Wie oft gescreent (und gekauft) wird. Stichtage: erster Handelstag im Januar/April/Juli/Oktober usw. */
+export const FREQ_MONTHS = { monthly: null, quarterly: [1, 4, 7, 10], semiannual: [1, 7], annual: [1] };
+export const FREQ_LABEL = { monthly: 'monatlich', quarterly: 'vierteljährlich (Jan, Apr, Jul, Okt)', semiannual: 'halbjährlich (Jan, Jul)', annual: 'jährlich (Januar)' };
+export function isScreenMonth(date, freq) {
+  const ms = FREQ_MONTHS[freq];
+  return !ms || ms.includes(Number(String(date).slice(5, 7)));
+}
 
 /** Letzter Bewertungspunkt bis Ende des Endjahres (null = bis heute). */
 export function endIndex(data, year) {
@@ -256,7 +264,8 @@ export function simulate(data, key, opts) {
         m.invest = b.cash; b.cash = 0;
       }
     } else {
-      const target = targetList(data, key, k, o.rest, o.minScore, exSet);
+      const screenNow = k === k0 || isScreenMonth(date, o.freq);
+      const target = screenNow ? targetList(data, key, k, o.rest, o.minScore, exSet) : [];
       const targetSyms = new Set(target.map((i) => data.syms[i]));
       // 1) Verkäufe
       const cashPreSell = b.cash;
@@ -268,7 +277,8 @@ export function simulate(data, key, opts) {
           const cond = c === '1' || c === '3';
           const n = cond ? (b.hcount.get(sym) || 0) + 1 : 0;
           b.hcount.set(sym, n);
-          if ((cond && n >= 2) || c === '2') {
+          // Verkaufssignale werden nur an Screening-Terminen gelesen (dazwischen schaut man nicht in die App)
+          if (screenNow && ((cond && n >= 2) || c === '2')) {
             const endK = data.ended?.[i];
             const why = c === '2' ? 'Verkaufssignal sofort (Rang unter Median oder 12 M unter −10 %)'
               : c === '3' ? (endK != null && k > endK ? `Kursdaten enden am ${dmy(data.points[endK])} (Delisting/Übernahme) – Verkauf zum letzten bekannten Kurs angenommen, tatsächlicher Ausgang unbekannt`
@@ -301,9 +311,13 @@ export function simulate(data, key, opts) {
         }
       }
       m.proceeds = b.cash - cashPreSell + (b.monthTax - taxPaid);   // Erlöse vor Steuer
-      // 2) Anlagebetrag: fest = nur Monatsbudget; mit Erlösen = alles verfügbare Geld
+      // 2) Anlagebetrag: fest = nur Monatsbudget(s) seit dem letzten Screening; mit Erlösen = alles verfügbare Geld.
+      //    Zwischen zwei Screening-Terminen wird nichts gekauft: Budget und Erlöse sammeln sich auf dem Konto.
+      b.pendingBudget = (b.pendingBudget || 0) + budget;
       const avail = Math.max(0, b.cash);
-      const invest = o.budgetMode === 'fixed' ? Math.min(budget, avail) : avail;
+      const invest = !screenNow ? 0 : o.budgetMode === 'fixed' ? Math.min(b.pendingBudget, avail) : avail;
+      if (screenNow) b.pendingBudget = 0;
+      m.screen = screenNow;
       const slots = st.n || target.length;
       m.invest = invest; m.n = target.length;
       if (slots > 0 && invest > 0) {
@@ -317,7 +331,7 @@ export function simulate(data, key, opts) {
         }
         const rest = invest - used * each;
         if (rest > 1 && o.rest === 'etf' && st.list !== 'min') buyEtf(b, rest, etfPx(data, k), o, k, { name: worldName, text: `${slots - used} freie Plätze`, date });
-      } else if (invest > 1 && o.rest === 'etf' && st.list !== 'min') {
+      } else if (screenNow && invest > 1 && o.rest === 'etf' && st.list !== 'min') {
         buyEtf(b, invest, etfPx(data, k), o, k, { name: worldName, text: 'kein Kandidat in diesem Monat', date });
       }
     }
