@@ -1,8 +1,8 @@
 {
- "asof": "2026-11-25",
+ "asof": "2026-11-24",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.5.0",
+ "pipeline_version": "0.6.0",
  "status": "ok",
  "candidates": [
   "6098.T",
@@ -20,18 +20,18 @@
  "market": {
   "proxy": "URTH",
   "name": "iShares MSCI World ETF (USD)",
-  "date": "2026-11-25",
+  "date": "2026-11-24",
   "above_ma200": false,
-  "dist_ma200": -0.023528,
-  "dd_from_high": -0.080185,
-  "ret_12m": 0.077588,
-  "ret_24m": 0.2539,
-  "vol_3m": 0.18301,
-  "vol_change": 0.79064,
+  "dist_ma200": -0.023374,
+  "dd_from_high": -0.080138,
+  "ret_12m": 0.089898,
+  "ret_24m": 0.2579,
+  "vol_3m": 0.18336,
+  "vol_change": 0.79408,
   "vol_shock_threshold": 0.35323,
   "vol_shock": true,
   "bear_state": false,
-  "breadth_above_ma200": 0.5644
+  "breadth_above_ma200": 0.54717
  },
  "universe": {
   "source": "iShares MSCI World (URTH)",

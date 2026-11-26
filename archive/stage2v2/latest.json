@@ -1,0 +1,104 @@
+{
+ "asof": "2026-11-24",
+ "stage2_version": "2.0.0",
+ "status": "ok",
+ "buy": [
+  "MPC",
+  "VLO",
+  "PSX",
+  "OMV.VI",
+  "6098.T"
+ ],
+ "ranking": [
+  {
+   "symbol": "MPC",
+   "name": "Marathon Petroleum",
+   "stage1_rank": 2,
+   "stage2_rank": 1,
+   "score": 7.426,
+   "decision": "TOP5",
+   "price_only": false
+  },
+  {
+   "symbol": "VLO",
+   "name": "Valero Energy Corp",
+   "stage1_rank": 4,
+   "stage2_rank": 2,
+   "score": 7.121,
+   "decision": "TOP5",
+   "price_only": false
+  },
+  {
+   "symbol": "PSX",
+   "name": "Phillips 66",
+   "stage1_rank": 7,
+   "stage2_rank": 3,
+   "score": 6.939,
+   "decision": "TOP5",
+   "price_only": false
+  },
+  {
+   "symbol": "OMV.VI",
+   "name": "Omv",
+   "stage1_rank": 10,
+   "stage2_rank": 4,
+   "score": 6.477,
+   "decision": "TOP5",
+   "price_only": false
+  },
+  {
+   "symbol": "6098.T",
+   "name": "Recruit Holdings",
+   "stage1_rank": 1,
+   "stage2_rank": 5,
+   "score": 5.874,
+   "decision": "TOP5",
+   "price_only": false
+  },
+  {
+   "symbol": "OKTA",
+   "name": "Okta Class A",
+   "stage1_rank": 6,
+   "stage2_rank": 6,
+   "score": 5.262,
+   "decision": "REST",
+   "price_only": false
+  },
+  {
+   "symbol": "FTNT",
+   "name": "Fortinet",
+   "stage1_rank": 9,
+   "stage2_rank": 7,
+   "score": 5.158,
+   "decision": "REST",
+   "price_only": false
+  },
+  {
+   "symbol": "O39.SI",
+   "name": "Oversea-Chinese Banking",
+   "stage1_rank": 3,
+   "stage2_rank": 8,
+   "score": 4.686,
+   "decision": "REST",
+   "price_only": false
+  },
+  {
+   "symbol": "MU",
+   "name": "Micron Technology",
+   "stage1_rank": 8,
+   "stage2_rank": 9,
+   "score": 4.399,
+   "decision": "REST",
+   "price_only": false
+  },
+  {
+   "symbol": "ILMN",
+   "name": "Illumina Inc",
+   "stage1_rank": 5,
+   "stage2_rank": 10,
+   "score": 3.855,
+   "decision": "REST",
+   "price_only": false
+  }
+ ]
+}
