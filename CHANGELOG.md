@@ -1,5 +1,18 @@
 # Änderungen
 
+## Pipeline 0.6.0 / Stage 2 v2.0.0 – 26.11.2026
+- **Stage 2 komplett neu: Fortsetzungs-Rangfolge.** Die Top-10-Kandidaten aus Stage 1 werden nach Forschungssignalen für das Weiterlaufen von Momentum sortiert (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, marktbereinigtes Momentum; live zusätzlich Schätzungsänderungen und Gewinnüberraschungen). Die besten 5 sind die Kaufkandidaten. Nichts wird ausgeschlossen. Anti-Peak-Filter und Kategorien von v1 entfallen.
+- Simulator: sechs Strategien – MSCI World, S&P 500, Stage 1 Top 5, Stage 1 Top 10, Stage 2 Top 5 (Kursteil rückwirkend getestet), Minimum Score 4 (nur Stage-1-Kandidaten mit Momentum-Score ab 4, sonst bleibt das Budget auf dem Konto).
+- Steuern: Sparer-Pauschbetrag 801 € bis 2022, 1.000 € ab 2023.
+- Stage-2-Teilvalidierung (v1) im Backtest entfernt; neues Live-Protokoll unter `archive/stage2v2`.
+
+## Pipeline 0.5.2 – 26.11.2026
+- Simulator: Bei „Nur Kandidaten, Rest bleibt auf dem Konto“ zusätzlich Mindest-Momentum-Score (Stage-1-Score, Standard 4). Ohne passenden Kandidaten wird nicht gehandelt, das Budget bleibt auf dem Konto. Monatslisten zeigen den Score.
+
+## Pipeline 0.5.1 – 26.11.2026
+- Simulator: Haltedauer 3 Monate (auch mit „im Minus warten bis ±0“), ebenso im Depot.
+- Simulator: Vorabpauschale ab 2018 mit Basiszins des BMF (2018 0,87 %, 2019 0,52 %, 2020 0,07 %, 2021–2022 0 %, 2023 2,55 %, 2024 2,29 %, 2025 2,53 %, 2026 3,20 %), 30 % Teilfreistellung, Anrechnung beim Verkauf; Sparer-Pauschbetrag gemeinsam für Aktiengewinne und Vorabpauschale; Aktienverluste nur mit Aktiengewinnen verrechnet.
+
 ## Pipeline 0.5.0 – 26.11.2026
 - Autopilot entfernt (Wunsch des Nutzers).
 - Simulator: ETF-Sparplan als normaler Sparplanrechner; Feld heißt jetzt „Gebühr je ETF-Sparrate“, unrealistische Gebühren/Spreads werden abgefangen (vorher konnte die Sparrate versehentlich als Gebühr eingetragen werden). Neue Haltedauer-Optionen „6/12 Monate, im Minus warten bis ±0“; Protokoll zeigt „Halten“-Einträge. Feste Haltedauer verkauft jetzt am ersten Monatsende nach Ablauf (auch wenn die Aktie noch auf der Liste steht; sie wird dann mit dem neuen Geld wieder gekauft).

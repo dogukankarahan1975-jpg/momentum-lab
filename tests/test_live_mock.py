@@ -193,19 +193,20 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     assert (cache / "last_good" / "screen.json").exists()
     # Stage 2: automatisch berechnet, über den echten Parser-Pfad (Crumb, quoteSummary, Zeitreihen)
     s2 = json.loads((out / "stage2.json").read_text())
-    assert seen["qs"] > 250 and seen["ts"] > 100
+    assert seen["qs"] > 20
     assert s2["status"] == "ok", s2["messages"]
-    assert [r["symbol"] for r in s2["ranking"]] and {r["symbol"] for r in s2["ranking"]} == set(screen["candidates"])
-    assert all(r["decision"]["code"] in ("EXCEPTIONAL", "STRONG_BUY", "WATCHLIST", "NO_ENTRY", "REJECT", "HARD_RISK",
-                                         "INSUFFICIENT_DATA") for r in s2["ranking"])
+    assert s2["schema"] == 2 and s2["stage2_version"] == "2.0.0"
+    assert [r["symbol"] for r in s2["ranking"]] and {r["symbol"] for r in s2["ranking"]} == set(screen["candidates"][:10])
     scores = [r["stage2"]["score"] for r in s2["ranking"] if r["stage2"]["score"] is not None]
-    assert scores == sorted(scores, reverse=True)                    # finale Rangfolge nach Stage-2-Score
-    assert s2["reference"]["fundamentals_coverage"] >= 0.6
+    assert scores == sorted(scores, reverse=True)                    # Fortsetzungs-Rangfolge nach Stage-2-Score
+    assert s2["buy"] == [r["symbol"] for r in s2["ranking"][:5] if r["stage2"]["score"] is not None]
+    assert any(not r["stage2"]["price_only"] for r in s2["ranking"]), "Gewinnteil (Analystendaten) fehlt"
+    assert s2["fundamentals_coverage"] >= 0.5
     assert status["sources"]["fundamentals_stage2"]["ok"] is True
     assert status["stage2"]["scored"] == len(scores)
     assert (cache / "fundamentals.json.gz").exists()
     assert list((archive / "fundamentals").glob("*.csv.gz")), "Wochen-Schnappschuss fehlt"
-    assert (archive / "stage2" / "latest.json").exists()
+    assert (archive / "stage2v2" / "latest.json").exists()
     assert json.loads((out / "methodology.json").read_text())["stage2"]["version"]
     # Zweiter Lauf: Yahoo komplett gesperrt -> Cache wird genutzt, ehrliche Kennzeichnung
     class Blocked:
@@ -220,7 +221,7 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     screen2 = json.loads((out / "screen.json").read_text())
     assert screen2["candidates"] == [] and screen2["top_pick"] is None   # keine Empfehlungen mit alten Daten
     s2b = json.loads((out / "stage2.json").read_text())
-    assert s2b["status"] == "fehler" and s2b["ranking"] == [] and s2b["eligible"] == []
+    assert s2b["status"] == "fehler" and s2b["ranking"] == []
     assert np.isfinite(1.0)
 
 

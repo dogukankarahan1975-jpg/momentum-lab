@@ -78,14 +78,9 @@ export async function render(root) {
   } else parts.push(note('info', 'Methodik-Datei noch nicht verfügbar.'));
   if (meth?.stage2) {
     const m2 = meth.stage2;
-    const w = m2.params?.weights || {};
-    parts.push(html`<div class="panel"><p class="small">Stage 2 (Fortsetzungsanalyse) Version <b>${m2.version}</b> (Prüfsumme ${m2.params_hash}). Jede Kennzahl wird als Perzentil gegen eine feste Vergleichsgruppe gemessen: alle zulässigen MSCI-World-Aktien, der eigene Sektor (Fundamentaldaten und Bewertung) oder die Momentum-Gruppe (Überhitzung). Fehlende Werte werden nie geschätzt.</p>
-      <dl class="kv small">${Object.entries(m2.categories || {}).map(([k, c]) => html`<dt>${k} ${c.name}</dt><dd>${fmtPct(w[k], 0, false)}</dd>`)}
-      <dt>Score nur ab verfügbarem Gewicht</dt><dd>${fmtPct(m2.params?.min_weight_available, 0, false)}</dd>
-      <dt>Schwellen EXCEPTIONAL / STRONG BUY / WATCHLIST / NO ENTRY</dt><dd>${(m2.params?.thresholds || []).slice(0, 4).map((t) => fmtNum(t[0], 1)).join(' / ')}</dd>
-      <dt>Kennzahlen höchstens</dt><dd>${m2.params?.fund_max_age_days} Tage alt</dd>
-      <dt>Vergleichsgruppe nötig</dt><dd>${fmtPct(m2.params?.ref_min_coverage, 0, false)} Abdeckung</dd></dl>
-      <p class="xs muted" style="margin:10px 0 0">Gewichte und Schwellen sind deine Vorgabe und noch heuristisch. Gültig sind nur vorab festgelegte, versionierte Regeln.${repo ? html` <a href="${repo}/blob/main/docs/METHODIK.md#stage-2" target="_blank" rel="noopener">Stage 2 in der Methodik</a>` : ''}</p></div>`);
+    parts.push(html`<div class="panel"><p class="small">Stage 2 (${m2.name || 'Fortsetzungs-Rangfolge'}) Version <b>${m2.version}</b>. Die Top-10-Kandidaten aus Stage 1 werden nach Signalen sortiert, die laut Forschung das Weiterlaufen von Momentum anzeigen. Gekauft werden die besten 5. Es wird nichts ausgeschlossen.</p>
+      <dl class="kv small">${(m2.signals || []).map((x) => html`<dt>${x.label}</dt><dd>${x.part === 'kurs' ? 'Kursteil' : 'Gewinnteil'}<div class="xs muted">${x.study}</div></dd>`)}</dl>
+      <p class="xs muted" style="margin:10px 0 0">${m2.rule || ''}</p></div>`);
   }
   parts.push(html`<div class="group"><button class="row" id="archive"><div class="grow"><div class="title">Offizielle Monats-Screenings</div><div class="sub">Archiv des Datenlaufs (je Monatsende)</div></div></button></div>`);
 

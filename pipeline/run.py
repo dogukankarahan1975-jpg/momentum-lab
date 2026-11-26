@@ -425,10 +425,10 @@ def run(args) -> int:
     except Exception as exc:  # noqa: BLE001
         traceback.print_exc()
         msg("warnung", f"Stage 2 fehlgeschlagen ({exc}). Stage 1 ist davon nicht betroffen.")
-        s2 = {"schema": 1, "stage2_version": STAGE2_VERSION, "status": "fehler", "asof": iso(asof), "demo": demo,
+        s2 = {"schema": 2, "stage2_version": "2.0.0", "status": "fehler", "asof": iso(asof), "demo": demo,
               "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
               "messages": [{"level": "fehler", "text": f"Stage 2 konnte nicht berechnet werden: {str(exc)[:240]}"}],
-              "ranking": [], "eligible": []}
+              "ranking": [], "buy": []}
         if overall == "ok":
             overall = "warnung"
     (out / "stage2.json").write_text(json.dumps(sanitize(s2), default=_json_default, ensure_ascii=False,
@@ -472,13 +472,6 @@ def run(args) -> int:
                 upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
                 ctx = bt.Context(upanel, cur_series.reindex(uni_syms), fx, dups, asof, bench_eur, log=log)
                 bt_res = bt.run_backtest(ctx, log=log)
-                if bt_res.get("available"):
-                    try:
-                        from .stage2_backtest import run_stage2_validation
-                        bt_res["stage2"] = run_stage2_validation(ctx, meta, bench_eur, log=log)
-                    except Exception as exc:  # noqa: BLE001
-                        traceback.print_exc()
-                        bt_res["stage2"] = {"available": False, "reason": f"Fehler: {exc}"}
                 if bt_res.get("available"):
                     try:
                         from .simulator import build_sim_data
@@ -538,10 +531,10 @@ def run(args) -> int:
         "candidates": len(cands), "top_pick": top_pick, "methodology_version": METHODOLOGY_VERSION,
         "pipeline_version": PIPELINE_VERSION, "runtime_s": round(time.time() - t0, 1),
         "backtest_available": bool(bt_res and bt_res.get("available")),
-        "stage2": {"version": STAGE2_VERSION, "status": (s2 or {}).get("status"),
-                   "sparplan_freigabe": (s2 or {}).get("eligible", []),
+        "stage2": {"version": (s2 or {}).get("stage2_version"), "status": (s2 or {}).get("status"),
+                   "top5": (s2 or {}).get("buy", []),
                    "scored": sum(1 for r in (s2 or {}).get("ranking", []) if (r.get("stage2") or {}).get("score") is not None),
-                   "fundamentals_coverage": ((s2 or {}).get("reference") or {}).get("fundamentals_coverage")},
+                   "fundamentals_coverage": (s2 or {}).get("fundamentals_coverage")},
     }
     (out / "status.json").write_text(json.dumps(status, default=_json_default, ensure_ascii=False, indent=1))
     write_methodology(out)
@@ -564,7 +557,7 @@ def run(args) -> int:
                                 sc_prev["rank"].dropna().sort_values().index[:50]]}
                 month_file.write_text(json.dumps(ms, ensure_ascii=False, indent=1))
         if s2 and s2.get("ranking") is not None and s2.get("status") != "fehler":
-            write_stage2_archive(archive / "stage2", s2, close, cur_series, fx_row)
+            write_stage2_archive(archive / "stage2v2", s2, close, cur_series, fx_row)
         with (archive / "runs.log").open("a", encoding="utf-8") as fh:
             fh.write(f"{now} asof={iso(asof)} status={overall} priced={n_priced}/{n_uni} eligible={n_elig} "
                      f"candidates={len(cands)} top={top_pick} v={METHODOLOGY_VERSION}\n")
@@ -621,15 +614,16 @@ def stage2_block(*, demo, universe, meta, panel, fx, fx_row, cur_series, bench_f
         stats = {"demo": True}
     else:
         store = fund.FundamentalsStore.load(cache / "fundamentals.json.gz")
-        qs_list, ts_list, boot = fund.plan_refresh(store, today, list(cands) + list(watch_only), pool, elig_syms, FUNDAMENTALS)
+        # Stage 2 v2 braucht Analystendaten nur für Kandidaten und die Momentum-Vergleichsgruppe
+        qs_list, ts_list, boot = fund.plan_refresh(store, today, list(cands) + list(watch_only), pool, list(pool), FUNDAMENTALS)
         log(f"[stage2] Kennzahlen fällig: {len(qs_list)}, Jahreswerte fällig: {len(ts_list)}{' (Aufbauphase)' if boot else ''}")
         stats = fund.refresh(store, qs_list, ts_list, today, FUNDAMENTALS, boot, log=log)
         store.save(cache / "fundamentals.json.gz")
-        snap = fund.write_weekly_snapshot(store, elig_syms, archive / "fundamentals", today)
+        snap = fund.write_weekly_snapshot(store, list(dict.fromkeys(list(cands) + list(pool))), archive / "fundamentals", today)
         if snap:
             log(f"[stage2] Wochen-Schnappschuss {snap.name} archiviert")
     snap90, snap_date = fund.load_snapshot_near(archive / "fundamentals", today - pd.Timedelta(days=90))
-    cov = fund.coverage(store, elig_syms, today, STAGE2["fund_max_age_days"])
+    cov = fund.coverage(store, list(pool) or elig_syms, today, STAGE2["fund_max_age_days"])
     stats["coverage"] = round(cov, 3)
     if demo:
         sources["fundamentals_stage2"] = {"name": "DEMO (synthetisch)", "ok": True, "type": "demo"}
@@ -650,31 +644,30 @@ def stage2_block(*, demo, universe, meta, panel, fx, fx_row, cur_series, bench_f
              "fx": {"name": "EZB-Referenzkurse", "type": "official"},
              "sector": {"name": "GICS-Sektor laut iShares-Bestandsliste", "type": "database"},
              "benchmark": {"name": mname, "type": "database"}}
-    res = stage2.run_stage2(loc=win, eur=eur, mkt=mkt, market_name=mname, asof=asof, today=today, meta=meta,
-                            eligible=elig, stage1=stage1, cands=[] if stage1_failed else list(cands), pool=pool,
-                            top_pick=None if stage1_failed else top_pick, verified=verified, store=store, fx_row=fx_row,
-                            snap90=snap90, snap90_date=snap_date, demo=demo, sources=s2src, fund_stats=stats,
-                            currency=cur_series)
+    from .stage2v2 import peer_group, run_stage2_v2
+    peers = peer_group(sc, f, elig, pool)
+    res = run_stage2_v2(loc=win, eur=eur, mkt=mkt, market_name=mname, asof=asof, today=today, meta=meta, stage1=stage1,
+                        cands=[] if stage1_failed else list(cands), peers=peers, store=store, fx_row=fx_row,
+                        snap90=snap90, demo=demo, sources=s2src, fund_stats=stats)
+    res["fundamentals_coverage"] = round(cov, 3)
     if stage1_failed:
         res["status"] = "fehler"
         res["messages"].insert(0, {"level": "fehler", "text": "Stage 1 hat wegen Datenproblemen keine Kandidaten "
                                                               "freigegeben – Stage 2 bewertet deshalb nichts."})
-    res["live_track"] = live_track(archive / "stage2", adj, cur_series, fx, mkt, asof)
+    res["live_track"] = live_track(archive / "stage2v2", adj, cur_series, fx, mkt, asof)
     return res
 
 
 def write_stage2_archive(folder: Path, s2: dict, close: pd.DataFrame, cur: pd.Series, fx_row: pd.Series) -> None:
-    """Live-Protokoll: Stage-2-Entscheidungen je Monat (letzter Lauf des Monats bleibt stehen)."""
+    """Live-Protokoll: Stage-2-Rangfolge je Monat (letzter Lauf des Monats bleibt stehen)."""
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
     for r in s2.get("ranking", []):
         rows.append({"symbol": r["symbol"], "name": r.get("name"), "stage1_rank": (r.get("stage1") or {}).get("rank"),
                      "stage2_rank": (r.get("stage2") or {}).get("rank"), "score": (r.get("stage2") or {}).get("score"),
-                     "decision": (r.get("decision") or {}).get("code"), "risk": (r.get("risk") or {}).get("level"),
-                     "dq": (r.get("data_quality") or {}).get("level"),
-                     "outperformance": (r.get("outperformance") or {}).get("level")})
-    snap = {"asof": s2.get("asof"), "stage2_version": s2.get("stage2_version"), "params_hash": s2.get("params_hash"),
-            "status": s2.get("status"), "eligible": s2.get("eligible", []), "ranking": rows}
+                     "decision": "TOP5" if r.get("buy") else "REST", "price_only": (r.get("stage2") or {}).get("price_only")})
+    snap = {"asof": s2.get("asof"), "stage2_version": s2.get("stage2_version"), "status": s2.get("status"),
+            "buy": s2.get("buy", []), "ranking": rows}
     txt = json.dumps(sanitize(snap), ensure_ascii=False, indent=1, default=_json_default)
     (folder / "latest.json").write_text(txt)
     if s2.get("asof"):
@@ -710,8 +703,7 @@ def live_track(folder: Path, adj: pd.DataFrame, cur: pd.Series, fx: pd.DataFrame
                     ret = (p1 / f1) / (p0 / f0) - 1
             rows.append({"month": fp.stem, "symbol": sym, "decision": e.get("decision"), "ret": ret, "mkt": mret})
     groups = []
-    spec = [("Sparplanfreigabe (EXCEPTIONAL / STRONG BUY)", {"EXCEPTIONAL", "STRONG_BUY"}), ("WATCHLIST", {"WATCHLIST"}),
-            ("Keine Freigabe (NO ENTRY, REJECT, HARD RISK)", {"NO_ENTRY", "REJECT", "HARD_RISK"}), ("Alle Stage-1-Kandidaten", None)]
+    spec = [("Stage 2 Top 5", {"TOP5"}), ("Stage-1-Kandidaten außerhalb der Stage-2-Top-5", {"REST"}), ("Alle Stage-1-Kandidaten", None)]
     for label, codes in spec:
         sub = [r for r in rows if np.isfinite(r["ret"]) and np.isfinite(r["mkt"]) and (codes is None or r["decision"] in codes)]
         if not sub:
@@ -796,11 +788,9 @@ def write_methodology(out: Path) -> None:
     (out / "methodology.json").write_text(json.dumps({
         "version": METHODOLOGY_VERSION, "params_hash": params_hash(), "params": METHODOLOGY,
         "variants": BACKTEST_VARIANTS, "tax": TAX, "costs": COST_SCENARIOS, "backtest": BACKTEST,
-        "stage2": {"version": STAGE2_VERSION, "params_hash": stage2_params_hash(), "params": STAGE2,
-                   "categories": {c: {"name": v["name"], "metrics": [{"key": m[0], "label": m[1], "dir": m[2], "ref": m[3],
-                                                                       "block": m[4], "rule": m[5]} for m in v["metrics"]],
-                                      **({"blocks": v["blocks"]} if "blocks" in v else {})} for c, v in STAGE2_CATEGORIES.items()},
-                   "min": STAGE2_MIN, "backtest": STAGE2_BACKTEST, "fetch": FUNDAMENTALS},
+        "stage2": {"version": "2.0.0", "name": "Fortsetzungs-Rangfolge",
+                   "signals": __import__("pipeline.stage2v2", fromlist=["SIGNALS"]).SIGNALS,
+                   "rule": "Score = 10 × (½ Kursteil + ½ Gewinnteil), Perzentile gegen die Momentum-Vergleichsgruppe; Top 5 kaufen."},
         "changelog": changelog,
     }, ensure_ascii=False, indent=1))
 

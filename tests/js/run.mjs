@@ -6,9 +6,9 @@ import { addMonths, parseDec } from '../../app/js/fmt.js';
 import { freshness } from '../../app/js/data.js';
 import { validateBackup } from '../../app/js/store.js';
 import { parseStage2 } from '../../app/js/data.js';
-import { decisionCounts, fmtMetric, stage2Usable } from '../../app/js/stage2.js';
+import { fmtSignal, stage2Usable } from '../../app/js/stage2.js';
 import { holdEnd, holdStatus, buildICS, splitBuy, nextScreeningDay } from '../../app/js/holding.js';
-import { simulate as simRun, irr as simIrr, monthList } from '../../app/js/simulator.js';
+import { simulate as simRun, irr as simIrr, monthList, allowance as simAllowance } from '../../app/js/simulator.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -76,6 +76,10 @@ test('Ohne Kurs kein Marktwert, Gesamtrendite unbekannt', () => {
   const it = computePosition({ id: 'p1' }, [tx({ type: 'BUY', date: '2024-01-01', qty: 1, price: 10 })], null);
   assert.equal(it.mvEUR, null);
   assert.equal(it.totalReturn, null);
+});
+test('Sparer-Pauschbetrag: 801 € bis 2022, 1.000 € ab 2023', () => {
+  assert.equal(simAllowance(2022), 801);
+  assert.equal(simAllowance(2023), 1000);
 });
 test('Steuerschätzung mit Pauschbetrag', () => {
   near(estimateSaleTax(3000, { taxAllowanceLeft: 1000, churchTax: false }), 2000 * 0.26375);
@@ -158,33 +162,26 @@ test('Backup-Prüfung', () => {
   assert.equal(validateBackup({ app: 'momentum-lab', schema: 1, data: { positions: [], transactions: [{ id: 't', positionId: 'x', type: 'BUY', date: '2024-01-01' }] } }).ok, false);
 });
 
-// ---------------------------------------------------------------- Stage 2
-const s2raw = { schema: 1, asof: '2026-11-20', status: 'ok', eligible: ['AAA'], messages: [],
-  ranking: [{ symbol: 'AAA', decision: { code: 'STRONG_BUY' } }, { symbol: 'BBB', decision: { code: 'HARD_RISK' } }],
-  all: { fields: ['symbol', 'score', 'A'], rows: [['AAA', 8.7, 9.1], ['CCC', 5.2, 4.0]] } };
+// ---------------------------------------------------------------- Stage 2 (v2)
+const s2raw = { schema: 2, asof: '2026-11-20', status: 'ok', buy: ['AAA'], messages: [],
+  ranking: [{ symbol: 'AAA', buy: true, stage2: { rank: 1, score: 7.1 } }, { symbol: 'BBB', buy: false, stage2: { rank: 6, score: 4.2 } }] };
 test('Stage 2: Daten einlesen', () => {
   const s = parseStage2(s2raw);
-  assert.equal(s.bySymbol.get('BBB').decision.code, 'HARD_RISK');
-  assert.equal(s.allBySymbol.get('CCC').score, 5.2);
+  assert.equal(s.bySymbol.get('BBB').stage2.rank, 6);
+  assert.deepEqual(s.buy, ['AAA']);
   assert.throws(() => parseStage2({ ...s2raw, schema: 99 }));
-  assert.deepEqual(decisionCounts(s), { STRONG_BUY: 1, HARD_RISK: 1 });
 });
-test('Stage 2: keine Entscheidung bei alten oder abweichenden Daten', () => {
+test('Stage 2: keine Rangfolge bei alten, abweichenden oder alten Schema-Daten', () => {
   const s = parseStage2(s2raw);
   assert.equal(stage2Usable(s, { asof: '2026-11-20' }, fresh).ok, true);
   assert.equal(stage2Usable(s, { asof: '2026-11-21' }, fresh).ok, false);
   assert.equal(stage2Usable(s, { asof: '2026-11-20' }, { ok: false, label: '8 Tage alt' }).ok, false);
   assert.equal(stage2Usable(null, { asof: '2026-11-20' }, fresh).ok, false);
-  assert.equal(stage2Usable({ ...s, status: 'fehler' }, { asof: '2026-11-20' }, fresh).ok, false);
+  assert.equal(stage2Usable({ ...s, schema: 1 }, { asof: '2026-11-20' }, fresh).ok, false);
 });
-test('Stage 2: Kennzahlen formatieren', () => {
-  assert.equal(fmtMetric(0.1234, 'pct'), '+12,3 %');
-  assert.equal(fmtMetric(0.75, 'share'), '75 %');
-  assert.equal(fmtMetric(0.4, 'share_signed'), '+0,40');
-  assert.equal(fmtMetric(2.5, 'x'), '2,5×');
-  assert.equal(fmtMetric(0.012, 'pp'), '+1,2 Pp.');
-  assert.equal(fmtMetric(0.97, 'ratio'), '-3,0 % vom Hoch');
-  assert.equal(fmtMetric(null, 'pct'), '–');
+test('Stage 2: Signale formatieren', () => {
+  assert.equal(fmtSignal('prox_52w', 0.95), '-5,0 %');
+  assert.equal(fmtSignal('x', null), '–');
 });
 
 // ---------------------------------------------------------------- Simulator
@@ -196,7 +193,7 @@ const simData = () => {
   return {
     signal_dates: sig, points: pts, syms: ['A', 'B', 'C'], names: ['Alpha', 'Beta', 'Gamma'], sectors: ['IT', 'IT', 'Energie'],
     px: [pts.map((_, k) => 100 * 1.02 ** k), pts.map((_, k) => 100 * 0.97 ** k), pts.map(() => 50)],
-    rank: sig.map(() => [0, 1, 2]), cand: sig.map((_, k) => (k < 12 ? [0, 1] : [0])), s2: sig.map(() => [0]), s2_normal: sig.map(() => [0]),
+    rank: sig.map(() => [0, 1, 2]), cand: sig.map((_, k) => (k < 12 ? [0, 1] : [0])), s2: sig.map(() => [0]),
     hold: sig.map((_, k) => (k >= 3 ? '010' : '000')),
     bench: { msci_world: { name: 'W', start: pts[0], px: pts.map((_, k) => 10 * 1.01 ** k) }, sp500: { name: 'S', start: pts[0], px: pts.map(() => 20) } },
   };
@@ -249,13 +246,12 @@ test('Simulator: festes Budget lässt Verkaufserlöse auf dem Konto', () => {
   assert.ok(re.cash < fx.cash);
   fx.months.forEach((m) => assert.ok(m.invest <= m.budget + 1e-9));
 });
-test('Simulator: Stage 2 kauft nur Treffer, ohne Treffer nichts', () => {
+test('Simulator: Stage 2 Top 5 kauft die 5 besten der Stage-2-Rangfolge', () => {
   const d = simData();
-  d.s2 = d.s2.map((x, k) => (k % 2 ? [] : [0]));
-  const r = simRun(d, 's2', { ...simOpts, rest: 'top' });
-  const buys = r.log.filter((x) => x.type === 'Kauf');
-  assert.ok(buys.every((x) => x.sym === 'A'));
-  assert.equal(buys.length, 13);
+  d.s2 = d.s2.map(() => [1, 0]);  // B vor A
+  const r = simRun(d, 's2top5', { ...simOpts, rest: 'cash' });
+  const first = r.log.filter((x) => x.type === 'Kauf' && x.k === 0).map((x) => x.sym);
+  assert.deepEqual(first, ['B', 'A']);
 });
 test('Simulator: Protokoll stimmt mit Kontostand überein', () => {
   const r = simRun(simData(), 's1top5', { ...simOpts, feeBuy: 1, feeSell: 1, spread: 0.2 });
@@ -310,6 +306,36 @@ test('Kalender: gültige ICS-Datei mit Wecker', () => {
   const t = buildICS([{ uid: 'x', date: '2027-06-01', title: 'Verkaufen: A, B', desc: 'Test; mit Komma, ok' }]);
   assert.ok(t.startsWith('BEGIN:VCALENDAR') && t.includes('DTSTART;TZID=Europe/Berlin:20270601T080000') && t.includes('BEGIN:VALARM'));
   assert.ok(t.includes('Verkaufen: A\\, B'));
+});
+
+test('Simulator: Vorabpauschale ab 2018 und Haltedauer 3 Monate', () => {
+  // 2018-2019: ETF steigt 1 %/Monat -> Vorabpauschale > 0, aber unter Pauschbetrag -> keine Steuer
+  const K = 30;
+  const pts = Array.from({ length: K + 1 }, (_, k) => new Date(Date.UTC(2018, k, 2)).toISOString().slice(0, 10));
+  const d = { ...simData(), signal_dates: pts.slice(0, K), points: pts,
+    px: [pts.map((_, k) => 100 * 1.02 ** k), pts.map((_, k) => 100 * 0.97 ** k), pts.map(() => 50)],
+    rank: pts.slice(0, K).map(() => [0, 1, 2]), cand: pts.slice(0, K).map(() => [0, 1]), s2: pts.slice(0, K).map(() => [0]),
+    hold: pts.slice(0, K).map(() => '000'),
+    bench: { msci_world: { name: 'W', start: pts[0], px: pts.map((_, k) => 10 * 1.01 ** k) }, sp500: { name: 'S', start: pts[0], px: pts.map(() => 20) } } };
+  const r = simRun(d, 'world', { ...simOpts, startYear: 2018, budget: 100000 });
+  assert.ok(r.vpTotal > 0);
+  assert.ok(r.taxesPaid > 0);         // großer Sparplan -> Vorabpauschale über Pauschbetrag
+  const small = simRun(d, 'world', { ...simOpts, startYear: 2018 });
+  assert.equal(small.taxesPaid, 0);
+  const h3 = simRun(d, 's1top10', { ...simOpts, startYear: 2018, hold: '3' });
+  assert.ok(h3.log.some((x) => x.type === 'Verkauf' && x.why.includes('3 Monate')));
+});
+
+test('Simulator: Min. Score kauft nur Kandidaten ab Mindestwert, sonst bleibt das Budget liegen', () => {
+  const d = simData();
+  d.cand_z = d.cand.map((c) => c.map((_, j) => (j === 0 ? 4.5 : 2.1)));
+  const r = simRun(d, 's1min4', { ...simOpts, rest: 'etf', minScore: 4 });
+  const buys = r.log.filter((x) => x.type === 'Kauf');
+  assert.ok(buys.length && buys.every((x) => x.sym === 'A'));
+  d.cand_z = d.cand.map((c) => c.map(() => 1.0));
+  const none = simRun(d, 's1min4', { ...simOpts, rest: 'etf', minScore: 4 });
+  assert.equal(none.log.filter((x) => x.type === 'Kauf' || x.type === 'ETF-Kauf').length, 0);
+  near(none.cash, none.contrib);
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);

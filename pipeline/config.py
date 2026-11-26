@@ -10,9 +10,9 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.5.0"
+PIPELINE_VERSION = "0.6.0"
 METHODOLOGY_VERSION = "1.0.0"   # Stage 1 (Momentum-Screening) – unverändert
-STAGE2_VERSION = "1.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
+STAGE2_VERSION = "2.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
 
 METHODOLOGY = {
     # --- Momentum-Signal (orientiert an MSCI Momentum, Abschnitt 2.2) ---

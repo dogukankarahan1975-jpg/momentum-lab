@@ -4,18 +4,20 @@
 export const STRATEGIES = {
   world: { label: 'MSCI World ETF-Sparplan', short: 'MSCI World', kind: 'etf', bench: 'msci_world' },
   sp500: { label: 'S&P 500 ETF-Sparplan', short: 'S&P 500', kind: 'etf', bench: 'sp500' },
-  s1top5: { label: 'Stage 1: Top-5-Liste', short: 'Top 5', kind: 'list', n: 5, list: 'cand' },
-  s1top10: { label: 'Stage 1: Top-10-Liste', short: 'Top 10', kind: 'list', n: 10, list: 'cand' },
-  s2: { label: 'Stage 2 (Kursteil): nur Aktien mit Risiko normal und Outperformance hoch', short: 'Stage 2', kind: 'list', n: null, list: 's2' },
+  s1top5: { label: 'Stage 1: Top-5-Liste', short: 'Stage 1 Top 5', kind: 'list', n: 5, list: 'cand' },
+  s1top10: { label: 'Stage 1: Top-10-Liste', short: 'Stage 1 Top 10', kind: 'list', n: 10, list: 'cand' },
+  s2top5: { label: 'Stage 2: Top 5 der Fortsetzungs-Rangfolge (Kursteil)', short: 'Stage 2 Top 5', kind: 'list', n: 5, list: 's2' },
+  s1min4: { label: 'Stage 1: nur Kandidaten mit Momentum-Score ab 4', short: 'Minimum Score 4', kind: 'list', n: null, list: 'min' },
 };
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'etf', budgetMode: 'reinvest', strategies: ['world', 'sp500', 's1top5', 's1top10', 's2'],
+  hold: 'signal', rest: 'etf', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
   signal: 'bis zum ersten Verkaufssignal der App',
+  3: 'immer 3 Monate, dann verkaufen (auch im Minus)', '3be': '3 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist',
   6: 'immer 6 Monate, dann verkaufen (auch im Minus)', 12: 'immer 12 Monate, dann verkaufen (auch im Minus)',
   '6be': '6 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist', '12be': '12 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist',
 };
@@ -25,12 +27,15 @@ export const BUDGET_LABEL = {
 };
 export const REST_LABEL = {
   etf: 'Rest fließt in den MSCI World ETF',
-  cash: 'Rest bleibt auf dem Konto (0 % Zins) und wird im nächsten Monat mit angelegt',
+  cash: 'Nur Kandidaten kaufen, Rest bleibt auf dem Konto (0 % Zins) und wird im nächsten Monat mit angelegt',
   top: 'Immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus',
 };
 
 const TAX = 0.26375;
-const ALLOWANCE = 1000;
+// Basiszins für die Vorabpauschale (BMF, § 18 Abs. 4 InvStG); negative Werte = 0. Vor 2018 gab es keine Vorabpauschale.
+export const BASISZINS = { 2018: 0.0087, 2019: 0.0052, 2020: 0.0007, 2021: 0, 2022: 0, 2023: 0.0255, 2024: 0.0229, 2025: 0.0253, 2026: 0.032 };
+// Sparer-Pauschbetrag (Einzelperson): 801 € bis 2022, 1.000 € ab 2023 (§ 20 Abs. 9 EStG)
+export const allowance = (y) => (y >= 2023 ? 1000 : 801);
 const ETF_EXEMPT = 0.3;
 
 const yearOf = (iso) => Number(iso.slice(0, 4));
@@ -87,29 +92,51 @@ function buyEtf(b, amount, px, o, k, why) {
   const units = (amount - o.feeEtf - sc) / px;
   b.etfUnits += units;
   b.etfBasis += amount; b.cash -= amount; b.fees += o.feeEtf; b.spreadCost += sc; b.trades += 1;
+  if (b.etfYear) b.etfYear.buys.push({ amount, month: Number(why.date?.slice(5, 7) || 1) - 1 });
   b.log.push({ k, type: 'ETF-Kauf', sym: 'ETF', name: why.name, px, shares: units, amount, fee: o.feeEtf, spread: sc, why: why.text, cash: b.cash });
   return true;
 }
 
 function settle(b, year, k) {
-  // Abgeltungsteuer für abgeschlossene Jahre (Aktien-Verlusttopf, Pauschbetrag je Jahr), Zahlung vom Konto
+  // Steuerabrechnung je abgeschlossenem Jahr: Aktiengewinne (eigener Verlusttopf, Vortrag), Vorabpauschale der ETFs
+  // (nach 30 % Teilfreistellung), gemeinsamer Sparer-Pauschbetrag (801 € bis 2022, 1.000 € ab 2023); Zahlung vom Konto im Januar.
   if (b.taxedThrough === null) b.taxedThrough = year - 1;
   let paid = 0;
   for (let y = b.taxedThrough + 1; y < year; y++) {
     const gain = b.gains[y] || 0;
     const g = gain + b.carry;
-    if (g <= 0) {
-      if (gain) b.log.push({ k, type: 'Steuer', name: `Abrechnung ${y}`, amount: 0, why: `Ergebnis ${y}: ${eur(gain)}. Kein Gewinn, also keine Steuer. Verlustvortrag jetzt ${eur(g)}`, cash: b.cash });
-      b.carry = g; continue;
-    }
-    b.carry = 0;
-    const tax = Math.max(0, g - ALLOWANCE) * TAX;
+    const vp = b.vp?.[y] || 0;
+    const vpT = vp * (1 - ETF_EXEMPT);
+    b.carry = g < 0 ? g : 0;
+    const taxable = Math.max(0, g) + vpT;
+    const tax = Math.max(0, taxable - allowance(y)) * TAX;
+    if (!gain && !vp) continue;
     b.cash -= tax; b.taxes += tax; paid += tax;
     if (b.yearly[y]) b.yearly[y].tax += tax;
-    b.log.push({ k, type: 'Steuer', name: `Abrechnung ${y}`, amount: tax, why: `Gewinne ${y} nach Verlustverrechnung ${eur(g)}, minus 1.000 € Pauschbetrag, davon 26,375 %`, cash: b.cash });
+    const parts = [];
+    if (gain || b.carry) parts.push(`Aktien: ${eur(gain)}${g !== gain ? ` (mit Verlustvortrag ${eur(g)})` : ''}${g < 0 ? `, Verlust wird vorgetragen` : ''}`);
+    if (vp) parts.push(`ETF-Vorabpauschale ${eur(vp)}, davon 70 % steuerpflichtig = ${eur(vpT)}`);
+    b.log.push({ k, type: 'Steuer', name: `Abrechnung ${y}`, amount: tax,
+      why: `${parts.join('; ')}. Steuerpflichtig ${eur(taxable)} − ${eur(allowance(y))} Sparer-Pauschbetrag → ${tax > 0 ? `× 26,375 % = ${eur(tax)}` : 'keine Steuer'}.`, cash: b.cash });
   }
   b.taxedThrough = Math.max(b.taxedThrough, year - 1);
   return paid;
+}
+
+function vorabpauschale(b, y, pxNow) {
+  // Basisertrag = Wert Jahresanfang × Basiszins × 0,7 (+ Käufe im Jahr anteilig je volle Monate), höchstens der Wertzuwachs
+  const e = b.etfYear;
+  if (!e || e.year !== y) return;
+  const bz = BASISZINS[y] || 0;
+  if (!bz || !(pxNow > 0)) return;
+  const vEnd = b.etfUnits * pxNow;
+  const bought = e.buys.reduce((s, x) => s + x.amount, 0);
+  const gain = vEnd - e.v0 - bought;
+  const base = e.v0 * bz * 0.7 + e.buys.reduce((s, x) => s + x.amount * bz * 0.7 * (12 - x.month) / 12, 0);
+  const vp = Math.max(0, Math.min(gain, base));
+  if (!b.vp) b.vp = {};
+  b.vp[y] = vp;
+  b.vpTotal = (b.vpTotal || 0) + vp;
 }
 
 function lastPx(data, i, k) {
@@ -133,11 +160,19 @@ function etfPx(data, k) {
 }
 
 /** Liste, die eine Strategie im Monat k kaufen würde. */
-export function targetList(data, key, k, rest) {
+export function targetList(data, key, k, rest, minScore = 4) {
   const st = STRATEGIES[key];
-  if (st.list === 's2') return (data.s2[k] || []).slice(); // nur echte Stage-2-Treffer, sonst nichts
-  let t = (data.cand[k] || []).slice(0, st.n);
-  if (rest === 'top' && t.length < st.n) t = (data.rank[k] || []).slice(0, st.n);
+  if (st.list === 'min') {
+    // nur Stage-1-Kandidaten mit Momentum-Score ab minScore, sonst nichts
+    const z = data.cand_z?.[k] || [];
+    return (data.cand[k] || []).filter((_, j) => z[j] != null && z[j] >= minScore);
+  }
+  const src = st.list === 's2' ? (data.s2[k] || []) : (data.cand[k] || []);
+  let t = src.slice(0, st.n);
+  if (rest === 'top' && t.length < st.n) {
+    const extra = (data.rank[k] || []).filter((i) => !t.includes(i));
+    t = t.concat(extra).slice(0, st.n);
+  }
   return t;
 }
 
@@ -157,7 +192,10 @@ export function simulate(data, key, opts) {
     const date = data.points[k];
     const year = yearOf(date);
     if (!b.yearly[year]) b.yearly[year] = { contrib: 0, tax: 0, trades0: b.trades, value: 0, holdings: [], buys: [], sells: [] };
-    const taxPaid = st.kind === 'etf' ? 0 : settle(b, year, k);
+    const pxE = st.kind === 'etf' ? data.bench?.[st.bench]?.px?.[k] : etfPx(data, k);
+    if (b.etfYear && b.etfYear.year !== year) vorabpauschale(b, b.etfYear.year, pxE);
+    if (!b.etfYear || b.etfYear.year !== year) b.etfYear = { year, v0: b.etfUnits * (pxE || 0), buys: [] };
+    const taxPaid = settle(b, year, k);
     const budget = o.budget * Math.pow(1 + o.dyn / 100, Math.floor((k - k0) / 12));
     const cashBefore = b.cash;
     b.cash += budget; b.contrib += budget;
@@ -172,10 +210,11 @@ export function simulate(data, key, opts) {
         const units = (b.cash - o.feeEtf - sc) / px;
         b.log.push({ k, type: 'ETF-Kauf', sym: 'ETF', name: data.bench[st.bench].name, px, shares: units, amount: b.cash, fee: o.feeEtf, spread: sc, why: 'Sparrate', cash: 0 });
         b.etfUnits += units; b.etfBasis += b.cash; b.fees += o.feeEtf; b.spreadCost += sc; b.trades += 1;
+        b.etfYear.buys.push({ amount: b.cash, month: Number(date.slice(5, 7)) - 1 });
         m.invest = b.cash; b.cash = 0;
       }
     } else {
-      const target = targetList(data, key, k, o.rest);
+      const target = targetList(data, key, k, o.rest, o.minScore);
       const targetSyms = new Set(target.map((i) => data.syms[i]));
       // 1) Verkäufe
       const cashPreSell = b.cash;
@@ -233,9 +272,9 @@ export function simulate(data, key, opts) {
           }
         }
         const rest = invest - used * each;
-        if (rest > 1 && o.rest === 'etf') buyEtf(b, rest, etfPx(data, k), o, k, { name: worldName, text: `${slots - used} freie Plätze` });
-      } else if (invest > 1 && o.rest === 'etf') {
-        buyEtf(b, invest, etfPx(data, k), o, k, { name: worldName, text: 'kein Kandidat in diesem Monat' });
+        if (rest > 1 && o.rest === 'etf' && st.list !== 'min') buyEtf(b, rest, etfPx(data, k), o, k, { name: worldName, text: `${slots - used} freie Plätze`, date });
+      } else if (invest > 1 && o.rest === 'etf' && st.list !== 'min') {
+        buyEtf(b, invest, etfPx(data, k), o, k, { name: worldName, text: 'kein Kandidat in diesem Monat', date });
       }
     }
     m.cashAfter = b.cash;
@@ -272,19 +311,19 @@ export function simulate(data, key, opts) {
   series.push([data.points[kEnd], final, b.contrib]);
   // Steuer, falls am Ende alles verkauft würde (rein rechnerisch)
   const endYear = yearOf(data.points[kEnd]);
-  if (st.kind !== 'etf') settle(b, endYear, kEnd);
+  settle(b, endYear, kEnd);
   const akt = (b.gains[endYear] || 0) + b.carry + unrealStock;
-  const etfGain = (etfVal - b.etfBasis) * (1 - ETF_EXEMPT);
+  const etfGain = (etfVal - b.etfBasis - (b.vpTotal || 0)) * (1 - ETF_EXEMPT);
   const base = Math.max(0, akt) + etfGain;
-  const endTax = Math.max(0, base - ALLOWANCE) * TAX;
+  const endTax = Math.max(0, base - allowance(endYear)) * TAX;
   const afterTax = final - endTax;
   const years = (Date.parse(data.points[kEnd]) - Date.parse(data.points[k0])) / (365.25 * 864e5);
   const ys = Object.keys(b.yearly).map(Number).sort((a, c) => a - c);
   ys.forEach((y, j) => { b.yearly[y].trades = (j + 1 < ys.length ? b.yearly[ys[j + 1]].trades0 : b.trades) - b.yearly[y].trades0; });
   if (b.yearly[endYear]) b.yearly[endYear].value = final;
   return {
-    key, label: st.label, short: st.short, kind: st.kind, series, contrib: b.contrib, final, afterTax, endTax,
-    taxesPaid: b.taxes, fees: b.fees, spreadCost: b.spreadCost, trades: b.trades, maxDD, years,
+    key, label: key === 's1min4' ? `Stage 1: nur Kandidaten mit Momentum-Score ab ${String(o.minScore).replace('.', ',')}` : st.label, short: key === 's1min4' ? `Minimum Score ${String(o.minScore).replace('.', ',')}` : st.short, kind: st.kind, series, contrib: b.contrib, final, afterTax, endTax,
+    taxesPaid: b.taxes, vpTotal: b.vpTotal || 0, fees: b.fees, spreadCost: b.spreadCost, trades: b.trades, maxDD, years,
     irr: irr(b.flows, k0, kEnd, final, data), irrAfter: irr(b.flows, k0, kEnd, afterTax, data),
     yearly: b.yearly, log: b.log, months: b.months, open, cash: b.cash, etfValue: etfVal, etfBasis: b.etfBasis,
     start: data.points[k0], end: data.points[kEnd], k0, kEnd,
@@ -309,14 +348,14 @@ export function irr(flows, k0, kEnd, finalValue, data) {
 /** Liste eines Monats so, wie das Screening sie damals gezeigt hätte. */
 export function monthList(data, k) {
   const cand = new Set(data.cand[k]);
-  const s2 = new Set(data.s2[k]);
-  const s2n = new Set(data.s2_normal?.[k] || []);
-  const op = data.s2_op ? new Set(data.s2_op[k] || []) : null;
-  const risk = data.s2_risk?.[k] || {};
-  const top10 = new Set((data.cand[k] || []).slice(0, 10));
-  return (data.rank[k] || []).map((i, r) => ({
-    rank: r + 1, symbol: data.syms[i], name: data.names[i], sector: data.sectors[i],
-    cand: cand.has(i), s2: s2.has(i), riskNormal: s2n.has(i), checked: top10.has(i),
-    risk: risk[String(i)] || (s2n.has(i) ? 'NORMAL' : null), opHigh: op ? op.has(i) : (s2.has(i) ? true : null),
-  }));
+  const s2 = data.s2?.[k] || [];
+  const s2sc = data.s2_score?.[k] || [];
+  const zr = data.rank_z?.[k] || [];
+  return (data.rank[k] || []).map((i, r) => {
+    const p = s2.indexOf(i);
+    return {
+      rank: r + 1, symbol: data.syms[i], name: data.names[i], sector: data.sectors[i], score: zr[r] ?? null,
+      cand: cand.has(i), s2rank: p >= 0 ? p + 1 : null, s2score: p >= 0 ? s2sc[p] ?? null : null, s2top: p >= 0 && p < 5,
+    };
+  });
 }

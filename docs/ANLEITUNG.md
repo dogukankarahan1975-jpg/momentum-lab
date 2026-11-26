@@ -38,9 +38,9 @@ Der erste Lauf startet sofort (Reiter **Actions**). Er dauert 20–40 Minuten, w
 - **Monats-Screening-Erinnerung:** Einstellungen → Erinnerungen.
 - **Backtest → Simulator:** Strategien antippen, Budget, Dynamik, Gebühren, Spread und Haltedauer einstellen. Darunter steht, was aus dem Geld geworden wäre (vor und nach Steuern), Jahr für Jahr mit Bestand, und welche Aktien in jedem Monat auf der Liste standen.
 - **SCREENING STARTEN** prüft den neuesten Datenstand (werktags nachts aktualisiert), zeigt Stage 1 und Stage 2 und bewertet dein Depot.
-- **Top 10 → Finale Rangfolge**: die Stage-1-Kandidaten, neu sortiert nach dem Stage-2-Score (0 bis 10), mit Entscheidung, Risiko-Stufe, Datenqualität und Outperformance-Einschätzung. **Top 10 → Stage 1** zeigt die ursprüngliche Momentum-Liste. Die App merkt sich die zuletzt gewählte Ansicht.
+- **Top 10 → Stage 2 Rangfolge**: dieselben Top-10-Kandidaten, sortiert nach der Chance, dass das Momentum weiterläuft (Score 0 bis 10). Die ersten 5 tragen „Top 5 – kaufen“. Tippe eine Aktie an, um jedes Signal mit Studie zu sehen. **Top 10 → Stage 1** zeigt die ursprüngliche Momentum-Liste. Die App merkt sich die zuletzt gewählte Ansicht.
 - **Aktie antippen**: Stage-2-Details mit aufklappbaren Abschnitten (Momentum, Gewinne, Trend, Fundamentaldaten, Bewertung und Risiko), Begründungen und Quellen.
-- **Erste Tage nach dem Stage-2-Update**: Der Datenlauf baut die Vergleichsdaten für rund 1.200 Aktien schrittweise auf (1 bis 3 Nächte). Bis dahin zeigt Stage 2 „INSUFFICIENT DATA“ statt einer Freigabe. Das ist gewollt.
+- **Nach dem Update auf Stage 2 v2**: Bis der nächste Datenlauf fertig ist, zeigt Stage 2 einen Hinweis statt einer Rangfolge. Fehlen bei einer Aktie Analystendaten, steht „nur Kursteil“ dabei.
 - **Backup**: Zahnrad → **Backup exportieren** → **In Dateien sichern** (iCloud Drive). Die App erinnert dich.
 - **Wiederherstellen**: Zahnrad → **Backup importieren**.
 

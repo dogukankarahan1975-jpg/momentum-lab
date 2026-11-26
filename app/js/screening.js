@@ -8,17 +8,15 @@ import { stage2Usable } from './stage2.js';
 import { db } from './store.js';
 import { isDataProblem, riskFlags } from './analysis.js';
 
-export const STEP_GROUPS = { s1: 'Stage 1 – Momentum-Screening', s2: 'Stage 2 – Fortsetzungsanalyse', depot: 'Depot und Speichern' };
+export const STEP_GROUPS = { s1: 'Stage 1 – Momentum-Screening', s2: 'Stage 2 – Fortsetzungs-Rangfolge', depot: 'Depot und Speichern' };
 export const STEP_DEFS = [
   ['data', 's1', 'Aktuellen Datenstand abrufen'], ['universe', 's1', 'Aktienuniversum laden'],
   ['scan', 's1', 'Alle Aktien untersuchen'], ['errors', 's1', 'Fehlerhafte Daten erkennen'],
   ['exclude', 's1', 'Ungeeignete Aktien ausschließen'], ['scores', 's1', 'Momentum-Scores berechnen'],
   ['risk', 's1', 'Fundamentale und Risiko-Prüfungen'], ['news', 's1', 'Unternehmensnachrichten berücksichtigen'],
   ['rank', 's1', 'Aktien ranken'], ['select', 's1', 'Maximal 10 Kandidaten auswählen'], ['top', 's1', 'Top-Kandidaten bestimmen'],
-  ['s2handover', 's2', 'Kandidaten an Stage 2 übergeben'], ['s2data', 's2', 'Kennzahlen und Analystendaten prüfen'],
-  ['s2quality', 's2', 'Datenqualität bewerten'], ['s2factors', 's2', 'Faktoren und Kategorie-Scores berechnen'],
-  ['s2risk', 's2', 'Hard-Risk-Filter anwenden (Anti-Peak)'], ['s2outperf', 's2', 'Outperformance gegenüber MSCI World einschätzen'],
-  ['s2rank', 's2', 'Finale Rangfolge erstellen'], ['s2decide', 's2', 'Sparplan-Entscheidungen ableiten'],
+  ['s2handover', 's2', 'Top-10-Kandidaten an Stage 2 übergeben'], ['s2data', 's2', 'Analystendaten prüfen (Gewinnteil)'],
+  ['s2factors', 's2', 'Fortsetzungs-Signale gegen alle Momentum-Aktien vergleichen'], ['s2rank', 's2', 'Rangfolge erstellen, Top 5 bestimmen'],
   ['depot', 'depot', 'Depotpositionen einbeziehen'], ['signals', 'depot', 'Empfehlungen für das Depot erzeugen'],
   ['save', 'depot', 'Screening mit Datum speichern'],
 ];
@@ -123,30 +121,19 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
     let s2 = null;
     try { s2 = await loadStage2(true); } catch { s2 = null; }
     const use = stage2Usable(s2, screen, fr);
-    const S2_IDS = ['s2data', 's2quality', 's2factors', 's2risk', 's2outperf', 's2rank', 's2decide'];
-    if (!s2 || s2.status === 'fehler' || !s2.ranking.length) {
+    const S2_IDS = ['s2data', 's2factors', 's2rank'];
+    if (!use.ok || !s2.ranking.length) {
       set(I.s2handover, 'warn', !s2 ? 'Stage 2 wird beim nächsten nächtlichen Datenlauf zum ersten Mal berechnet.'
-        : !s2.ranking.length && s2.status !== 'fehler' ? 'Keine Stage-1-Kandidaten, deshalb keine Stage-2-Analyse.'
-          : (s2.messages?.[0]?.text || 'Stage 2 konnte nicht berechnet werden.'));
+        : !s2.ranking?.length && s2.status !== 'fehler' ? 'Keine Stage-1-Kandidaten, deshalb keine Stage-2-Rangfolge.' : use.reason);
       for (const id of S2_IDS) steps[I[id]].state = 'skip';
       emit();
     } else {
       const R = s2.ranking;
-      set(I.s2handover, s2.asof === screen.asof ? 'ok' : 'warn', `${R.length} Kandidaten aus Stage 1 übergeben, Datenstand ${fmtDate(s2.asof)}. Berechnet im nächtlichen Datenlauf (Stage 2 v${s2.stage2_version}).`);
-      const ref = s2.reference || {};
-      set(I.s2data, s2.status === 'aufbau' ? 'warn' : 'ok', `Kennzahlen für ${fmtPct(ref.fundamentals_coverage, 0, false)} der ${ref.universe ?? '–'} zulässigen Aktien${s2.status === 'aufbau' ? '. Vergleichsdaten werden noch aufgebaut' : ''}. Quelle: Yahoo Finance (inoffiziell).`);
-      const dqc = count(R, (r) => r.data_quality?.level);
-      set(I.s2quality, dqc.INSUFFICIENT || dqc.LOW ? 'warn' : 'ok', `${dqc.HIGH || 0}× hoch, ${dqc.MEDIUM || 0}× mittel, ${dqc.LOW || 0}× niedrig, ${dqc.INSUFFICIENT || 0}× unzureichend. Fehlende Werte werden nicht geschätzt.`);
-      const scored = R.filter((r) => r.stage2?.score != null).length;
-      const inactive = ref.inactive_metrics || [];
-      set(I.s2factors, scored ? 'ok' : 'warn', `${scored} von ${R.length} Kandidaten mit Score aus sechs Kategorien (Gewichte 20/20/20/15/10/15 %)${inactive.length ? `. ${inactive.length} Kennzahl(en) mangels Vergleichswerten ausgesetzt` : ''}`);
-      const rc = count(R, (r) => r.risk?.level);
-      set(I.s2risk, rc.CRITICAL ? 'warn' : 'ok', `${rc.CRITICAL || 0}× CRITICAL (HARD RISK, keine Freigabe), ${rc.HIGH || 0}× HIGH, ${rc.ELEVATED || 0}× ELEVATED, ${rc.NORMAL || 0}× NORMAL`);
-      const oc = count(R, (r) => r.outperformance?.level);
-      set(I.s2outperf, 'ok', `${oc.HIGH || 0}× hoch, ${oc.MODERATE || 0}× moderat, ${oc.MARKET_LIKE || 0}× marktähnlich, ${oc.LOW || 0}× niedrig, ${oc.INSUFFICIENT || 0}× nicht bestimmbar. Research-Einschätzung, keine Wahrscheinlichkeit.`);
-      set(I.s2rank, 'ok', `Nach Stage-2-Score: ${R.slice(0, 3).map((r) => `${r.stage2?.rank ?? '–'}. ${r.name}`).join(', ')}`);
-      const names = R.filter((r) => s2.eligible.includes(r.symbol)).map((r) => r.name).join(', ');
-      set(I.s2decide, use.ok ? 'ok' : 'warn', use.ok ? (s2.eligible.length ? `${s2.eligible.length} mit Sparplanfreigabe: ${names}` : 'Keine Sparplanfreigabe. Das ist ein gültiges Ergebnis.') : use.reason);
+      set(I.s2handover, 'ok', `${R.length} Kandidaten aus Stage 1 übergeben, Datenstand ${fmtDate(s2.asof)} (Stage 2 v${s2.stage2_version}).`);
+      const po = R.filter((r) => r.stage2?.price_only).length;
+      set(I.s2data, po ? 'warn' : 'ok', po ? `${R.length - po} mit aktuellen Analystendaten, ${po} nur mit Kursteil. Quelle: Yahoo Finance (inoffiziell).` : 'Alle Kandidaten mit aktuellen Analystendaten. Quelle: Yahoo Finance (inoffiziell).');
+      set(I.s2factors, 'ok', `Gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke ggü. dem Markt, Gewinnschätzungen und Gewinnüberraschungen, verglichen mit ${s2.method?.peers ?? '–'} Momentum-Aktien.`);
+      set(I.s2rank, 'ok', `Top 5: ${R.filter((r) => r.buy).map((r) => r.name).join(', ')}`);
     }
 
     // ---------------- Depot
@@ -169,10 +156,9 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
         return { symbol: s, name: r.name, rank: r.rank, Z: r.Z, pct: r.pct, m6: r.m6, m12: r.m12, vol: r.vol, sector: r.sector,
           country: r.country, flags: (flags[s] || []).map((x) => x.text) };
       }),
-      stage2: s2 && s2.status !== 'fehler' ? {
-        asof: s2.asof, version: s2.stage2_version, params_hash: s2.params_hash, usable: use.ok, eligible: use.ok ? s2.eligible : [],
-        ranking: s2.ranking.map((r) => ({ symbol: r.symbol, name: r.name, rank: r.stage2?.rank, score: r.stage2?.score_display,
-          decision: r.decision?.code, risk: r.risk?.level, dq: r.data_quality?.level, outperformance: r.outperformance?.level })),
+      stage2: s2 && use.ok ? {
+        asof: s2.asof, version: s2.stage2_version, usable: use.ok, top5: s2.buy || [],
+        ranking: s2.ranking.map((r) => ({ symbol: r.symbol, name: r.name, rank: r.stage2?.rank, score: r.stage2?.score_display, buy: !!r.buy })),
       } : null,
       signals: signals.map((s) => ({ positionId: s.positionId, symbol: s.symbol, name: s.name, signal: s.signal, urgency: s.urgency,
         reasons: s.reasons, next: s.next, plan: s.plan ? { signal: s.plan.signal, reasons: s.plan.reasons, switchTo: s.plan.switchTo } : null })),

@@ -4,7 +4,7 @@ import { freshness, loadDetail, loadScreen, loadStage2 } from '../data.js';
 import { computePortfolio } from '../depot.js';
 import { cls, fmtDate, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
 import { computeSignals } from '../screening.js';
-import { CAT_ORDER, decisionBadge, dqBadge, outBadge, profile, riskBadge, scoreScale, stage2Usable } from '../stage2.js';
+import { buyBadge, stage2Usable } from '../stage2.js';
 import { latestScreening, state } from '../state.js';
 import { getSetting, setSetting } from '../store.js';
 import { badge, empty, holdBand, html, note } from '../ui.js';
@@ -23,67 +23,35 @@ export async function render(root, mode) {
   const parts = [html`<h1>Top 10</h1>`];
   if (screen.demo) parts.push(html`<div class="demo-banner">DEMO-DATEN – erfundene Unternehmen, keine echten Signale</div>`);
   parts.push(html`<div class="seg" role="group" aria-label="Ansicht">
-    <a class="seg-link" href="#/top10/final" aria-pressed="${view === 'final'}">Finale Rangfolge</a>
+    <a class="seg-link" href="#/top10/final" aria-pressed="${view === 'final'}">Stage 2 Rangfolge</a>
     <a class="seg-link" href="#/top10/stage1" aria-pressed="${view !== 'final'}">Stage 1 (Momentum)</a></div>`);
   if (view === 'final') parts.push(...finalParts(screen, s2, fr));
   else parts.push(...(await stage1Parts(screen, s2, fr)));
   root.innerHTML = parts.join('');
 }
 
-// ---------------------------------------------------------------- Finale Rangfolge (Stage 2)
+// ---------------------------------------------------------------- Stage 2: Fortsetzungs-Rangfolge
 function finalParts(screen, s2, fr) {
   const parts = [];
   const use = stage2Usable(s2, screen, fr);
-  if (!s2) {
-    parts.push(note('info', 'Stage 2 wird beim nächsten nächtlichen Datenlauf zum ersten Mal berechnet. Bis dahin gilt die Stage-1-Liste.'));
-    return parts;
-  }
-  for (const m of (s2.messages || []).filter((x) => x.level !== 'info')) parts.push(note(m.level === 'fehler' ? 'error' : 'warn', m.text));
-  const infos = (s2.messages || []).filter((x) => x.level === 'info');
-  if (infos.length) parts.push(html`<details class="more"><summary>Hinweise zur Datenbasis (${infos.length})</summary>${infos.map((m) => html`<p class="small muted">${m.text}</p>`)}</details>`);
-  if (!use.ok && s2.status !== 'fehler') parts.push(note('warn', use.reason));
+  if (!use.ok) parts.push(note(s2?.status === 'fehler' ? 'error' : 'info', use.reason));
+  if (!s2 || !s2.schema || s2.schema < 2) return parts;
+  for (const m of (s2.messages || [])) parts.push(html`<p class="xs muted">${m.text}</p>`);
   if (!s2.ranking.length) {
-    parts.push(empty('Keine Kandidaten für Stage 2', 'Stage 1 hat heute keine Aktie ausgewählt. Ohne Kandidaten gibt es auch keine Stage-2-Bewertung.'));
+    parts.push(empty('Keine Kandidaten für Stage 2', 'Stage 1 hat heute keine Aktie ausgewählt.'));
     return parts;
   }
-  const m = s2.market || {};
-  const elig = use.ok ? s2.eligible.length : null;
-  parts.push(html`<div class="panel">
-    <div class="s2-meta" style="margin-top:0">
-      <div><div class="muted xs">Für einen neuen Sparplan freigegeben</div>
-        <div class="s2-score">${elig ?? '–'}<span class="small muted" style="font-weight:500"> von ${s2.ranking.length} Kandidaten</span></div></div>
-      <div class="xs muted" style="text-align:right">Stage 2 v${s2.stage2_version}<br>Stand ${fmtDate(s2.asof)}</div></div>
-    <p class="small" style="margin:8px 0 6px;color:var(--ink-2)">Sortiert nach Stage-2-Score (0 bis 10). Er prüft, ob die Stärke aus Stage 1 durch mehrere unabhängige Faktoren gestützt wird: Persistenz, Gewinnrevisionen, relative Stärke, Trend, Qualität, Bewertung und Überhitzung.</p>
-    ${use.ok && elig === 0 ? html`<p class="small" style="margin:0 0 6px">Derzeit erfüllt keine Aktie die Bedingungen für einen neuen Sparplan. Das ist ein gültiges Ergebnis.</p>` : ''}
-    <p class="xs muted" style="margin:0">Vergleich MSCI World (${m.name || 'EUNL'}): 3 Monate ${fmtPct(m.ret_3m)}, 6 Monate ${fmtPct(m.ret_6m)}, 12 Monate ${fmtPct(m.ret_12m)}.</p></div>`);
-  for (const r of s2.ranking) {
-    const sc = r.stage2?.score_display;
-    const missing = CAT_ORDER.filter((c) => r.categories?.[c] && !r.categories[c].available).map((c) => r.categories[c].short);
-    parts.push(html`<a class="panel" href="#/aktie/${encodeURIComponent(r.symbol)}" style="display:block;color:inherit">
-      <div class="s2-head">
-        <div class="s2-rank">${r.stage2?.rank ?? '–'}</div>
-        <div style="flex:1;min-width:0"><div class="title" style="font-weight:650">${r.name}</div>
-          <div class="chips" style="margin:5px 0 0"><span class="chip">${r.symbol}</span><span class="chip">Stage 1: Rang ${r.stage1?.rank ?? '–'}, Score ${fmtNum(r.stage1?.score, 2)}</span>${r.stage1?.top_pick ? html`<span class="chip" style="color:var(--brass-ink)">Top Pick</span>` : ''}</div></div>
-        <div>${use.ok ? decisionBadge(r.decision?.code) : badge('KEINE BEWERTUNG')}</div>
-      </div>
-      <div class="s2-meta"><div><div class="muted xs">Stage-2-Score</div><div class="s2-score">${sc != null ? fmtNum(sc, 1) : '–'}</div></div>${profile(r.categories)}</div>
-      ${scoreScale(r.stage2?.score, { label: false })}
-      <div class="chips" style="margin-top:8px">${outBadge(r.outperformance?.level)}${riskBadge(r.risk?.level)}${dqBadge(r.data_quality?.level)}</div>
-      ${missing.length && sc != null ? html`<p class="xs" style="margin:8px 0 0;color:var(--warn)">Ohne ${missing.join(', ')} berechnet (fehlende Daten, Gewichte neu normiert).</p>` : ''}
-      <p class="small muted" style="margin:8px 0 0">${r.texts?.vs_next || ''}</p>
-    </a>`);
-  }
-  parts.push(html`<details class="more"><summary>Als Tabelle anzeigen</summary><div class="table-wrap"><table><thead><tr>
-    <th class="n">Rang</th><th class="sticky">Aktie</th><th class="n">Stage 1</th><th class="n">Stage 2</th><th>Outperformance</th><th>Risiko</th><th>Entscheidung</th></tr></thead><tbody>
-    ${s2.ranking.map((r) => html`<tr><td class="n">${r.stage2?.rank ?? '–'}</td><td class="sticky">${r.name}</td><td class="n">${r.stage1?.rank ?? '–'}</td>
-      <td class="n">${r.stage2?.score_display != null ? fmtNum(r.stage2.score_display, 1) : '–'}</td><td>${r.outperformance?.level || '–'}</td>
-      <td>${r.risk?.level || '–'}</td><td>${use.ok ? r.decision?.label || '–' : '–'}</td></tr>`)}
-    </tbody></table></div></details>`);
-  parts.push(html`<p class="xs muted">Schwellen: ab 9,0 EXCEPTIONAL, ab 8,5 STRONG BUY CANDIDATE, ab 7,5 WATCHLIST, ab 6,0 NO ENTRY, darunter REJECT. HARD RISK (Risiko CRITICAL) blockiert jede Freigabe. Die Schwellen sind Heuristiken und noch nicht durch einen Backtest belegt. Keine Anlageberatung.</p>`);
+  parts.push(html`<div class="panel"><h3 style="margin-top:0">So liest du diese Liste</h3>
+    <p class="small" style="margin:0">Das sind dieselben Top-10-Kandidaten wie in Stage 1, neu sortiert nach der Frage: <b>Bei welchen läuft das Momentum am ehesten weiter?</b> Gezählt werden gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke gegenüber dem Gesamtmarkt und – wenn vorhanden – steigende Gewinnschätzungen und Gewinnüberraschungen. Die <b>ersten 5</b> sind die Kaufkandidaten.</p></div>`);
+  parts.push(html`<div class="group">${s2.ranking.map((r) => html`<a class="row" href="#/aktie/${encodeURIComponent(r.symbol)}" style="color:inherit">
+      <div style="font-size:22px;font-weight:700;width:30px;text-align:center">${r.stage2?.rank ?? '–'}</div>
+      <div class="grow"><div class="title">${r.name}</div><div class="sub">Stage 2 Score ${r.stage2?.score_display != null ? fmtNum(r.stage2.score_display, 1) : '–'}${r.stage2?.price_only ? ' (nur Kursteil)' : ''} · Stage 1: Platz ${r.stage1?.rank ?? '–'}, Score ${fmtNum(r.stage1?.score, 2)}</div>
+        ${r.flags?.length ? html`<div class="xs" style="color:var(--brass-ink);white-space:normal">${r.flags[0]}</div>` : ''}</div>
+      <div class="end">${use.ok ? buyBadge(r) : ''}</div></a>`)}</div>
+    <p class="xs muted">Score 0–10: Durchschnitt der Signale im Vergleich zu allen ${s2.method?.peers ?? ''} Momentum-Aktien (10 = überall vorne). Kursteil und Gewinnteil zählen je zur Hälfte. Keine Anlageberatung.</p>`);
   return parts;
 }
 
-// ---------------------------------------------------------------- Stage-1-Liste (unverändert, plus Stage-2-Zeile)
 async function stage1Parts(screen, s2, fr) {
   const snap = await latestScreening();
   const pf = computePortfolio(state.positions, state.txs, screen);
@@ -114,7 +82,7 @@ async function stage1Parts(screen, s2, fr) {
       <dl class="kv"><dt>Score</dt><dd>${fmtNum(tp.Z, 2)} (${fmtRankPct(tp.pct)})</dd>
         <dt>12 / 6 Monate (ohne letzten)</dt><dd><span class="${cls(tp.m12)}">${fmtPct(tp.m12)}</span> / <span class="${cls(tp.m6)}">${fmtPct(tp.m6)}</span></dd>
         <dt>Volatilität</dt><dd>${fmtPct(tp.vol, 0, false)} p. a.</dd>
-        ${s2tp ? html`<dt>Stage 2</dt><dd>${s2tp.stage2?.score_display != null ? fmtNum(s2tp.stage2.score_display, 1) : '–'} ${use.ok ? decisionBadge(s2tp.decision?.code) : ''}</dd>` : ''}</dl>
+        ${s2tp && use.ok ? html`<dt>Stage 2</dt><dd>Platz ${s2tp.stage2?.rank ?? '–'}, Score ${s2tp.stage2?.score_display != null ? fmtNum(s2tp.stage2.score_display, 1) : '–'}</dd>` : ''}</dl>
       <div style="margin-top:12px">${holdBand(tp.pct, { holdMax: hold })}</div>
       <p class="small" style="margin:12px 0 0;color:var(--ink-2)">${why[0]} Zusätzlich erfüllt: beide Teilscores mindestens 1, Volatilität nicht im obersten Zehntel, Kurs gegengeprüft.</p>
     </a>`);
@@ -148,9 +116,9 @@ async function stage1Parts(screen, s2, fr) {
         <dt>Trend</dt><dd>${r.above_ma200 === true ? 'über 200-Tage-Linie' : r.above_ma200 === false ? 'unter 200-Tage-Linie' : 'n. v.'}</dd>
         <dt>Datenqualität</dt><dd>${r.verified === true ? 'gegengeprüft' : r.verified === false ? 'Abweichung!' : 'geprüft, ohne Zweitquelle'}</dd>
         <dt>Bewertung (KGV)</dt><dd>${fm && Number.isFinite(fm.metrics.pe) ? fmtNum(fm.metrics.pe, 1) : 'n. v.'}</dd>
-        ${e2 ? html`<dt>Stage 2</dt><dd>Rang ${e2.stage2?.rank ?? '–'}, Score ${e2.stage2?.score_display != null ? fmtNum(e2.stage2.score_display, 1) : '–'}</dd>` : ''}
+        ${e2 && use.ok ? html`<dt>Stage 2</dt><dd>Platz ${e2.stage2?.rank ?? '–'}, Score ${e2.stage2?.score_display != null ? fmtNum(e2.stage2.score_display, 1) : '–'}</dd>` : ''}
       </dl>
-      ${e2 && use.ok ? html`<div class="chips" style="margin-top:8px">${decisionBadge(e2.decision?.code)}${riskBadge(e2.risk?.level)}</div>` : ''}
+      ${e2 && use.ok ? html`<div class="chips" style="margin-top:8px">${buyBadge(e2)}</div>` : ''}
       <p class="small" style="margin:10px 0 4px;color:var(--ink-2)">Warum ausgewählt: ${r.rank <= 3 ? 'Spitzenreiter' : 'Unter den Besten'} beim risikoadjustierten Momentum, 12-Monats-Momentum ${fmtPct(r.m12)}, alle Qualitätsregeln erfüllt.</p>
       <p class="small" style="margin:0;color:${serious.length ? 'var(--serious)' : 'var(--ink-3)'}">${serious.length ? `Risiken: ${serious.map((f) => f.text).slice(0, 2).join(' ')}` : 'Keine besonderen Risikohinweise.'}</p>
       <p class="xs muted" style="margin:6px 0 0">Screening-Datum ${fmtDate(screen.asof)}</p>

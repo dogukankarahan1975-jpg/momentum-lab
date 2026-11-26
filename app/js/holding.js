@@ -3,6 +3,7 @@
 
 export const HOLD_CHOICES = [
   ['', 'Bis zum Verkaufssignal der App'],
+  ['3', '3 Monate'],
   ['6', '6 Monate'],
   ['12', '12 Monate'],
 ];

@@ -80,7 +80,7 @@ export async function loadMethodology() {
 /* Stage 2 (Fortsetzungsanalyse). Fehlt die Datei (älterer Datenlauf), liefert die Funktion null statt eines Fehlers. */
 export function parseStage2(raw) {
   if (!raw || typeof raw !== 'object') throw new DataError('Stage-2-Daten fehlen.', 'format');
-  if (raw.schema > SUPPORTED_SCHEMA) throw new DataError(`Stage-2-Format ${raw.schema} ist neuer als diese App – bitte App aktualisieren.`, 'format');
+  if (raw.schema > 2) throw new DataError(`Stage-2-Format ${raw.schema} ist neuer als diese App – bitte App aktualisieren.`, 'format');
   const ranking = Array.isArray(raw.ranking) ? raw.ranking : [];
   const bySymbol = new Map(ranking.map((r) => [r.symbol, r]));
   const all = new Map();
@@ -89,7 +89,7 @@ export function parseStage2(raw) {
     const o = Object.fromEntries(F.map((f, i) => [f, row[i]]));
     all.set(o.symbol, o);
   }
-  return { ...raw, ranking, bySymbol, allBySymbol: all, eligible: raw.eligible || [], messages: raw.messages || [] };
+  return { ...raw, ranking, bySymbol, allBySymbol: all, buy: raw.buy || [], messages: raw.messages || [] };
 }
 export async function loadStage2(fresh = false) {
   if (!fresh && memo.has('stage2')) return memo.get('stage2');

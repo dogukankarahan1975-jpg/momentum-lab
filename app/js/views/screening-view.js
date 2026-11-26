@@ -53,8 +53,8 @@ export async function render(root) {
     const s = res.snapshot;
     const warn = res.steps.filter((x) => x.state === 'warn').length;
     resEl.innerHTML = String(html`${s.demo ? html`<div class="demo-banner">DEMO-DATEN – keine echten Signale</div>` : ''}
-      ${note(warn ? 'warn' : 'ok', html`<b>${s.candidates.length ? `${s.candidates.length} Kandidaten gefunden` : 'Keine Kandidaten'}</b>${s.top_pick ? `, Top Pick ${res.screen.bySymbol.get(s.top_pick)?.name}` : ', kein Top Pick'}. ${s.stage2 ? (s.stage2.usable ? `Stage 2: ${s.stage2.eligible.length ? `${s.stage2.eligible.length} mit Sparplanfreigabe` : 'keine Sparplanfreigabe'}. ` : 'Stage 2: keine aktuelle Entscheidung. ') : ''}Datenstand ${fmtDate(s.asof)}${warn ? `. ${warn} Hinweise im Ablauf` : ''}.`)}
-      <div class="btn-row"><a class="btn primary" href="#/top10/final">Finale Rangfolge</a><a class="btn" href="#/top10/stage1">Top 10 (Stage 1)</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
+      ${note(warn ? 'warn' : 'ok', html`<b>${s.candidates.length ? `${s.candidates.length} Kandidaten gefunden` : 'Keine Kandidaten'}</b>${s.top_pick ? `, Top Pick ${res.screen.bySymbol.get(s.top_pick)?.name}` : ', kein Top Pick'}. ${s.stage2?.usable ? `Stage 2 Top 5: ${(s.stage2.ranking || []).filter((x) => x.buy).map((x) => x.name).join(', ')}. ` : ''}Datenstand ${fmtDate(s.asof)}${warn ? `. ${warn} Hinweise im Ablauf` : ''}.`)}
+      <div class="btn-row"><a class="btn primary" href="#/top10/final">Stage 2: Top 5</a><a class="btn" href="#/top10/stage1">Top 10 (Stage 1)</a><a class="btn" href="#/signale">Depot-Signale</a></div>`);
     renderUniverse(root.querySelector('#universe'), res.screen);
     renderHistory(root.querySelector('#history'), await screenings());
   };
@@ -123,7 +123,7 @@ function showSnapshot(s) {
     ${s.candidates.length ? html`<div class="group">${s.candidates.map((c, i) => html`<div class="row"><div class="grow"><div class="title">${i + 1}. ${c.name}${c.symbol === s.top_pick ? ' (Top Pick)' : ''}</div><div class="sub">${c.symbol}, Score ${fmtNum(c.Z, 2)}, 12 M ${fmtPct(c.m12)}</div></div></div>`)}</div>` : html`<p class="muted">Keine Kandidaten.</p>`}
     <h3>Depot-Signale</h3>
     ${s.signals.length ? html`<div class="group">${s.signals.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.name}</div><div class="sub">${x.reasons?.[0] || ''}</div></div><div class="end">${badge(x.signal)}${x.plan ? html`<div style="margin-top:4px">${badge(x.plan.signal)}</div>` : ''}</div></div>`)}</div>` : html`<p class="muted">Keine Positionen.</p>`}
-    ${s.stage2 ? html`<h3>Stage 2</h3><div class="group">${s.stage2.ranking.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.rank ?? '–'}. ${x.name}</div><div class="sub">Score ${x.score ?? '–'}, Risiko ${x.risk || '–'}, Daten ${x.dq || '–'}</div></div><div class="end small">${s.stage2.usable ? x.decision || '–' : '–'}</div></div>`)}</div>` : ''}
+    ${s.stage2 ? html`<h3>Stage 2</h3><div class="group">${s.stage2.ranking.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.rank ?? '–'}. ${x.name}</div><div class="sub">Score ${x.score ?? '–'}</div></div><div class="end small">${x.buy ? 'Top 5' : ''}</div></div>`)}</div>` : ''}
     <h3>Ablauf</h3>${stepsHTML(s.steps || [])}`) });
   void esc;
 }

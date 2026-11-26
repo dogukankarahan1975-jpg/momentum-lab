@@ -5,7 +5,7 @@ import { BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, 
 import { getSetting, setSetting } from '../store.js';
 import { html, note } from '../ui.js';
 
-const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2: 'var(--s5)' };
+const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2top5: 'var(--s5)', s1min4: 'var(--ink-2)' };
 
 function toastFee() {
   import('../ui.js').then((u) => u.toast?.('Gebühr oder Spread unrealistisch hoch – auf Standard zurückgesetzt'));
@@ -18,7 +18,10 @@ export async function renderSimulator(el, data) {
   }
   const saved = await getSetting('simOpts', null);
   const o = { ...DEFAULTS, ...(saved || {}) };
-  if (!['signal', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
+  if (!['signal', '3', '3be', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
+  o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
+  if (saved && !saved.v6) { for (const x of ['s2top5', 's1min4']) if (!o.strategies.includes(x)) o.strategies.push(x); o.v6 = true; }
+  if (!(o.minScore >= 0 && o.minScore <= 10)) o.minScore = 4;
   // Schutz gegen versehentlich hohe Gebühren (z. B. Sparrate ins Gebührenfeld getippt)
   for (const f of ['feeBuy', 'feeSell', 'feeEtf']) if (!(o[f] >= 0) || o[f] > Math.min(Math.max(0, o.budget * 0.1), 50)) o[f] = DEFAULTS[f];
   for (const f of ['spread', 'spreadEtf']) if (!(o[f] >= 0) || o[f] > 5) o[f] = DEFAULTS[f];
@@ -54,11 +57,13 @@ export async function renderSimulator(el, data) {
       <label class="field"><span>Budget der Aktien-Strategien</span><select name="budgetMode">
         ${['reinvest', 'fixed'].map((m) => html`<option value="${m}" ${o.budgetMode === m ? 'selected' : ''}>${m === 'reinvest' ? 'Budget + Verkaufserlöse anlegen' : 'Nur festes Monatsbudget anlegen'}</option>`)}</select></label>
       <label class="field"><span>Wie lange werden Aktien gehalten?</span><select name="hold">
-        ${['signal', '6', '6be', '12', '12be'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${{ signal: 'Bis zum Verkaufssignal der App', 6: '6 Monate, dann verkaufen', '6be': '6 Monate, im Minus warten bis ±0', 12: '12 Monate, dann verkaufen', '12be': '12 Monate, im Minus warten bis ±0' }[h]}</option>`)}</select></label>
+        ${['signal', '3', '3be', '6', '6be', '12', '12be'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${{ signal: 'Bis zum Verkaufssignal der App', 3: '3 Monate, dann verkaufen', '3be': '3 Monate, im Minus warten bis ±0', 6: '6 Monate, dann verkaufen', '6be': '6 Monate, im Minus warten bis ±0', 12: '12 Monate, dann verkaufen', '12be': '12 Monate, im Minus warten bis ±0' }[h]}</option>`)}</select></label>
       <label class="field"><span>Weniger Kandidaten als Plätze?</span><select name="rest">
-        ${['etf', 'cash', 'top'].map((r) => html`<option value="${r}" ${o.rest === r ? 'selected' : ''}>${{ etf: 'Rest in MSCI World ETF', cash: 'Rest auf dem Konto (0 %)', top: 'Immer Top 5/10 kaufen' }[r]}</option>`)}</select></label>
-      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Bei 6 oder 12 Monaten wird am ersten Monatsende nach Ablauf verkauft, im Plus wie im Minus; mit „warten bis ±0“ wird eine Aktie im Minus weiter gehalten und erst verkauft, wenn der Erlös nach Kosten wieder den Einstand deckt. Steht die Aktie dann noch auf der Liste, wird sie mit dem neuen Geld wieder gekauft. Bei weniger Kandidaten als Plätzen: Rest in den ETF, aufs Konto (wird im nächsten Monat mit angelegt) oder immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus. Stage 2 kauft nur Aktien, die beide Bedingungen erfüllen, auch wenn es nur eine ist; gibt es keine, wird keine Aktie gekauft (der Betrag geht in den ETF bzw. bleibt auf dem Konto). ETF-Sparpläne: jeden Monat wird das Monatsbudget (mit Dynamik) in den ETF gesteckt, nie verkauft; „Gebühr je ETF-Sparrate“ ist nur die Ausführungsgebühr (Trade Republic: 0 €). Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
-      <p class="xs muted" style="margin:0">Voreinstellung Trade Republic: 1 € je Order, ETF-Sparplan kostenlos. Der Spread ist eine Annahme: Er wird je zur Hälfte beim Kauf und beim Verkauf berechnet. Steuer: 26,375 % auf realisierte Gewinne, 1.000 € Pauschbetrag pro Jahr, Verluste werden vorgetragen. ETF: 30 % Teilfreistellung, Vorabpauschale nicht berücksichtigt.</p>
+        ${['etf', 'cash', 'top'].map((r) => html`<option value="${r}" ${o.rest === r ? 'selected' : ''}>${{ etf: 'Rest in MSCI World ETF', cash: 'Rest bleibt auf dem Konto', top: 'Immer 5/10 Aktien kaufen' }[r]}</option>`)}</select></label>
+      <label class="field"><span>Mindest-Score für „Minimum Score“ (Stage 1)</span><input name="minScore" inputmode="decimal" value="${String(o.minScore).replace('.', ',')}">
+        <div class="hint">Strategie „Minimum Score“: Gekauft werden nur Stage-1-Kandidaten mit mindestens diesem Momentum-Score (wie in der Top-10-Liste, z. B. 4,52), zu gleichen Teilen. Gibt es keinen, wird nicht gehandelt und das Budget bleibt auf dem Konto.${data.cand_z ? '' : ' Diese Daten entstehen beim nächsten Datenlauf.'}</div></label>
+      <p class="xs muted" style="margin:-4px 0 8px">Verkaufssignal = Aktie an zwei Monatsenden hintereinander nicht mehr im besten Fünftel (sofort bei schwerer Verschlechterung). Bei 3, 6 oder 12 Monaten wird am ersten Monatsende nach Ablauf verkauft, im Plus wie im Minus; mit „warten bis ±0“ wird eine Aktie im Minus weiter gehalten und erst verkauft, wenn der Erlös nach Kosten wieder den Einstand deckt. Steht die Aktie dann noch auf der Liste, wird sie mit dem neuen Geld wieder gekauft. Bei weniger Kandidaten als Plätzen: Rest in den ETF, aufs Konto (wird im nächsten Monat mit angelegt) oder immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus. Stage 2 Top 5: die 5 besten der Top-10-Kandidaten nach der Fortsetzungs-Rangfolge (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke gegenüber dem Markt). ETF-Sparpläne: jeden Monat wird das Monatsbudget (mit Dynamik) in den ETF gesteckt, nie verkauft; „Gebühr je ETF-Sparrate“ ist nur die Ausführungsgebühr (Trade Republic: 0 €). Bei „Nur festes Monatsbudget“ bleiben Verkaufserlöse auf dem Konto (0 % Zins) und zählen zum Vermögen.</p>
+      <p class="xs muted" style="margin:0">Voreinstellung Trade Republic: 1 € je Order, ETF-Sparplan kostenlos. Der Spread ist eine Annahme: Er wird je zur Hälfte beim Kauf und beim Verkauf berechnet. Steuer: 26,375 % (Abgeltungsteuer + Soli, ohne Kirchensteuer). Aktien: Verluste nur mit Aktiengewinnen verrechnet und vorgetragen. ETF: 30 % Teilfreistellung, Vorabpauschale ab 2018 mit dem Basiszins des BMF, wird beim Verkauf angerechnet. Sparer-Pauschbetrag pro Jahr (801 € bis 2022, 1.000 € ab 2023), gemeinsam für Aktiengewinne und Vorabpauschale; ETF-Verluste dürfen mit Aktiengewinnen verrechnet werden, Aktienverluste nicht mit ETF-Gewinnen, je Strategie eigenständig gerechnet. Abrechnung jeweils im Januar.</p>
     </div>
     <div id="simout"></div>`;
   el.innerHTML = String(form);
@@ -85,7 +90,7 @@ export async function renderSimulator(el, data) {
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
     parts.push(html`<h3>Ergebnis: ${fmtEUR(opts.budget, 0)} pro Monat ab ${fmtDate(data.points[k0])}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
-      <p class="xs muted">Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL[opts.rest]}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
+      <p class="xs muted">Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL[opts.rest]}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
       <div class="panel"><div id="simchart"></div><p class="xs muted" style="margin:6px 0 0">Depotwert in Euro vor Steuern. Graue Linie = eingezahltes Geld.</p></div>`);
     for (const r of res) {
       const isEtf = r.kind === 'etf';
@@ -100,7 +105,7 @@ export async function renderSimulator(el, data) {
           <div class="stat"><div class="l">Rendite pro Jahr</div><div class="v">${fmtPct(r.irr)}</div></div>
         </div>
         <p class="xs muted" style="margin:8px 0 0">${isEtf
-          ? html`Jeden Monat gekauft, nie etwas verkauft, keine Steuer gezahlt. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
+          ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
           : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
           Größter Rückgang ${fmtPct(r.maxDD, 0)}. ${fmtNum(r.trades, 0)} Orders, Gebühren ${fmtEUR(r.fees, 0)}, Spread ${fmtEUR(r.spreadCost, 0)}.</p>
       </div>`);
@@ -141,11 +146,10 @@ export async function renderSimulator(el, data) {
     const drawMonth = () => {
       const k = Number(out.querySelector('#simmonth').value);
       const list = monthList(data, k);
-      const riskTxt = (x) => (!x.checked ? 'nicht geprüft' : x.risk ? `Risiko ${x.risk}` : 'Risiko –');
       out.querySelector('#simml').innerHTML = String(html`<div class="group">${list.map((x) => html`<div class="row"><div class="grow"><div class="title">${x.rank}. ${x.name}</div>
-          <div class="sub" style="white-space:normal">${x.sector || ''}${x.checked ? html` · ${riskTxt(x)} · Outperformance ${x.opHigh === true ? 'hoch' : x.opHigh === false ? 'nicht hoch' : '–'}` : ''}</div></div>
-        <div class="end">${x.cand ? html`<span class="badge b-buy">Kandidat</span>` : html`<span class="badge b-hold">kein Kandidat</span>`}${x.s2 ? html` <span class="badge b-cont">Stage 2 ✓</span>` : ''}</div></div>`)}</div>
-        <p class="xs muted">Rangfolge nach Stage-1-Score am ${fmtDate(data.signal_dates[k])}, nur mit Kursen bis zu diesem Tag. <b>Kandidat</b> = erfüllt alle Stage-1-Regeln (Top-Liste). <b>Stage 2 ✓</b> = einer der Top-10-Kandidaten mit Risiko NORMAL <i>und</i> hoher Outperformance im Kursteil: stärker als der MSCI World über 3, 6 und 12 Monate, in mindestens 7 von 12 Monaten besser und risikobereinigt besser. Die anderen hatten ein höheres Risiko (ELEVATED, HIGH oder CRITICAL, zum Beispiel überhitzt, zu volatil oder Trend schwächer werdend) oder keine hohe Outperformance. Plätze nach den Top 10 werden für Stage 2 nicht geprüft. Gekauft wurde am ${fmtDate(data.points[k])}.</p>`);
+          <div class="sub" style="white-space:normal">${x.sector || ''}${x.score != null ? html` · Momentum-Score ${fmtNum(x.score, 2)}` : ''}${x.s2rank ? html` · Stage 2: Platz ${x.s2rank}${x.s2score != null ? `, Score ${fmtNum(x.s2score, 1)}` : ''}` : ''}</div></div>
+        <div class="end">${x.cand ? html`<span class="badge b-buy">Kandidat</span>` : html`<span class="badge b-hold">kein Kandidat</span>`}${x.s2top ? html` <span class="badge b-cont">S2 Top 5</span>` : ''}</div></div>`)}</div>
+        <p class="xs muted">Rangfolge nach Stage-1-Momentum-Score am ${fmtDate(data.signal_dates[k])}, nur mit Kursen bis zu diesem Tag. <b>Kandidat</b> = erfüllt alle Stage-1-Regeln. <b>S2 Top 5</b> = unter den Top-10-Kandidaten die 5 mit dem höchsten Stage-2-Score (Kursteil: gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, Stärke gegenüber dem Markt; jeweils im Vergleich zu allen Momentum-Aktien). Gekauft wurde am ${fmtDate(data.points[k])}.</p>`);
     };
     const fillLogYears = () => {
       const r = res.find((x) => x.key === out.querySelector('#logstrat').value) || res[0];
@@ -206,6 +210,7 @@ export async function renderSimulator(el, data) {
     for (const f of ['feeBuy', 'feeSell', 'feeEtf']) {
       if (o[f] > Math.min(maxFee, 50)) { o[f] = DEFAULTS[f]; const inp = el.querySelector(`[name=${f}]`); if (inp) inp.value = String(o[f]).replace('.', ','); toastFee(); }
     }
+    if (t.name === 'minScore' && !(o.minScore >= 0 && o.minScore <= 10)) { o.minScore = 4; t.value = '4'; }
     for (const f of ['spread', 'spreadEtf']) if (o[f] > 5) { o[f] = DEFAULTS[f]; el.querySelector(`[name=${f}]`).value = String(o[f]).replace('.', ','); toastFee(); }
     await setSetting('simOpts', o);
     run();
