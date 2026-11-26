@@ -2,7 +2,7 @@
  "asof": "2026-11-25",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.7.0",
+ "pipeline_version": "0.7.1",
  "status": "ok",
  "candidates": [
   "1303.TW",
@@ -31,46 +31,46 @@
   "vol_shock_threshold": 0.35323,
   "vol_shock": true,
   "bear_state": false,
-  "breadth_above_ma200": 0.50979
+  "breadth_above_ma200": 0.50811
  },
  "universe": {
   "source": "iShares MSCI ACWI",
-  "as_of": "Nov 24, 2026",
-  "size": 1984,
-  "priced": 1925,
+  "as_of": "Nov 25, 2026",
+  "size": 1986,
+  "priced": 1927,
   "eligible": 1787,
   "excluded_by_reason": {
    "duplicate": 9,
    "stale": 1,
-   "short_history": 32,
+   "short_history": 34,
    "penny": 77,
    "gaps": 8,
-   "liquidity": 13,
-   "zero_volume": 21,
-   "crosscheck": 4,
+   "liquidity": 14,
+   "zero_volume": 22,
+   "crosscheck": 7,
    "no_vol": 1,
    "jump": 1,
    "no_data": 59
   },
   "watchlist": [],
   "kind": "acwi",
-  "size_index": 2184,
+  "size_index": 2186,
   "tradable": {
    "checked": false,
    "source": null,
-   "kept": 1984,
+   "kept": 1986,
    "removed": 0,
    "removed_examples": [],
    "removed_cn_a": 200,
    "note": "Bestandsliste ohne ISIN – Handelbarkeit nicht geprüft (nur China-A-Aktien ausgeschlossen)."
   },
-  "emerging": 729
+  "emerging": 732
  },
  "top50": [
   [
    "009150.KS",
    "Samsung Electro Mechanics",
-   3.0869,
+   3.0896,
    15,
    4.1003,
    0.42386
@@ -78,7 +78,7 @@
   [
    "1303.TW",
    "Nan Ya Plastics Corp",
-   7.793,
+   7.7977,
    1,
    5.969,
    2.521
@@ -86,7 +86,7 @@
   [
    "2059.TW",
    "King Slide Works",
-   2.9223,
+   2.9252,
    26,
    1.5898,
    1.5796
@@ -94,7 +94,7 @@
   [
    "2303.TW",
    "United Micro Electronics Corp",
-   3.0527,
+   3.0555,
    18,
    1.8116,
    0.71339
@@ -102,7 +102,7 @@
   [
    "2383.TW",
    "Elite Material",
-   2.9693,
+   2.9718,
    25,
    3.5678,
    0.13813
@@ -110,7 +110,7 @@
   [
    "2395.TW",
    "Advantech",
-   3.0435,
+   3.0464,
    19,
    1.1156,
    0.93336
@@ -118,7 +118,7 @@
   [
    "2408.TW",
    "Nanya Technology Corp",
-   2.6714,
+   2.674,
    36,
    2.793,
    1.0162
@@ -126,7 +126,7 @@
   [
    "2412.TW",
    "Chunghwa Telecom Ltd",
-   2.6197,
+   2.6224,
    39,
    0.22476,
    0.2112
@@ -134,7 +134,7 @@
   [
    "2454.TW",
    "Mediatek",
-   2.5572,
+   2.5598,
    44,
    2.1754,
    0.65666
@@ -142,7 +142,7 @@
   [
    "2880.TW",
    "Hua Nan Financial Holdings",
-   3.0175,
+   3.0203,
    22,
    0.75741,
    0.49882
@@ -150,7 +150,7 @@
   [
    "2881.TW",
    "Fubon Financial Holding",
-   3.5896,
+   3.5928,
    7,
    0.78322,
    0.86649
@@ -158,7 +158,7 @@
   [
    "2884.TW",
    "E.Sun Financial Holding",
-   3.0642,
+   3.0672,
    16,
    0.58828,
    0.59316
@@ -166,7 +166,7 @@
   [
    "2885.TW",
    "Yuanta Financial Holding",
-   3.6587,
+   3.6617,
    6,
    1.2242,
    0.55184
@@ -174,7 +174,7 @@
   [
    "2886.TW",
    "Mega Financial Holding Ltd",
-   3.031,
+   3.0339,
    20,
    0.37804,
    0.44772
@@ -182,7 +182,7 @@
   [
    "2890.TW",
    "Sinopac Financial Holdings",
-   2.9717,
+   2.9745,
    24,
    0.86272,
    0.52166
@@ -190,7 +190,7 @@
   [
    "2891.TW",
    "Ctbc Financial Holding",
-   2.9085,
+   2.9113,
    27,
    0.84949,
    0.4684
@@ -198,7 +198,7 @@
   [
    "2892.TW",
    "First Financial Holding Ltd",
-   3.3901,
+   3.3932,
    10,
    0.51415,
    0.55428
@@ -206,7 +206,7 @@
   [
    "3008.TW",
    "Largan Precision Ltd",
-   3.4571,
+   3.4602,
    8,
    1.8049,
    1.4728
@@ -214,7 +214,7 @@
   [
    "3037.TW",
    "Unimicron Technology",
-   4.9159,
+   4.9191,
    3,
    5.9694,
    0.37623
@@ -222,7 +222,7 @@
   [
    "3443.TW",
    "Global Unichip",
-   3.3331,
+   3.3359,
    14,
    3.718,
    0.88837
@@ -230,7 +230,7 @@
   [
    "3711.TW",
    "Ase Technology Holding",
-   2.8814,
+   2.884,
    28,
    2.3672,
    0.3306
@@ -238,7 +238,7 @@
   [
    "4958.TW",
    "Zhen Ding Technology Holding Ltd",
-   2.6372,
+   2.6398,
    37,
    2.5023,
    0.64281
@@ -246,7 +246,7 @@
   [
    "5876.TW",
    "Shanghai Commercial",
-   2.7571,
+   2.76,
    33,
    0.3873,
    0.44133
@@ -254,7 +254,7 @@
   [
    "6098.T",
    "Recruit Holdings",
-   4.2478,
+   4.2513,
    4,
    1.4101,
    1.6102
@@ -262,7 +262,7 @@
   [
    "6446.TW",
    "Pharmaessentia",
-   2.7629,
+   2.7657,
    31,
    1.5609,
    1.0777
@@ -270,7 +270,7 @@
   [
    "ALE.WA",
    "Allegro Sa",
-   2.9755,
+   2.9785,
    23,
    0.67883,
    0.9351
@@ -278,7 +278,7 @@
   [
    "BBSE3.SA",
    "Bb Seguridade Sa",
-   2.5292,
+   2.5319,
    46,
    0.53699,
    0.33866
@@ -286,7 +286,7 @@
   [
    "BNS.TO",
    "Bank Of Nova Scotia",
-   2.6368,
+   2.6395,
    38,
    0.49248,
    0.27857
@@ -294,7 +294,7 @@
   [
    "CRWD",
    "Crowdstrike Holdings Class A",
-   2.4859,
+   2.4886,
    48,
    0.9538,
    1.2991
@@ -302,7 +302,7 @@
   [
    "DSFIR.AS",
    "Dsm Firmenich Ag",
-   2.6034,
+   2.6062,
    41,
    0.49098,
    0.75676
@@ -310,7 +310,7 @@
   [
    "FTNT",
    "Fortinet",
-   2.7942,
+   2.7971,
    29,
    1.1037,
    1.1341
@@ -318,7 +318,7 @@
   [
    "GWO.TO",
    "Great West Lifeco Inc",
-   2.5653,
+   2.5679,
    43,
    0.57274,
    0.28083
@@ -326,7 +326,7 @@
   [
    "HPE",
    "Hewlett Packard Enterprise",
-   2.7082,
+   2.711,
    35,
    1.4558,
    1.0241
@@ -334,7 +334,7 @@
   [
    "ILMN",
    "Illumina Inc",
-   3.3833,
+   3.3863,
    11,
    1.6912,
    1.1068
@@ -342,7 +342,7 @@
   [
    "LAURUSLABS.NS",
    "Laurus Labs Ltd",
-   3.0602,
+   3.0631,
    17,
    1.1304,
    0.77104
@@ -350,7 +350,7 @@
   [
    "MOH.AT",
    "Motor Oil (Hellas) Corinth Refiner",
-   5.9563,
+   5.9603,
    2,
    1.8722,
    1.049
@@ -358,7 +358,7 @@
   [
    "MOL.BD",
    "Mol Hungarian Oil And Gas",
-   2.7385,
+   2.7411,
    34,
    0.85895,
    0.24958
@@ -366,7 +366,7 @@
   [
    "MPC",
    "Marathon Petroleum",
-   3.6821,
+   3.6853,
    5,
    1.3691,
    1.0533
@@ -374,7 +374,7 @@
   [
    "MU",
    "Micron Technology",
-   2.789,
+   2.7916,
    30,
    3.0113,
    0.76724
@@ -382,7 +382,7 @@
   [
    "NTAP",
    "Netapp Inc",
-   2.5559,
+   2.5586,
    45,
    0.87581,
    0.99266
@@ -390,7 +390,7 @@
   [
    "NTRA",
    "Natera",
-   2.4814,
+   2.4841,
    50,
    1.0983,
    0.98258
@@ -398,7 +398,7 @@
   [
    "O39.SI",
    "Oversea-Chinese Banking",
-   3.4303,
+   3.4332,
    9,
    0.80148,
    0.35584
@@ -406,7 +406,7 @@
   [
    "OKTA",
    "Okta Class A",
-   3.3575,
+   3.3606,
    13,
    1.3919,
    1.804
@@ -414,7 +414,7 @@
   [
    "OMV.VI",
    "Omv",
-   2.7621,
+   2.7648,
    32,
    0.74013,
    0.38133
@@ -422,7 +422,7 @@
   [
    "PSX",
    "Phillips 66",
-   3.0198,
+   3.0227,
    21,
    1.1601,
    0.76082
@@ -430,7 +430,7 @@
   [
    "REP.MC",
    "Repsol",
-   2.6134,
+   2.6161,
    40,
    1.0135,
    0.44592
@@ -438,7 +438,7 @@
   [
    "RPRX",
    "Royalty Pharma Plc Class A",
-   2.5228,
+   2.5254,
    47,
    0.74714,
    0.30419
@@ -446,7 +446,7 @@
   [
    "TEAM",
    "Atlassian Corp Class A",
-   2.5969,
+   2.5999,
    42,
    0.39947,
    2.1811
@@ -454,7 +454,7 @@
   [
    "VLO",
    "Valero Energy Corp",
-   3.3806,
+   3.3836,
    12,
    1.5032,
    0.79309
@@ -462,7 +462,7 @@
   [
    "WCP.TO",
    "Whitecap Resources Inc",
-   2.4822,
+   2.4848,
    49,
    1.0241,
    0.41429

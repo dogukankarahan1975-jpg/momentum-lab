@@ -15,7 +15,7 @@
    "name": "Yuanta Financial Holding",
    "stage1_rank": 6,
    "stage2_rank": 1,
-   "score": 7.898,
+   "score": 7.889,
    "decision": "TOP5",
    "price_only": false
   },
@@ -42,7 +42,7 @@
    "name": "Motor Oil (Hellas) Corinth Refiner",
    "stage1_rank": 2,
    "stage2_rank": 4,
-   "score": 6.923,
+   "score": 6.904,
    "decision": "TOP5",
    "price_only": false
   },
@@ -60,7 +60,7 @@
    "name": "Recruit Holdings",
    "stage1_rank": 4,
    "stage2_rank": 6,
-   "score": 5.938,
+   "score": 5.985,
    "decision": "REST",
    "price_only": false
   },
@@ -69,7 +69,7 @@
    "name": "First Financial Holding Ltd",
    "stage1_rank": 10,
    "stage2_rank": 7,
-   "score": 5.632,
+   "score": 5.641,
    "decision": "REST",
    "price_only": false
   },
@@ -78,7 +78,7 @@
    "name": "Oversea-Chinese Banking",
    "stage1_rank": 9,
    "stage2_rank": 8,
-   "score": 4.793,
+   "score": 4.783,
    "decision": "REST",
    "price_only": false
   },
@@ -87,7 +87,7 @@
    "name": "Fubon Financial Holding",
    "stage1_rank": 7,
    "stage2_rank": 9,
-   "score": 4.058,
+   "score": 4.067,
    "decision": "REST",
    "price_only": false
   },
@@ -96,7 +96,7 @@
    "name": "Largan Precision Ltd",
    "stage1_rank": 8,
    "stage2_rank": 10,
-   "score": 1.63,
+   "score": 1.64,
    "decision": "REST",
    "price_only": false
   }
