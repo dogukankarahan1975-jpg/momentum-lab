@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'top', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  hold: 'signal', rest: 'top', biasCorr: false, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -193,9 +193,22 @@ export function targetList(data, key, k, rest, minScore = 4, ex = null) {
   return t;
 }
 
+// Korrektur Überlebenden-Effekt: alle Aktienkurse verlieren gleichmäßig den gemessenen Vorsprung pro Jahr
+const dragCache = new WeakMap();
+export function withDrag(data, pa) {
+  const c = dragCache.get(data);
+  if (c && c.pa === pa) return c.d;
+  const t0 = Date.parse(data.points[0]);
+  const f = data.points.map((p) => (1 + pa) ** (-(Date.parse(p) - t0) / (365.25 * 86400000)));
+  const d = { ...data, px: data.px.map((row) => row.map((v, k) => (v == null ? v : v * f[k]))) };
+  dragCache.set(data, { pa, d });
+  return d;
+}
+
 /** Simuliert eine Strategie. Liefert Monatswerte, Kennzahlen, Jahres- und Transaktionsprotokoll. */
 export function simulate(data, key, opts) {
   const o = { ...DEFAULTS, ...opts };
+  if (o.biasCorr && data.bias?.pa > 0 && STRATEGIES[key].kind !== 'etf') data = withDrag(data, data.bias.pa);
   const st = STRATEGIES[key];
   const idx = new Map(data.syms.map((s, i) => [s, i]));
   const exSet = o.exclude?.length ? new Set(o.exclude.map((s) => idx.get(s)).filter((i) => i != null)) : null;
@@ -246,8 +259,10 @@ export function simulate(data, key, opts) {
           const n = cond ? (b.hcount.get(sym) || 0) + 1 : 0;
           b.hcount.set(sym, n);
           if ((cond && n >= 2) || c === '2') {
+            const endK = data.ended?.[i];
             const why = c === '2' ? 'Verkaufssignal sofort (Rang unter Median oder 12 M unter −10 %)'
-              : c === '3' ? 'Datenproblem / nicht mehr im Universum (2. Monat)' : 'Verkaufssignal: 2. Monatsende außerhalb der besten 20 %';
+              : c === '3' ? (endK != null && k > endK ? `Kursdaten enden am ${dmy(data.points[endK])} (Delisting/Übernahme) – Verkauf zum letzten bekannten Kurs angenommen, tatsächlicher Ausgang unbekannt`
+                : 'Nicht mehr im Index oder Datenproblem (2. Monat)') : 'Verkaufssignal: 2. Monatsende außerhalb der besten 20 %';
             if (sellLots(b, data, i, px, o, k, year, why)) { b.yearly[year].sells.push(sym); m.sold.push(data.names[i]); }
           }
         } else {

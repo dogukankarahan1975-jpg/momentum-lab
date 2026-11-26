@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.8.0 – 26.11.2026: Backtest mit historischer Indexzusammensetzung
+- Der Backtest verwendet in jedem Monat nur die Aktien, die damals im Index waren (iShares-Bestandslisten zu früheren Stichtagen, kostenlos). MSCI ACWI ab 04/2008, MSCI World ab 02/2012. Die Liste wird über mehrere Nächte aufgebaut, vom jüngsten Monat rückwärts; erst ab 24 zusammenhängenden Monaten wird sie verwendet.
+- Ehemalige Indexmitglieder werden mitgerechnet, wenn Yahoo noch Kurse hat und diese zu den iShares-Kursen der Stichtage passen (Schutz vor wiederverwendeten Tickern). Enden die Kurse (Delisting/Übernahme), wird zum letzten Kurs verkauft und das im Protokoll gekennzeichnet.
+- Simulator: Häkchen „Überlebenden-Effekt herausrechnen“. Der Korrekturwert wird aus den eigenen Daten gemessen (gleichgewichtete Backtest-Liste minus echter ACWI- bzw. MSCI-World-ETF im selben Zeitraum) und von jeder Aktie abgezogen. Ohne Häkchen keine Korrektur.
+- Neuer Vergleichswert: iShares MSCI ACWI ETF.
+
 ## Pipeline 0.7.1 – 26.11.2026
 - Übersicht auf Screening-Knopf und Backtest reduziert (Backup-Erinnerung bleibt).
 - Simulator: Top 5, Top 10 und Stage 2 Top 5 kaufen jeden Monat immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score; fehlende Kandidaten werden mit den nächsten der Momentum-Rangliste aufgefüllt. „Minimum Score“ bleibt die einzige Strategie mit Score-Grenze.

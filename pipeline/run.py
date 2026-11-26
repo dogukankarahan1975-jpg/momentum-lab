@@ -106,6 +106,25 @@ def determine_asof(adj: pd.DataFrame) -> pd.Timestamp:
 FX_FROM_YAHOO = ["TWD", "SAR", "AED", "QAR", "KWD", "CLP", "COP", "PEN", "EGP"]
 
 
+def demo_history(universe: pd.DataFrame, frames: dict) -> dict:
+    """DEMO: synthetische historische Zusammensetzung (rotierend ein Teil der Aktien nicht im Index)."""
+    syms = list(universe["symbol"])
+    h = {"version": 1, "months": {}, "failed": {}, "dead": {}}
+    for i, per in enumerate(pd.period_range("2012-01", "2026-10", freq="M")):
+        d = per.to_timestamp(how="end").normalize()
+        rows = []
+        for j, x in enumerate(syms):
+            if (j + i // 12) % 7 == 0:
+                continue
+            if x not in frames:
+                continue
+            c = frames[x]["close"].dropna()
+            p = float(c.asof(d)) if not c.empty and d >= c.index[0] else None
+            rows.append([x, x, "", "", p, "", ""])
+        h["months"][per.strftime("%Y-%m")] = {"asof": d.strftime("%Y-%m-%d"), "rows": rows}
+    return h
+
+
 def read_universe_kind(path: Path) -> str:
     """config/universe.txt: „acwi“ (Standard) oder „world“."""
     if path.exists():
@@ -267,6 +286,7 @@ def run(args) -> int:
         price_status = {s: "ok" for s in frames}
         pstats = {"requested": len(frames), "ok": len(frames), "failed": 0, "cached_only": 0}
         watch = []
+        hist, pit_frames, pit_currency, kind = demo_history(universe, frames), {}, {}, "acwi"
     else:
         kind = read_universe_kind(ROOT / "config" / "universe.txt")
         ures = load_universe(lambda u: http_get(u), archive / "universe", offline=False, kind=kind)
@@ -284,6 +304,7 @@ def run(args) -> int:
         if "isin" in universe and (universe["isin"].astype(str).str.len() == 12).mean() > 0.8:
             isins, tstat = load_frankfurt_isins(lambda u: http_get(u, binary=True), lambda u: http_get(u), log)
         universe, tinfo = apply_filter(universe, isins, archive / "universe", iso(pd.Timestamp.utcnow().tz_localize(None)))
+        untradable = set(tinfo.pop("removed_symbols", []))
         tstat["filter"] = tinfo
         tstat["ok"] = bool(tinfo.get("checked"))
         sources["tradable_de"] = tstat
@@ -304,8 +325,40 @@ def run(args) -> int:
         store = PriceStore.load(cache / "prices.pkl.gz")
         log(f"Kurse laden für {len(symbols)} Symbole (Cache: {len(store.data)})")
         res = update_prices(symbols, store, hints, full_refresh=args.full_refresh, log=log)
-        store.save(cache / "prices.pkl.gz")
         frames, currency, price_status, pstats = res.frames, res.currency, res.status, res.stats
+        # Historische Indexzusammensetzung für den Backtest (point in time) und Kurse ehemaliger Mitglieder
+        try:
+            from . import pit
+            today_ts = pd.Timestamp.utcnow().tz_localize(None).normalize()
+            hist_path = pit.path_for(archive / "universe", kind)
+            hist, hinfo = pit.update_history(lambda u: http_get(u), hist_path, kind, today_ts, log=log)
+            hsyms = pit.all_symbols(hist)
+            cur_set = set(universe["symbol"])
+            pit_only = [x for x in hsyms if x not in cur_set and x not in untradable and not x.endswith((".SS", ".SZ"))]
+            dead = {x for x, d in hist.get("dead", {}).items() if (today_ts - pd.Timestamp(d)).days < 60}
+            phints = {x: hsyms[x][3] or SUFFIX_CURRENCY.get("." + x.split(".", 1)[1] if "." in x else "") for x in pit_only}
+            log(f"[historie] {len(pit_only)} ehemalige Indexmitglieder, davon {len(dead)} zuletzt ohne Kurse")
+            pres = update_prices(pit_only, store, phints, full_refresh=False, deadline_s=1800, log=log,
+                                 refresh_if_older_days=7, fallback=False, skip=dead)
+            for x, st in pres.status.items():
+                if st.startswith("Fehler: nicht gefunden"):
+                    hist.setdefault("dead", {})[x] = today_ts.strftime("%Y-%m-%d")
+            pit.save(hist_path, hist)
+            pit_frames, pit_currency = pres.frames, pres.currency
+            hinfo["former_members"] = len(pit_only)
+            hinfo["former_with_prices"] = len(pit_frames)
+            sources["history"] = {"name": "iShares-Bestandslisten zu früheren Stichtagen", "type": "database",
+                                  "ok": hinfo["coverage_months"] >= pit.MIN_MONTHS, "info": hinfo,
+                                  "detail": f"{hinfo['months_have']} von {hinfo['months_total']} Monaten geladen, zusammenhängend "
+                                            f"{hinfo['coverage_from'] or '–'} bis {hinfo['coverage_to'] or '–'}; "
+                                            f"{len(pit_only)} ehemalige Mitglieder, davon {len(pit_frames)} mit Kursen"
+                                            + (f"; Fehler: {hinfo['error']}" if hinfo.get("error") else "")}
+        except Exception as exc:  # noqa: BLE001 – Historie ist optional, das Screening läuft auch ohne
+            log(f"[historie] Fehler: {exc}")
+            hist, pit_frames, pit_currency = None, {}, {}
+            sources["history"] = {"name": "iShares-Bestandslisten zu früheren Stichtagen", "type": "database",
+                                  "ok": False, "error": str(exc)[:200]}
+        store.save(cache / "prices.pkl.gz")
         sources["prices"] = {"name": "Yahoo Finance (inoffiziell)", "ok": pstats["ok"] > 0.8 * len(symbols),
                              "type": "database", "stats": pstats}
         if pstats.get("blocked"):
@@ -510,10 +563,45 @@ def run(args) -> int:
     if regime.get("vol_shock"):
         msg("warnung", "Volatilitätsschock (MSCI-Regel): MSCI würde jetzt ad hoc nur mit 6-Monats-Momentum neu gewichten.")
 
+    # 8a) Historische Indexzusammensetzung (point in time) für den Backtest
+    members, pit_info, bt_syms = None, None, list(uni_syms)
+    bt_frames, bt_currency = frames, dict(currency)
+    if hist is not None:
+        try:
+            from . import pit
+            months = pit.month_list(pit.START[kind], today)
+            cov = pit.coverage(hist, months)
+            close_local = {x: frames[x]["close"] for x in uni_syms}
+            close_local.update({x: df["close"] for x, df in pit_frames.items()})
+            valid, vstats = pit.validate(hist, close_local)
+            hsyms = pit.all_symbols(hist)
+            valid |= {x for x in uni_syms if x not in hsyms}
+            pit_info = {"active": False, "kind": kind, "coverage_from": cov[0], "coverage_to": cov[1],
+                        "months": cov[2], "symbols_total": len(hsyms), "validation": vstats}
+            if cov[2] >= pit.MIN_MONTHS:
+                mem = pit.membership(hist, valid, months)
+                members = {m: v for m, v in mem.items() if cov[0] <= m <= cov[1]}
+                extra = sorted({x for v in members.values() for x in v if x in pit_frames} - set(uni_syms))
+                bt_syms = list(uni_syms) + extra
+                bt_frames = {**frames, **{x: pit_frames[x] for x in extra}}
+                bt_currency.update({x: pit_currency.get(x) for x in extra})
+                in_hist = {x for v in members.values() for x in v}
+                pit_info.update(active=True, former_members_used=len(extra),
+                                members_without_prices=int(sum(1 for x in hsyms if x not in valid)))
+                log(f"[historie] Backtest mit historischer Zusammensetzung {cov[0]}–{cov[1]}: {len(in_hist)} Aktien, "
+                    f"davon {len(extra)} ehemalige; {pit_info['members_without_prices']} ohne passende Kurse")
+            else:
+                msg("info", f"Historische Indexzusammensetzung wird aufgebaut ({cov[2]} von mindestens {pit.MIN_MONTHS} "
+                            "Monaten) – Backtest bis dahin mit der heutigen Aktienliste.")
+        except Exception as exc:  # noqa: BLE001
+            log(f"[historie] nicht verwendet: {exc}")
+            members, pit_info = None, {"active": False, "error": str(exc)[:200]}
+
     # 8) Backtest (nur bei neuem Monat, Methodikänderung oder auf Wunsch)
     bt_path_cache = cache / "backtest.json"
     bt_key = (f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}"
-              f"|{len(uni_syms)//50}|{'demo' if demo else 'live'}")
+              f"|{len(uni_syms)//50}|{'demo' if demo else 'live'}"
+              f"|pit{(pit_info or {}).get('coverage_from')}-{len(bt_syms)//50}")
     bt_res = None
     bt_ctx = None
     if not args.skip_backtest:
@@ -547,13 +635,27 @@ def run(args) -> int:
                             continue
                         s = s / fx_on_index(fx, s.index)[c]
                     backfill.append({"symbol": b["symbol"], "name": b["name"], "eur": s.dropna()})
-                upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
-                ctx = bt.Context(upanel, cur_series.reindex(uni_syms), fx, dups, asof, bench_eur, log=log)
+                if members:
+                    badj = to_wide({x: bt_frames[x] for x in bt_syms}, "adj", "2000-01-01")
+                    bclose = to_wide({x: bt_frames[x] for x in bt_syms}, "close", "2000-01-01")
+                    bvol = to_wide({x: bt_frames[x] for x in bt_syms}, "volume", "2000-01-01")
+                    upanel = core.prepare_panel(badj, bclose, bvol)
+                    bcur = pd.Series({x: bt_currency.get(x) for x in bt_syms})
+                    hs = pit.all_symbols(hist)
+                    extra_meta = pd.DataFrame([{"symbol": x, "name": hs[x][0], "country": hs[x][1], "sector": hs[x][2]}
+                                               for x in bt_syms if x not in set(uni_syms) and x in hs]).set_index("symbol") \
+                        if len(bt_syms) > len(uni_syms) else None
+                    bt_meta = pd.concat([meta, extra_meta]) if extra_meta is not None else meta
+                else:
+                    upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
+                    bcur = cur_series.reindex(uni_syms)
+                    bt_meta = meta
+                ctx = bt.Context(upanel, bcur, fx, dups, asof, bench_eur, log=log, membership=members)
                 bt_res = bt.run_backtest(ctx, log=log)
                 if bt_res.get("available"):
                     try:
                         from .simulator import build_sim_data
-                        sim = build_sim_data(ctx, meta, bench_eur, asof, log=log, backfill=backfill)
+                        sim = build_sim_data(ctx, bt_meta, bench_eur, asof, log=log, backfill=backfill, pit_info=pit_info)
                         sim["key"] = bt_key
                         sim["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                         (cache / "simulator.json").write_text(json.dumps(sanitize(sim), separators=(",", ":"),

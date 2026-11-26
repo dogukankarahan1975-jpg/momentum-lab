@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.7.1"
+PIPELINE_VERSION = "0.8.0"
 METHODOLOGY_VERSION = "1.0.0"   # Stage 1 (Momentum-Screening) – unverändert
 STAGE2_VERSION = "2.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
 
@@ -104,6 +104,7 @@ BENCHMARKS = {
     "msci_usa_momentum": {"symbol": "MTUM", "name": "iShares MSCI USA Momentum Factor (USD)", "currency": "USD"},
     "sp500_tr": {"symbol": "^SP500TR", "name": "S&P 500 (Total-Return-Index, abzgl. 0,07 % ETF-Kosten)", "currency": "USD"},
     "sp500_eur": {"symbol": "SXR8.DE", "name": "iShares Core S&P 500 (EUR, thesaurierend)", "currency": "EUR"},
+    "acwi_usd": {"symbol": "ACWI", "name": "iShares MSCI ACWI ETF (USD), inkl. Fondskosten", "currency": "USD"},
 }
 REGIME_SYMBOL_ORDER = ["URTH", "EUNL.DE"]
 # Verlängerung des MSCI-World-Sparplans vor dem Start von EUNL (09/2009): ältere iShares-MSCI-World-ETFs

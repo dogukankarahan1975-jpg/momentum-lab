@@ -124,5 +124,6 @@ def apply_filter(universe: pd.DataFrame, isins: set[str] | None, archive: Path, 
     keep = u["isin"].isin(ok_set) | no_isin          # ohne ISIN: nicht prüfbar, bleibt drin
     removed = u[~keep]
     info.update(checked=True, source=src, kept=int(keep.sum()), removed=int(len(removed)), unchecked=int(no_isin.sum()),
-                removed_examples=[f"{n} ({c})" for n, c in zip(removed["name"].head(12), removed["country"].head(12))])
+                removed_examples=[f"{n} ({c})" for n, c in zip(removed["name"].head(12), removed["country"].head(12))],
+                removed_symbols=sorted(removed["symbol"]))
     return u[keep].reset_index(drop=True), info

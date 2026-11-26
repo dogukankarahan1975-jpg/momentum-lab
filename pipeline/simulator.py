@@ -88,8 +88,36 @@ def chain_backfill(main: pd.Series, candidates: list, log=print) -> tuple[pd.Ser
     return pd.concat([early, main]).sort_index(), info
 
 
+def measure_bias(ctx, dates: list, ref: pd.Series | None) -> dict | None:
+    """Vorsprung der gleichgewichteten Backtest-Liste (alle zulässigen Aktien, monatlich neu gewichtet, ohne Kosten)
+    vor einem echten Index-ETF im selben Zeitraum. Dient als gemessener Korrekturwert für den Simulator."""
+    if ref is None or len(dates) < 25:
+        return None
+    ref = ref.dropna()
+    ds = [d for d in dates if d >= ref.index[0]]
+    if len(ds) < 25:
+        return None
+    rets = []
+    for a, b in zip(ds[:-1], ds[1:]):
+        el = ctx.signals[a]["elig"]
+        syms = el[el].index
+        pa, pb = ctx.price_eur.loc[a, syms], ctx.price_eur.loc[b, syms]
+        r = (pb / pa - 1).replace([np.inf, -np.inf], np.nan).dropna()
+        r = r[r.abs() < 3]
+        if len(r):
+            rets.append(float(r.mean()))
+    yrs = (ds[-1] - ds[0]).days / 365.25
+    ew = float(np.prod([1 + x for x in rets]) ** (1 / yrs) - 1)
+    ra, rb = ref.asof(ds[0]), ref.asof(ds[-1])
+    if not (ra and rb and ra > 0):
+        return None
+    rf = float((rb / ra) ** (1 / yrs) - 1)
+    return {"ew_cagr": round(ew, 4), "ref_cagr": round(rf, 4), "pa": round(max(0.0, ew - rf), 4),
+            "from": ds[0].strftime("%Y-%m-%d"), "to": ds[-1].strftime("%Y-%m-%d")}
+
+
 def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp, log=print,
-                   backfill: list | None = None) -> dict:
+                   backfill: list | None = None, pit_info: dict | None = None) -> dict:
     if not ctx.signals:
         ctx.compute_signals()
     p = ctx.params
@@ -141,9 +169,13 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         sig = ctx.signals[d]
         hs = core.hold_state(sig["ra"]["pct"], sig["f"]["m12"], sig["q"]["data_ok"], sig["ra"]["score_valid"], p)
         code = []
+        mem = None
+        if getattr(ctx, "membership", None):
+            keys = [m for m in ctx.membership if m <= d.strftime("%Y-%m")]
+            mem = ctx.membership[max(keys)] if keys else set()
         for s in sym_list:
-            if s not in hs.index:
-                code.append("3")
+            if s not in hs.index or (mem is not None and s not in mem):
+                code.append("3")      # Datenproblem oder nicht mehr im Index
                 continue
             if bool(hs.at[s, "data_problem"]):
                 code.append("3")
@@ -180,6 +212,22 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         bench_out["sp500"] = bench_out.pop("sp500_eur")
     if "msci_world_eur" in bench_out:
         bench_out["msci_world"] = bench_out.pop("msci_world_eur")
+    # Kursdaten enden (Delisting, Übernahme): letzten Kurs fortschreiben, Ende markieren
+    ended = {}
+    for j, sname in enumerate(sym_list):
+        col = px[sname]
+        lv = col.last_valid_index()
+        if lv is not None and lv < points[-1]:
+            k_end = int(np.searchsorted(np.array(points), lv, side="right")) - 1
+            if k_end < len(points) - 3:
+                ended[j] = k_end
+    px = px.ffill()
+    ref_key = "acwi_usd" if (pit_info or {}).get("kind") == "acwi" and bench_eur.get("acwi_usd") else "msci_world_eur"
+    bias = measure_bias(ctx, dates, (bench_eur.get(ref_key) or {}).get("eur"))
+    if bias:
+        bias["ref_name"] = bench_eur[ref_key]["name"]
+        log(f"[simulator] gemessene Verzerrung: Liste gleichgewichtet {bias['ew_cagr']:.2%} vs. {bias['ref_name']} "
+            f"{bias['ref_cagr']:.2%} -> {bias['pa']:.2%} p. a.")
     names = meta["name"].reindex(sym_list).fillna(pd.Series(sym_list, index=sym_list)).tolist()
     sectors = meta["sector"].reindex(sym_list).fillna("").tolist()
     return {
@@ -191,9 +239,15 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         "rank": ranks, "cand": cands, "cand_z": zs, "rank_z": zr, "hold": holds, "s2": s2, "s2_score": s2sc, "s2_version": "2.0.0",
         "s2_world": [bool(x[5]) for x in raw_lists],
         "bench": bench_out,
+        "ended": ended,
+        "bias": bias,
+        "pit": pit_info,
         "notes": {
-            "survivorship": "Liste der Aktien = HEUTIGE MSCI-World-Mitglieder. Firmen, die seitdem aus dem Index "
-                            "gefallen sind, fehlen. Die Ergebnisse sind dadurch zu günstig.",
+            "survivorship": ("Historische Indexzusammensetzung: In jedem Monat nur die Aktien, die damals im Index waren "
+                             "(iShares-Bestandslisten). Ehemalige Mitglieder ohne Yahoo-Kurse fehlen weiterhin."
+                             if (pit_info or {}).get("active") else
+                             "Liste der Aktien = HEUTIGE Indexmitglieder. Firmen, die seitdem aus dem Index "
+                             "gefallen sind, fehlen. Die Ergebnisse sind dadurch zu günstig."),
             "stage2": "Stage 2 (v2, Fortsetzungs-Rangfolge) nur mit dem Kursteil: Die Top-10-Kandidaten werden nach "
                       "gleichmäßigem Anstieg (Frog-in-the-Pan), Nähe zum 52-Wochen-Hoch und marktbereinigtem Momentum "
                       "sortiert; gekauft werden die besten 5. Die Analystensignale (Schätzungsänderungen, Gewinnüberraschungen) "

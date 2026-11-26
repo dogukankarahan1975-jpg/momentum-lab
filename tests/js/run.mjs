@@ -369,5 +369,11 @@ test('Simulator: ausgeblendete Aktie wird auch rückwirkend nicht gekauft', () =
   assert.ok(!r.log.some((x) => x.type === 'Kauf' && x.sym === 'A'));
 });
 
+test('Korrektur Überlebenden-Effekt senkt nur Aktien-Strategien', () => {
+  const d = { ...simData(), bias: { pa: 0.05 } };
+  const a = simRun(d, 's1top5', { ...simOpts }), b = simRun(d, 's1top5', { ...simOpts, biasCorr: true });
+  assert.ok(b.final < a.final);
+});
+
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);
 process.exit(failed ? 1 : 0);

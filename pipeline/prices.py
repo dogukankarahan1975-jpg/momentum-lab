@@ -257,7 +257,8 @@ class PriceUpdateResult:
 
 def update_prices(symbols: list[str], store: PriceStore, currency_hints: dict, full_refresh: bool,
                   session=None, deadline_s: float = 3600, delay_s: float = 0.25,
-                  today: pd.Timestamp | None = None, log=print) -> PriceUpdateResult:
+                  today: pd.Timestamp | None = None, log=print, refresh_if_older_days: int | None = None,
+                  fallback: bool = True, skip: set | None = None) -> PriceUpdateResult:
     today = (today or pd.Timestamp.utcnow().tz_localize(None)).normalize()
     if session is None:
         session, kind = make_session()
@@ -274,6 +275,13 @@ def update_prices(symbols: list[str], store: PriceStore, currency_hints: dict, f
             failed.append(sym)
             continue
         entry = store.data.get(sym)
+        if skip and sym in skip:
+            status[sym] = "übersprungen (zuletzt nicht gefunden)"
+            continue
+        if refresh_if_older_days is not None and entry is not None and entry.get("fetched") and \
+                (today - pd.Timestamp(entry["fetched"])).days < refresh_if_older_days:
+            status[sym] = "aus Cache (noch aktuell)"
+            continue
         full = full_refresh or entry is None or entry.get("full") is None or \
             (today - pd.Timestamp(entry["full"])).days > 8
         start = pd.Timestamp(HISTORY_START) if full else today - pd.Timedelta(days=40)
@@ -296,7 +304,7 @@ def update_prices(symbols: list[str], store: PriceStore, currency_hints: dict, f
             log(f"[prices] {i + 1}/{len(symbols)} verarbeitet, Fehler bisher: {len(failed)}")
     # Fallback yfinance für gescheiterte Symbole
     retry = [s for s in failed if not status[s].startswith("übersprungen")]
-    if retry and not stats["blocked"]:
+    if retry and not stats["blocked"] and fallback:
         got = fetch_yfinance(retry, pd.Timestamp(HISTORY_START))
         for sym, df in got.items():
             entry = store.data.get(sym, {})

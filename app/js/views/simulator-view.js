@@ -20,6 +20,7 @@ export async function renderSimulator(el, data) {
   const saved = await getSetting('simOpts', null);
   const o = { ...DEFAULTS, ...(saved || {}) };
   if (!['signal', '1', '1be', '3', '3be', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
+  o.biasCorr = o.biasCorr === true;
   o.rest = 'top'; // feste Regel: Top 5/Top 10/Stage 2 Top 5 kaufen immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score
   o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
   if (saved && !saved.v6) { for (const x of ['s2top5', 's1min4']) if (!o.strategies.includes(x)) o.strategies.push(x); o.v6 = true; }
@@ -39,11 +40,13 @@ export async function renderSimulator(el, data) {
         <li>Für <b>jeden Monat seit ${fmtDate(data.signal_dates[0])}</b> wird das Screening mit den Daten von damals nachgestellt. Es entsteht genau die Liste, die die App am jeweiligen Monatsende gezeigt hätte. Ganz unten kannst du jede Monatsliste ansehen.</li>
         <li>Gekauft wird am nächsten Handelstag zum Schlusskurs. Das Monatsbudget wird <b>zu gleichen Teilen</b> auf die Aktien der aktuellen Liste verteilt, Verkaufserlöse kommen dazu.</li>
         <li><b>Stage 2</b> ist nur mit seinem Kursteil testbar. ${data.notes?.stage2 || ''}</li>
-        <li><b>Haken:</b> ${data.notes?.survivorship || ''}</li>
+        <li><b>Welche Aktien:</b> ${data.notes?.survivorship || ''}${data.pit?.active ? ` Zeitraum ${data.pit.coverage_from.slice(5)}/${data.pit.coverage_from.slice(0, 4)} bis ${data.pit.coverage_to.slice(5)}/${data.pit.coverage_to.slice(0, 4)}; ${data.pit.former_members_used} ehemalige Mitglieder mit Kursen einbezogen, ${data.pit.members_without_prices} ehemalige ohne passende Kurse (fehlen).` : data.pit && !data.pit.active ? ` Die historische Zusammensetzung wird gerade aufgebaut (${data.pit.months || 0} Monate).` : ''}</li>
       </ul>
     </div>
     <h3>Einstellungen</h3>
     <div class="panel" id="simform">
+      ${data.bias?.pa > 0 ? html`<label class="check" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px"><input type="checkbox" name="biasCorr" ${o.biasCorr ? 'checked' : ''} style="width:22px;height:22px;flex:none;margin-top:2px">
+        <span class="small"><b>Überlebenden-Effekt herausrechnen (−${fmtNum(data.bias.pa * 100, 1)} % p. a. je Aktie)</b><br><span class="muted">Gemessen aus deinen Daten: Alle Aktien der Backtest-Liste gleich gewichtet, ganz ohne Momentum, erzielten ${fmtNum(data.bias.ew_cagr * 100, 1)} % p. a., der echte ${data.bias.ref_name} ${fmtNum(data.bias.ref_cagr * 100, 1)} % p. a. (${fmtDate(data.bias.from)} bis ${fmtDate(data.bias.to)}). Diesen Vorsprung zieht die Korrektur von jeder Aktie ab. ETF-Sparpläne bleiben unverändert.</span></span></label>` : ''}
       <div class="small" style="margin-bottom:6px">Strategien vergleichen</div>
       <div class="legend" id="simstrat">${Object.entries(STRATEGIES).map(([k, s]) => html`<button data-k="${k}" aria-pressed="${o.strategies.includes(k)}"><span class="swatch" style="background:${COLORS[k]}"></span>${s.short}</button>`)}</div>
       <div class="grid2" style="margin-top:10px">
@@ -88,6 +91,7 @@ export async function renderSimulator(el, data) {
     }
     const keys = opts.strategies.filter((k) => STRATEGIES[k].kind !== 'etf' || benchStart(STRATEGIES[k].bench));
     if (!keys.length) { out.innerHTML = String(note('info', 'Wähle oben mindestens eine Strategie.')); return; }
+    if (opts.biasCorr && data.bias?.pa > 0) notes.push(`Mit Korrektur: Alle Aktienkurse wurden um ${fmtNum(data.bias.pa * 100, 1)} % p. a. gemindert (gemessener Überlebenden-Effekt).`);
     const hidden = [...(await getHidden())];
     if (hidden.length) notes.push(`${hidden.length} von dir ausgeblendete Aktie(n) (gibt es bei Trade Republic nicht) werden auch rückwirkend nicht gekauft.`);
     const res = keys.map((k) => simulate(data, k, { ...opts, exclude: hidden }));
@@ -212,7 +216,8 @@ export async function renderSimulator(el, data) {
   el.querySelector('#simform').addEventListener('change', async (e) => {
     const t = e.target;
     if (!t.name) return;
-    if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
+    if (t.name === 'biasCorr') o.biasCorr = !!t.checked;
+    else if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
     else o[t.name] = num(t.value, DEFAULTS[t.name]);
     const maxFee = Math.max(0, o.budget * 0.1);

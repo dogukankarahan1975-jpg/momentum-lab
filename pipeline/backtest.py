@@ -215,7 +215,7 @@ class Context:
 
     def __init__(self, panel: core.Panel, currencies: pd.Series, fx: pd.DataFrame,
                  duplicates: set, asof: pd.Timestamp, benchmarks: dict, log=print,
-                 params: dict = METHODOLOGY):
+                 params: dict = METHODOLOGY, membership: dict | None = None):
         self.panel, self.currencies, self.params, self.log = panel, currencies, params, log
         idx = panel.adj.index
         fx_idx = fx_on_index(fx, idx)
@@ -234,6 +234,11 @@ class Context:
         pos = {d: i for i, d in enumerate(idx)}
         self.exec_day = {d: idx[pos[d] + 1] for d in self.dates if pos[d] + 1 < len(idx)}
         self.dates = [d for d in self.dates if d in self.exec_day]
+        # Historische Indexzusammensetzung: nur Monate mit bekannter Zusammensetzung, nur damalige Mitglieder
+        self.membership = membership or None
+        if self.membership:
+            first = min(self.membership)
+            self.dates = [d for d in self.dates if d.strftime("%Y-%m") >= first]
         self.signals = {}
         self.benchmarks = benchmarks
         # Marktproxy: gleichgewichtetes Universum (Landeswährungen), tägliche Durchschnittsrendite
@@ -255,6 +260,11 @@ class Context:
             q = core.quality_at(self.panel, d, self.currencies, fx_row, p, None, self.duplicates)
             f = core.features_at(self.panel, d, p, light=True)
             elig = q["eligible"] & f["vol"].notna()
+            if self.membership:
+                ym = d.strftime("%Y-%m")
+                keys = [m for m in self.membership if m <= ym]
+                mem = self.membership[max(keys)] if keys else set()
+                elig = elig & elig.index.isin(list(mem))
             sig = {"q": q, "f": f, "elig": elig}
             for name in ("ra", "m612", "m12"):
                 sig[name] = core.scores_at(f, elig, name, p)
