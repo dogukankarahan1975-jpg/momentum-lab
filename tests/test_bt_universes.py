@@ -3,6 +3,7 @@ import io
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from pipeline import bt_universes as bu
 
@@ -72,6 +73,8 @@ def make_pdf() -> bytes:
 
 
 def test_stoxx_pdf_parse_and_history():
+    pytest.importorskip("reportlab")      # nur lokal zum Erzeugen des Test-PDFs
+    pytest.importorskip("pdfplumber")
     parsed = bu.parse_stoxx_words(bu.pdf_words(make_pdf()))
     dax = parsed["DAX"]
     assert dax["initial"][0] == "30.12.1987" and len(dax["initial"][1]) == 30
@@ -122,3 +125,15 @@ def test_validation_coverage_and_quarterly_fill():
     assert start == "2020-04" and cov["2020-01"] == 0.5
     q = bu.fill_quarterly(months, "2020-12")
     assert q["2020-05"] == months["2020-04"] and q["2020-12"] == months["2020-10"]
+
+
+def test_stoxx_words_parse_without_pdf():
+    w = lambda t, x, y: {"text": t, "x0": x, "x1": x + 6 * len(t), "top": y}
+    page = [w("1.", 50, 10), w("DAX®", 62, 10), w("INDEX", 100, 10), w("COMPOSITION", 140, 10),
+            w("Initial", 50, 30), w("composition", 90, 30), w("30.12.1987", 170, 30)]
+    page += [w(f"Firma{i}", 50 + (i % 3) * 170, 50 + (i // 3) * 15) for i in range(30)]
+    y = 50 + 10 * 15 + 10
+    page += [w("Date", 50, y), w("Deletion", 300, y), w("Addition", 430, y)]
+    page += [w("18.09.1995", 50, y + 15), w("18.07.1995", 150, y + 15), w("Firma3", 300, y + 15), w("SAP", 430, y + 15)]
+    parsed = bu.parse_stoxx_words([page])
+    assert len(parsed["DAX"]["initial"][1]) == 30 and parsed["DAX"]["changes"] == [("18.09.1995", ["Firma3"], ["SAP"])]
