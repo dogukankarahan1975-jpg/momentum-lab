@@ -157,6 +157,8 @@ def _setup(tmp_path, monkeypatch):
         raise RuntimeError(url)
 
     monkeypatch.setattr(universe, "MIN_UNIVERSE", 100)
+    for k in universe.UNIVERSES:
+        monkeypatch.setitem(universe.UNIVERSES[k], "min", 100)
     monkeypatch.setattr(runmod, "http_get", fake_http_get)
     monkeypatch.setattr(runmod, "http_json", fake_http_json)
     monkeypatch.setattr(prices, "make_session", lambda: (FakeSession(), "fake"))
@@ -189,7 +191,7 @@ def test_live_pipeline_with_mocked_sources(tmp_path, monkeypatch):
     det = json.loads((out / "details" / "DMO021.json").read_text())
     assert abs(det["fund"]["sec"]["metrics"]["revenue_growth"] - 0.3) < 1e-9
     assert det["news"][0]["title"] == "Demo meldet Rekord"
-    assert (archive / "universe" / "latest.csv").exists() and (archive / "runs.log").exists()
+    assert (archive / "universe" / "latest-acwi.csv").exists() and (archive / "runs.log").exists()
     assert (cache / "last_good" / "screen.json").exists()
     # Stage 2: automatisch berechnet, über den echten Parser-Pfad (Crumb, quoteSummary, Zeitreihen)
     s2 = json.loads((out / "stage2.json").read_text())

@@ -2,7 +2,7 @@
 
 Persönliche, kostenlose Momentum-Investing-App fürs iPhone (Web-App für den Home-Bildschirm).
 
-- **Screening:** rund 1.300 Aktien des MSCI World, risikoadjustiertes 6- und 12-Monats-Momentum (MSCI-Stil), strenge Datenprüfung, höchstens 10 Kandidaten und ein Top Pick nur bei voller Erfüllung aller Regeln.
+- **Screening:** rund 2.000 Aktien des MSCI ACWI (Large und Mid Caps aus Industrie- und Schwellenländern, nur in Deutschland handelbar), risikoadjustiertes 6- und 12-Monats-Momentum (MSCI-Stil), strenge Datenprüfung, höchstens 10 Kandidaten und ein Top Pick nur bei voller Erfüllung aller Regeln.
 - **Stage 2 – Fortsetzungs-Rangfolge:** sortiert die Top 10 aus Stage 1 nach Forschungssignalen für das Weiterlaufen von Momentum (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, marktbereinigtes Momentum, Gewinnschätzungen, Gewinnüberraschungen). Die besten 5 sind die Kaufkandidaten. Nichts wird ausgeschlossen; Stage 1 bleibt unverändert.
 - **Mein Depot:** Kauftranchen, Teilverkäufe, Dividenden, Splits, Sparpläne, FIFO-Gewinne, Fremdwährungen. Die Daten liegen **nur auf deinem iPhone** und lassen sich als Backup-Datei sichern.
 - **Portfolio Intelligence:** HALTEN, NACHKAUFEN, SPARPLAN FORTSETZEN/STOPPEN, VERKAUF PRÜFEN, VERKAUF, jeweils mit Begründung, Kriterien, Dringlichkeit und nächster Prüfung.
@@ -15,7 +15,7 @@ pipeline/   Täglicher Datenlauf (Python): Universum, Kurse, Qualität, Momentum
 tests/      Python- und JavaScript-Tests (laufen vor jeder Veröffentlichung)
 tools/      Site-Build, Symbole
 docs/       Methodik, Datenquellen, Anleitung, Workflow-Vorlage
-config/     watchlist.txt – zusätzliche Symbole (z. B. Aktien außerhalb des MSCI World)
+config/     watchlist.txt – zusätzliche Symbole; universe.txt – acwi (Standard) oder world
 archive/    vom Datenlauf gepflegt: Monats-Screenings, Universums-Historie, Stage-2-Entscheidungen, Kennzahlen-Wochenarchiv, Laufprotokoll
 ```
 

@@ -51,4 +51,6 @@ Neue Version = neue `momentum-lab.zip` wie in Schritt 2 hochladen. Der Datenlauf
 - **Actions zeigt ein rotes ×:** Lauf antippen → fehlgeschlagenen Schritt öffnen → Screenshot an Claude schicken.
 - **App zeigt „Datenlauf fehlgeschlagen“:** Die App zeigt die letzten gültigen Daten mit Warnung. Meist erledigt sich das beim nächsten Lauf. Manuell starten: Actions → Momentum Lab → **Run workflow**.
 - **Zeitplan pausiert (60 Tage ohne Aktivität):** Actions → Momentum Lab → **Enable workflow**.
-- **Aktie im Depot ohne Kurs:** Sie ist nicht im MSCI World. Trage ihr Yahoo-Symbol in `config/watchlist.txt` ein (Projekt → Datei → Stift-Symbol) oder pflege den Kurs manuell in der App.
+- **Aktie gibt es bei Trade Republic nicht:** Aktie öffnen → ganz unten „Gibt es bei Trade Republic nicht“. Sie verschwindet aus Top 10, Stage 2 und Simulator, der nächste Kandidat rückt nach. Wieder einblenden unter Einstellungen.
+- **Zurück zu nur Industrieländern (MSCI World):** Im Repository `config/universe.txt` öffnen → Stift-Symbol → `acwi` durch `world` ersetzen → Commit changes. Der nächste Datenlauf startet automatisch.
+- **Aktie im Depot ohne Kurs:** Sie ist nicht im untersuchten Index. Trage ihr Yahoo-Symbol in `config/watchlist.txt` ein (Projekt → Datei → Stift-Symbol) oder pflege den Kurs manuell in der App.

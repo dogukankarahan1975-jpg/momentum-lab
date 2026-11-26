@@ -12,11 +12,12 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'etf', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  hold: 'signal', rest: 'cash', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
   signal: 'bis zum ersten Verkaufssignal der App',
+  1: 'immer 1 Monat, dann verkaufen (auch im Minus)', '1be': '1 Monat; im Minus weiter halten, bis wieder ±0 erreicht ist',
   3: 'immer 3 Monate, dann verkaufen (auch im Minus)', '3be': '3 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist',
   6: 'immer 6 Monate, dann verkaufen (auch im Minus)', 12: 'immer 12 Monate, dann verkaufen (auch im Minus)',
   '6be': '6 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist', '12be': '12 Monate; im Minus weiter halten, bis wieder ±0 erreicht ist',
@@ -49,7 +50,7 @@ export function startIndex(data, year) {
 
 function newBook() {
   return {
-    cash: 0, lots: new Map(), etfUnits: 0, etfBasis: 0, gains: {}, carry: 0, taxedThrough: null,
+    cash: 0, lots: new Map(), etfUnits: 0, etfBasis: 0, gains: {}, carry: 0, curYear: null, vpT: {}, paidYear: {}, monthTax: 0,
     contrib: 0, fees: 0, spreadCost: 0, taxes: 0, trades: 0, hcount: new Map(), yearly: {}, flows: [], log: [], months: [],
   };
 }
@@ -83,6 +84,7 @@ function sellLots(b, data, i, px, o, k, year, why, pred = () => true) {
   if (keep.length) b.lots.set(sym, keep); else { b.lots.delete(sym); b.hcount.delete(sym); }
   b.log.push({ k, type: 'Verkauf', sym, name: data.names[i], px, shares, amount: proceeds, basis, gain: proceeds - basis,
     buyPx: basis / shares, firstK, fee: o.feeSell, spread: sc, why, cash: b.cash });
+  withhold(b, year, k, `Verkauf ${data.names[i]}`);
   return true;
 }
 
@@ -97,30 +99,44 @@ function buyEtf(b, amount, px, o, k, why) {
   return true;
 }
 
-function settle(b, year, k) {
-  // Steuerabrechnung je abgeschlossenem Jahr: Aktiengewinne (eigener Verlusttopf, Vortrag), Vorabpauschale der ETFs
-  // (nach 30 % Teilfreistellung), gemeinsamer Sparer-Pauschbetrag (801 € bis 2022, 1.000 € ab 2023); Zahlung vom Konto im Januar.
-  if (b.taxedThrough === null) b.taxedThrough = year - 1;
-  let paid = 0;
-  for (let y = b.taxedThrough + 1; y < year; y++) {
-    const gain = b.gains[y] || 0;
-    const g = gain + b.carry;
-    const vp = b.vp?.[y] || 0;
-    const vpT = vp * (1 - ETF_EXEMPT);
-    b.carry = g < 0 ? g : 0;
-    const taxable = Math.max(0, g) + vpT;
-    const tax = Math.max(0, taxable - allowance(y)) * TAX;
-    if (!gain && !vp) continue;
-    b.cash -= tax; b.taxes += tax; paid += tax;
-    if (b.yearly[y]) b.yearly[y].tax += tax;
-    const parts = [];
-    if (gain || b.carry) parts.push(`Aktien: ${eur(gain)}${g !== gain ? ` (mit Verlustvortrag ${eur(g)})` : ''}${g < 0 ? `, Verlust wird vorgetragen` : ''}`);
-    if (vp) parts.push(`ETF-Vorabpauschale ${eur(vp)}, davon 70 % steuerpflichtig = ${eur(vpT)}`);
-    b.log.push({ k, type: 'Steuer', name: `Abrechnung ${y}`, amount: tax,
-      why: `${parts.join('; ')}. Steuerpflichtig ${eur(taxable)} − ${eur(allowance(y))} Sparer-Pauschbetrag → ${tax > 0 ? `× 26,375 % = ${eur(tax)}` : 'keine Steuer'}.`, cash: b.cash });
+// Steuer wie beim deutschen Broker: sofort bei jedem Verkauf einbehalten (bzw. erstattet), mit Aktien-Verlusttopf,
+// allgemeinem Topf (ETF: Vorabpauschale) und Sparer-Pauschbetrag des laufenden Jahres. Die Vorabpauschale wird am
+// ersten Handelstag des Folgejahres belastet. Nicht verrechnete Aktienverluste werden ins nächste Jahr vorgetragen.
+function liability(b, y, extraStock = 0, extraGeneral = 0) {
+  const g = (b.gains[y] || 0) + b.carry + extraStock;           // Aktien-Verlusttopf: nur mit Aktiengewinnen
+  const general = (b.vpT[y] || 0) + extraGeneral;                // allgemeiner Topf (Vorabpauschale, ETF-Gewinne)
+  const taxable = Math.max(0, g) + general;                       // allgemeine Verluste dürfen Aktiengewinne mindern
+  return Math.max(0, taxable - allowance(y)) * TAX;
+}
+
+function withhold(b, y, k, what) {
+  const due = liability(b, y);
+  const d = due - (b.paidYear[y] || 0);
+  if (Math.abs(d) < 0.005) return 0;
+  b.paidYear[y] = due;
+  b.cash -= d; b.taxes += d; b.monthTax += d;
+  if (b.yearly[y]) b.yearly[y].tax += d;
+  const g = (b.gains[y] || 0) + b.carry;
+  const parts = [`Aktien ${y} bisher ${eur(b.gains[y] || 0)}${b.carry ? ` (Verlustvortrag ${eur(b.carry)})` : ''}`];
+  if (b.vpT[y]) parts.push(`Vorabpauschale steuerpflichtig ${eur(b.vpT[y])}`);
+  b.log.push({ k, type: 'Steuer', name: d > 0 ? `einbehalten (${what})` : `erstattet (${what})`, amount: d,
+    why: `${parts.join('; ')}. Steuerpflichtig ${eur(Math.max(0, g) + (b.vpT[y] || 0))} − ${eur(allowance(y))} Sparer-Pauschbetrag → Steuer im Jahr ${eur(due)}, davon schon gezahlt ${eur(due - d)}.`, cash: b.cash });
+  return d;
+}
+
+function newYear(b, year, k, pxE) {
+  if (b.curYear === null) { b.curYear = year; return; }
+  if (year === b.curYear) return;
+  const prev = b.curYear;
+  b.carry = Math.min(0, (b.gains[prev] || 0) + b.carry);          // Aktienverluste vortragen
+  vorabpauschale(b, prev, pxE);
+  const vp = b.vp?.[prev] || 0;
+  b.curYear = year;
+  if (vp > 0) {
+    b.vpT[year] = vp * (1 - ETF_EXEMPT);
+    b.log.push({ k, type: 'Info', name: `Vorabpauschale ${prev}`, amount: 0, why: `ETF-Vorabpauschale ${prev}: ${eur(vp)}, nach 30 % Teilfreistellung steuerpflichtig ${eur(b.vpT[year])}. Wird Anfang ${year} belastet.`, cash: b.cash });
+    withhold(b, year, k, `Vorabpauschale ${prev}`);
   }
-  b.taxedThrough = Math.max(b.taxedThrough, year - 1);
-  return paid;
 }
 
 function vorabpauschale(b, y, pxNow) {
@@ -160,17 +176,18 @@ function etfPx(data, k) {
 }
 
 /** Liste, die eine Strategie im Monat k kaufen würde. */
-export function targetList(data, key, k, rest, minScore = 4) {
+export function targetList(data, key, k, rest, minScore = 4, ex = null) {
   const st = STRATEGIES[key];
+  const okI = (i) => !ex || !ex.has(i);
   if (st.list === 'min') {
     // nur Stage-1-Kandidaten mit Momentum-Score ab minScore, sonst nichts
     const z = data.cand_z?.[k] || [];
-    return (data.cand[k] || []).filter((_, j) => z[j] != null && z[j] >= minScore);
+    return (data.cand[k] || []).filter((i, j) => z[j] != null && z[j] >= minScore && okI(i));
   }
-  const src = st.list === 's2' ? (data.s2[k] || []) : (data.cand[k] || []);
+  const src = (st.list === 's2' ? (data.s2[k] || []) : (data.cand[k] || [])).filter(okI);
   let t = src.slice(0, st.n);
   if (rest === 'top' && t.length < st.n) {
-    const extra = (data.rank[k] || []).filter((i) => !t.includes(i));
+    const extra = (data.rank[k] || []).filter((i) => !t.includes(i) && okI(i));
     t = t.concat(extra).slice(0, st.n);
   }
   return t;
@@ -181,6 +198,7 @@ export function simulate(data, key, opts) {
   const o = { ...DEFAULTS, ...opts };
   const st = STRATEGIES[key];
   const idx = new Map(data.syms.map((s, i) => [s, i]));
+  const exSet = o.exclude?.length ? new Set(o.exclude.map((s) => idx.get(s)).filter((i) => i != null)) : null;
   const k0 = startIndex(data, o.startYear);
   const K = data.signal_dates.length;
   const b = newBook();
@@ -193,9 +211,10 @@ export function simulate(data, key, opts) {
     const year = yearOf(date);
     if (!b.yearly[year]) b.yearly[year] = { contrib: 0, tax: 0, trades0: b.trades, value: 0, holdings: [], buys: [], sells: [] };
     const pxE = st.kind === 'etf' ? data.bench?.[st.bench]?.px?.[k] : etfPx(data, k);
-    if (b.etfYear && b.etfYear.year !== year) vorabpauschale(b, b.etfYear.year, pxE);
+    b.monthTax = 0;
+    newYear(b, year, k, pxE);
     if (!b.etfYear || b.etfYear.year !== year) b.etfYear = { year, v0: b.etfUnits * (pxE || 0), buys: [] };
-    const taxPaid = settle(b, year, k);
+    const taxPaid = b.monthTax;
     const budget = o.budget * Math.pow(1 + o.dyn / 100, Math.floor((k - k0) / 12));
     const cashBefore = b.cash;
     b.cash += budget; b.contrib += budget;
@@ -214,7 +233,7 @@ export function simulate(data, key, opts) {
         m.invest = b.cash; b.cash = 0;
       }
     } else {
-      const target = targetList(data, key, k, o.rest, o.minScore);
+      const target = targetList(data, key, k, o.rest, o.minScore, exSet);
       const targetSyms = new Set(target.map((i) => data.syms[i]));
       // 1) Verkäufe
       const cashPreSell = b.cash;
@@ -256,7 +275,7 @@ export function simulate(data, key, opts) {
           }
         }
       }
-      m.proceeds = b.cash - cashPreSell;
+      m.proceeds = b.cash - cashPreSell + (b.monthTax - taxPaid);   // Erlöse vor Steuer
       // 2) Anlagebetrag: fest = nur Monatsbudget; mit Erlösen = alles verfügbare Geld
       const avail = Math.max(0, b.cash);
       const invest = o.budgetMode === 'fixed' ? Math.min(budget, avail) : avail;
@@ -277,6 +296,7 @@ export function simulate(data, key, opts) {
         buyEtf(b, invest, etfPx(data, k), o, k, { name: worldName, text: 'kein Kandidat in diesem Monat', date });
       }
     }
+    m.tax = b.monthTax;
     m.cashAfter = b.cash;
     b.months.push(m);
     const v = st.kind === 'etf'
@@ -311,11 +331,8 @@ export function simulate(data, key, opts) {
   series.push([data.points[kEnd], final, b.contrib]);
   // Steuer, falls am Ende alles verkauft würde (rein rechnerisch)
   const endYear = yearOf(data.points[kEnd]);
-  settle(b, endYear, kEnd);
-  const akt = (b.gains[endYear] || 0) + b.carry + unrealStock;
   const etfGain = (etfVal - b.etfBasis - (b.vpTotal || 0)) * (1 - ETF_EXEMPT);
-  const base = Math.max(0, akt) + etfGain;
-  const endTax = Math.max(0, base - allowance(endYear)) * TAX;
+  const endTax = liability(b, endYear, unrealStock, etfGain) - (b.paidYear[endYear] || 0);
   const afterTax = final - endTax;
   const years = (Date.parse(data.points[kEnd]) - Date.parse(data.points[k0])) / (365.25 * 864e5);
   const ys = Object.keys(b.yearly).map(Number).sort((a, c) => a - c);

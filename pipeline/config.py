@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.6.0"
+PIPELINE_VERSION = "0.7.0"
 METHODOLOGY_VERSION = "1.0.0"   # Stage 1 (Momentum-Screening) – unverändert
 STAGE2_VERSION = "2.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
 
@@ -106,6 +106,13 @@ BENCHMARKS = {
     "sp500_eur": {"symbol": "SXR8.DE", "name": "iShares Core S&P 500 (EUR, thesaurierend)", "currency": "EUR"},
 }
 REGIME_SYMBOL_ORDER = ["URTH", "EUNL.DE"]
+# Verlängerung des MSCI-World-Sparplans vor dem Start von EUNL (09/2009): ältere iShares-MSCI-World-ETFs
+# (ausschüttend; Yahoo-„adjclose“ rechnet Ausschüttungen wieder an). Wird nur verwendet, wenn die Reihe im
+# gemeinsamen Zeitraum mit EUNL nachweislich übereinstimmt (siehe simulator.chain_backfill).
+MSCI_WORLD_BACKFILL = [
+    {"symbol": "IQQW.DE", "name": "iShares MSCI World UCITS ETF (Dist), Xetra", "currency": "EUR"},
+    {"symbol": "IWRD.L", "name": "iShares MSCI World UCITS ETF (Dist), London", "currency": "USD"},
+]
 
 LN_MAX_JUMP = math.log(METHODOLOGY["max_daily_jump"])
 

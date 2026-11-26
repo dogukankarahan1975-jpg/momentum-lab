@@ -7,6 +7,7 @@ import { freshness } from '../../app/js/data.js';
 import { validateBackup } from '../../app/js/store.js';
 import { parseStage2 } from '../../app/js/data.js';
 import { fmtSignal, stage2Usable } from '../../app/js/stage2.js';
+import { applyHiddenScreen, applyHiddenStage2 } from '../../app/js/hidden.js';
 import { holdEnd, holdStatus, buildICS, splitBuy, nextScreeningDay } from '../../app/js/holding.js';
 import { simulate as simRun, irr as simIrr, monthList, allowance as simAllowance } from '../../app/js/simulator.js';
 
@@ -239,6 +240,18 @@ test('Simulator: ETF-Sparplan verkauft nie, Wert = Anteile × Kurs', () => {
   assert.ok(r.final > r.contrib);
   assert.equal(r.taxesPaid, 0);
 });
+test('Steuer: sofort beim Verkauf einbehalten, Verlust im selben Jahr wird erstattet', () => {
+  const d = simData();
+  // A: +50 % bis Monat 1, dann -60 % bis Monat 2 (nur A auf der Liste, 1 Monat halten)
+  d.px[0] = d.points.map((_, k) => (k === 0 ? 100 : k === 1 ? 150 : 60));
+  d.cand = d.cand.map(() => [0]); d.rank = d.rank.map(() => [0]);
+  const r = simRun(d, 's1top5', { ...simOpts, budget: 20000, hold: '1' });
+  const tax = r.log.filter((x) => x.type === 'Steuer' && x.k <= 2);
+  assert.ok(tax[0].k === 1 && tax[0].amount > 0);          // Gewinn im Februar -> sofort Steuer
+  assert.ok(tax.some((x) => x.k === 2 && x.amount < 0));   // Verlust im März -> Erstattung
+  const net = tax.filter((x) => Number(d.points[x.k].slice(0, 4)) === 2010).reduce((s, x) => s + x.amount, 0);
+  assert.ok(net >= -1e-6);                                 // nie mehr erstattet als gezahlt
+});
 test('Simulator: festes Budget lässt Verkaufserlöse auf dem Konto', () => {
   const fx = simRun(simData(), 's1top10', { ...simOpts, budgetMode: 'fixed' });
   const re = simRun(simData(), 's1top10', { ...simOpts, budgetMode: 'reinvest' });
@@ -336,6 +349,24 @@ test('Simulator: Min. Score kauft nur Kandidaten ab Mindestwert, sonst bleibt da
   const none = simRun(d, 's1min4', { ...simOpts, rest: 'etf', minScore: 4 });
   assert.equal(none.log.filter((x) => x.type === 'Kauf' || x.type === 'ETF-Kauf').length, 0);
   near(none.cash, none.contrib);
+});
+
+test('Ausblenden: Kandidat fällt weg, nächster rückt nach; Stage 2 zählt neu', () => {
+  const rows = ['A', 'B', 'C', 'D'].map((x, i) => ({ symbol: x, rank: i + 1, pct: 0.01 * (i + 1), Z: 3 - i, eligible: true, m6: 0.1, m12: 0.2 }));
+  const scr = { rows, bySymbol: new Map(rows.map((r) => [r.symbol, r])), candidates: ['A', 'B', 'C'], top_pick: 'A',
+    params: { candidate_max_pct: 0.1, require_positive_m6: true, require_positive_m12: true } };
+  const h = applyHiddenScreen(scr, new Set(['A']));
+  assert.deepEqual(h.candidates, ['B', 'C', 'D']);
+  assert.equal(h.top_pick, null);
+  const back = applyHiddenScreen(h, new Set());
+  assert.deepEqual(back.candidates, ['A', 'B', 'C']); assert.equal(back.top_pick, 'A');
+  const s2 = { top_n: 2, ranking: ['B', 'A', 'C'].map((x, i) => ({ symbol: x, buy: i < 2, stage2: { rank: i + 1, score: 5 - i } })) };
+  const s2h = applyHiddenStage2(s2, new Set(['A']));
+  assert.deepEqual(s2h.buy, ['B', 'C']); assert.equal(s2h.bySymbol.get('C').stage2.rank, 2);
+});
+test('Simulator: ausgeblendete Aktie wird auch rückwirkend nicht gekauft', () => {
+  const r = simRun(simData(), 's1top5', { ...simOpts, exclude: ['A'] });
+  assert.ok(!r.log.some((x) => x.type === 'Kauf' && x.sym === 'A'));
 });
 
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);

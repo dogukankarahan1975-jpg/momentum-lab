@@ -1,4 +1,5 @@
-import { clearMemo, freshness, getJSON, loadMethodology, loadStatus } from '../data.js';
+import { cachedScreen, clearMemo, freshness, getJSON, loadMethodology, loadStatus, refreshHidden } from '../data.js';
+import { getHidden, setHidden } from '../hidden.js';
 import { fmtDate, fmtDateTime, fmtNum, fmtPct, parseDec, todayISO } from '../fmt.js';
 import { refreshHeader } from '../main.js';
 import { buildICS, openICS, screeningEvent } from '../holding.js';
@@ -66,7 +67,7 @@ export async function render(root) {
       <div class="grow"><div class="title" style="white-space:normal">${v.name} ${srcTag(v.type || 'database')}</div>
       <div class="sub" style="white-space:normal">${sourceDetail(k, v)}</div></div>
       <span class="badge ${v.ok ? 'b-buy' : 'b-sell'}">${v.ok ? 'ok' : 'Problem'}</span></div>`)}</div>
-      <p class="xs muted">Kurse: Yahoo Finance (inoffiziell, frei, keine Garantie). Wechselkurse: Europäische Zentralbank (offiziell). Universum und Gegenprüfung: iShares-Bestandsliste. US-Fundamentaldaten: SEC EDGAR (offiziell). Nachrichten: Google News RSS (Sekundärquelle).</p>`);
+      <p class="xs muted">Kurse: Yahoo Finance (inoffiziell, frei, keine Garantie). Wechselkurse: Europäische Zentralbank (offiziell). Universum: iShares MSCI ACWI (Large und Mid Caps, Industrie- und Schwellenländer), nur in Deutschland handelbare Aktien (Liste der Deutschen Börse, Annäherung an Trade Republic). Gegenprüfung: iShares-Kurse. US-Fundamentaldaten: SEC EDGAR (offiziell). Nachrichten: Google News RSS (Sekundärquelle).</p>`);
   }
 
   // Methodik
@@ -85,10 +86,15 @@ export async function render(root) {
   parts.push(html`<div class="group"><button class="row" id="archive"><div class="grow"><div class="title">Offizielle Monats-Screenings</div><div class="sub">Archiv des Datenlaufs (je Monatsende)</div></div></button></div>`);
 
   // Depot-Einstellungen
+  const hid = [...(await getHidden())];
+  parts.push(html`<h2>Gibt es bei Trade Republic nicht</h2><div class="panel small">
+    ${hid.length ? html`<p style="margin-top:0">Diese Aktien hast du ausgeblendet. Tippe auf „Einblenden“, um sie wieder anzuzeigen.</p>
+      <div class="group">${hid.map((x) => html`<div class="row"><div class="grow">${cachedScreen()?.bySymbol?.get(x)?.name || x}</div><button class="btn" data-unhide="${x}">Einblenden</button></div>`)}</div>`
+      : html`<p style="margin:0">Keine Aktie ausgeblendet. Findest du eine Aktie aus der Liste nicht bei Trade Republic, öffne sie und tippe unten auf „Gibt es bei Trade Republic nicht“.</p>`}</div>`);
   parts.push(html`<h2>Erinnerungen</h2><div class="panel small">
     <p style="margin-top:0">Die App erinnert dich über deinen Kalender: Die Daten bleiben auf dem iPhone, und es braucht keinen Server.</p>
     <button class="btn block" id="ics-month">Monats-Screening in den Kalender (jeden ersten Werktag, 8 Uhr)</button>
-    <p class="xs muted" style="margin:8px 0 0">Verkaufstermine aus deiner Haltedauer (6 oder 12 Monate) trägst du unter Depot → „Verkaufstermine in den Kalender“ ein. Nach jedem neuen Kauf mit Haltedauer einmal wiederholen. Ob eine Position am Termin im Plus ist oder bis ±0 gehalten wird, zeigt die App beim Öffnen.</p></div>`);
+    <p class="xs muted" style="margin:8px 0 0">Verkaufstermine aus deiner Haltedauer (1, 3, 6 oder 12 Monate) trägst du unter Depot → „Verkaufstermine in den Kalender“ ein. Nach jedem neuen Kauf mit Haltedauer einmal wiederholen. Ob eine Position am Termin im Plus ist oder bis ±0 gehalten wird, zeigt die App beim Öffnen.</p></div>`);
   parts.push(html`<h2>Depot-Einstellungen</h2><div class="panel">
     <label class="field"><span>Maximaler Depotanteil für "Nachkaufen" (%)</span><input id="mw" inputmode="decimal" value="${fmtNum(s.maxWeight * 100, 0)}"></label>
     <label class="field"><span>Verbleibender Sparerpauschbetrag (€, für Steuerschätzungen)</span><input id="ta" inputmode="decimal" value="${fmtNum(s.taxAllowanceLeft, 0)}"></label>
@@ -121,6 +127,7 @@ export async function render(root) {
   root.innerHTML = parts.join('');
 
   const $ = (q) => root.querySelector(q);
+  root.querySelectorAll('[data-unhide]').forEach((b) => { b.onclick = async () => { await setHidden(b.dataset.unhide, false); await refreshHidden(); render(root); }; });
   $('#ics-month').onclick = () => openICS('momentum-lab-screening.ics', buildICS([screeningEvent()]));
   $('#save-s').onclick = async () => {
     const mw = parseDec($('#mw').value) / 100, ta = parseDec($('#ta').value), br = Math.round(parseDec($('#br').value));
@@ -206,10 +213,13 @@ function sourceDetail(key, v) {
   const parts = [];
   if (v.stats) parts.push(`${v.stats.ok} ok, ${v.stats.failed} ohne Daten, ${v.stats.cached_only || 0} nur aus Cache${v.stats.blocked ? ', Sperre erkannt' : ''}`);
   if (v.as_of) parts.push(`Stand ${v.as_of}`);
-  if (v.size) parts.push(`${v.size} Aktien`);
+  if (v.size_index && v.size_index !== v.size) parts.push(`${v.size_index} im Index, ${v.size} nach Handelbarkeits-Prüfung`);
+  else if (v.size) parts.push(`${v.size} Aktien`);
+  if (v.filter?.checked) parts.push(`${v.count ? `${v.count} ISINs, ` : ''}${v.filter.kept} handelbar, ${v.filter.removed} ohne Frankfurt-Notierung (${v.filter.source})`);
+  else if (v.filter?.note) parts.push(v.filter.note);
   if (v.last_date) parts.push(`letzter Kurs ${fmtDate(v.last_date)}${v.from_cache ? ' (Cache)' : ''}`);
   if (v.checked != null) parts.push(`${v.checked} geprüft, ${v.deviations} Abweichungen`);
   if (v.detail) parts.push(v.detail);
-  if (v.error) parts.push(v.error);
+  if (v.error && !v.filter?.checked) parts.push(v.error);
   return parts.join(', ') || (v.ok ? 'in Ordnung' : 'nicht verfügbar');
 }

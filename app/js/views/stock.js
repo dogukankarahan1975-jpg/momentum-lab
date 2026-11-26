@@ -1,6 +1,7 @@
 import { fundamentals, riskFlags, whyBetter, whySelected } from '../analysis.js';
 import { lineChart } from '../charts.js';
-import { freshness, loadDetail, loadScreen, loadStage2, reasonText } from '../data.js';
+import { freshness, loadDetail, loadScreen, loadStage2, reasonText, refreshHidden } from '../data.js';
+import { getHidden, setHidden } from '../hidden.js';
 import { stage2Usable } from '../stage2.js';
 import { stage2DetailHTML } from './stage2-detail.js';
 import { cls, fmtCompact, fmtDate, fmtEUR, fmtMoney, fmtNum, fmtPct, fmtPrice, fmtRankPct } from '../fmt.js';
@@ -21,11 +22,13 @@ export async function render(root, symbol) {
   const flags = r.Z != null ? riskFlags(r, d, screen, { isCandidate: isCand }) : [];
   const yahooUrl = `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`;
   const parts = [];
+  const isHidden = (await getHidden()).has(symbol);
   if (screen.demo) parts.push(html`<div class="demo-banner">DEMO-DATEN – erfundenes Unternehmen</div>`);
   parts.push(html`<p style="margin:4px 0"><a href="#/top10">‹ Top 10</a></p>
     <h1>${r.name}</h1>
     <div class="chips" style="margin:6px 0 12px"><span class="chip">${symbol}</span><span class="chip">${r.country}</span><span class="chip">${r.sector}</span>${r.isin ? html`<span class="chip">${r.isin}</span>` : ''}
       ${symbol === screen.top_pick ? badge('TOP PICK') : isCand ? badge('KAUF-KANDIDAT') : ''}${held ? html`<span class="chip" style="color:var(--ice)">im Depot</span>` : ''}</div>`);
+  if (isHidden) parts.push(note('warn', html`<b>Ausgeblendet:</b> Du hast markiert, dass es diese Aktie bei Trade Republic nicht gibt. Sie erscheint nicht in Top 10, Stage 2 und im Simulator.`));
   if (r.Z != null) {
     parts.push(html`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline">
       <div><div class="muted xs">Rang</div><div style="font-family:var(--display);font-size:24px;font-weight:750">${r.rank ? `${r.rank}.` : '–'} <span class="small muted" style="font-weight:500">${fmtRankPct(r.pct)}</span></div></div>
@@ -120,7 +123,9 @@ export async function render(root, symbol) {
   if (fm?.edgar) links.push([fm.edgar, 'Alle SEC-Berichte (EDGAR)', 'official']);
   links.push([`https://news.google.com/search?q=${encodeURIComponent(r.name)}`, 'Nachrichtensuche', 'secondary']);
   parts.push(html`<h2>Quellen</h2><div class="group">${links.map(([u, l, t]) => html`<a class="row" href="${safeUrl(u)}" target="_blank" rel="noopener"><div class="grow">${l} ${srcTag(t)}</div></a>`)}</div>`);
-  parts.push(html`<div class="btn-row" style="margin:16px 0"><button class="btn primary" id="add">${held ? 'Transaktion erfassen' : 'Zum Depot hinzufügen'}</button>${held ? html`<a class="btn" href="#/position/${encodeURIComponent(held.id)}">Position öffnen</a>` : ''}</div>`);
+  parts.push(html`<div class="btn-row" style="margin:16px 0"><button class="btn primary" id="add">${held ? 'Transaktion erfassen' : 'Zum Depot hinzufügen'}</button>${held ? html`<a class="btn" href="#/position/${encodeURIComponent(held.id)}">Position öffnen</a>` : ''}</div>
+    <div class="btn-row" style="margin:0 0 16px"><button class="btn" id="hideTR">${isHidden ? 'Wieder einblenden' : 'Gibt es bei Trade Republic nicht'}</button></div>
+    <p class="xs muted" style="margin-top:-8px">Die App nimmt nur Aktien auf, die an der Börse Frankfurt handelbar sind. Das passt gut, aber nicht zu 100 % zum Angebot von Trade Republic. Findest du eine Aktie dort nicht, blende sie hier aus: Der nächste Kandidat rückt nach. Wird nur auf deinem iPhone gespeichert.</p>`);
   root.innerHTML = parts.join('');
   const pts = d?.series || [];
   if (pts.length > 2) {
@@ -133,6 +138,11 @@ export async function render(root, symbol) {
   } else {
     root.querySelector('#pchart').innerHTML = '<p class="muted small" style="margin:0">Kein Kursverlauf in den Detaildaten. Detaildaten gibt es nur für Kandidaten, die besten 50, frühere Kandidaten und die Beobachtungsliste.</p>';
   }
+  root.querySelector('#hideTR').onclick = async () => {
+    await setHidden(symbol, !isHidden);
+    await refreshHidden();
+    await render(root, symbol);
+  };
   root.querySelector('#add').onclick = () => openTxForm({ preset: held ? { positionId: held.id } : { symbol, name: r.name, currency: r.currency, isin: r.isin, exchange: r.exchange } });
   void raw;
 }

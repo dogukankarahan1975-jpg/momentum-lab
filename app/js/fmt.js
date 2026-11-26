@@ -17,7 +17,7 @@ export function fmtQty(x) {
   const a = Math.abs(x);
   return nf(0, a < 1 ? 6 : a < 100 ? 4 : 2).format(x);
 }
-export function fmtEUR(x, d = 2) { return ok(x) ? nf(d, d, 'currency', 'EUR').format(x) : '–'; }
+export function fmtEUR(x, d = 2) { return ok(x) ? nf(d, d, 'currency', 'EUR').format(Math.abs(x) < 0.5 * 10 ** -d ? 0 : x) : '–'; }
 export function fmtMoney(x, cur = 'EUR', d = 2) {
   if (!ok(x)) return '–';
   try { return nf(d, d, 'currency', cur || 'EUR').format(x); } catch { return `${fmtNum(x, d)} ${cur}`; }

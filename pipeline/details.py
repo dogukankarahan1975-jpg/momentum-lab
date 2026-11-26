@@ -261,7 +261,9 @@ class DetailFetcher:
         self.log = log
         self.cik_map = None
         self.status = {"sec": "nicht genutzt", "yahoo_info": "nicht genutzt", "news": "nicht genutzt"}
-        self.counts = {"sec_ok": 0, "sec_fail": 0, "yahoo_ok": 0, "yahoo_fail": 0, "news_ok": 0, "news_fail": 0}
+        self.counts = {"sec_ok": 0, "sec_fail": 0, "yahoo_ok": 0, "yahoo_fail": 0, "news_ok": 0, "news_fail": 0,
+                       "yahoo_cached": 0, "news_cached": 0}
+        self.ok = {"yahoo_info": True, "news": True}
 
     def _cache(self, sym: str) -> dict:
         p = self.cache_dir / (re.sub(r"[^A-Za-z0-9._-]", "_", sym) + ".json")
@@ -323,6 +325,7 @@ class DetailFetcher:
                 c["fund_date"] = self.today.strftime("%Y-%m-%d")
             time.sleep(0.3)
         else:
+            self.counts["yahoo_cached"] += 1
             # Kurs-abhängige Kennzahlen aktualisieren
             sec = (c.get("fund") or {}).get("sec")
             if sec and last_price:
@@ -340,6 +343,8 @@ class DetailFetcher:
             except Exception:  # noqa: BLE001
                 self.counts["news_fail"] += 1
             time.sleep(0.4)
+        else:
+            self.counts["news_cached"] += 1
         self._save(sym, c)
         out.update({k: c.get(k) for k in ("fund", "fund_date", "news", "news_date")})
         return out
@@ -348,8 +353,13 @@ class DetailFetcher:
         n = self.counts
         self.status["sec"] = self.status["sec"] if n["sec_ok"] + n["sec_fail"] == 0 else \
             f"{n['sec_ok']} ok / {n['sec_fail']} Fehler"
-        self.status["yahoo_info"] = f"{n['yahoo_ok']} ok / {n['yahoo_fail']} Fehler"
-        self.status["news"] = f"{n['news_ok']} ok / {n['news_fail']} Fehler"
+        for key, ok, fail, cached in (("yahoo_info", n["yahoo_ok"], n["yahoo_fail"], n["yahoo_cached"]),
+                                      ("news", n["news_ok"], n["news_fail"], n["news_cached"])):
+            if ok + fail == 0:
+                self.status[key] = f"aktuell aus dem Zwischenspeicher ({cached} Aktien)" if cached else "nicht benötigt"
+            else:
+                self.status[key] = f"{ok} ok / {fail} Fehler" + (f", {cached} aus dem Zwischenspeicher" if cached else "")
+            self.ok[key] = fail == 0 or ok >= fail
         return self.status
 
 

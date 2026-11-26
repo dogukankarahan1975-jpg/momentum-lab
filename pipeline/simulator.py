@@ -46,7 +46,50 @@ def _stage2_rank(ctx, d, sig, top10: list[str], mkt: pd.Series | None):
     return res.index.tolist(), {s: float(res.at[s, "score"]) for s in res.index}
 
 
-def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp, log=print) -> dict:
+def chain_backfill(main: pd.Series, candidates: list, log=print) -> tuple[pd.Series, dict | None]:
+    """Verlängert eine ETF-Reihe nach hinten mit einer älteren Reihe desselben Index.
+
+    Bedingung (sonst keine Verlängerung): mindestens 24 gemeinsame Monate, Korrelation der Monatsrenditen >= 0,97,
+    Unterschied der Durchschnittsrendite <= 1,5 Prozentpunkte p. a., kein Monat mit mehr als 3 Prozentpunkten
+    Abweichung. Die ältere Reihe wird am ersten Tag der Hauptreihe auf deren Niveau skaliert (reine Verkettung der
+    Renditen, keine geschätzten Werte)."""
+    main = main.dropna()
+    if main.empty:
+        return main, None
+    best = None
+    for c in candidates:
+        s = c["eur"].dropna()
+        s = s[s > 0]
+        if s.empty or s.index[0] > main.index[0] - pd.Timedelta(days=200):
+            continue
+        both = pd.concat([main, s], axis=1, keys=["m", "c"]).dropna()
+        mon = both.groupby([both.index.year, both.index.month]).tail(1).pct_change().dropna()
+        if len(mon) < 24:
+            log(f"[simulator] Verlängerung {c['symbol']}: zu wenig gemeinsame Monate ({len(mon)})")
+            continue
+        corr = float(mon["m"].corr(mon["c"]))
+        diff = float(abs(mon["m"].mean() - mon["c"].mean()) * 12)
+        mx = float((mon["m"] - mon["c"]).abs().max())
+        ok = corr >= 0.97 and diff <= 0.015 and mx <= 0.03
+        log(f"[simulator] Verlängerung {c['symbol']}: {len(mon)} Monate, Korrelation {corr:.3f}, "
+            f"Differenz {diff:.2%} p. a., max. Monatsabweichung {mx:.2%} -> {'ok' if ok else 'verworfen'}")
+        if ok and (best is None or s.index[0] < best[1].index[0]):
+            best = (c, s, {"symbol": c["symbol"], "name": c["name"], "from": s.index[0].strftime("%Y-%m-%d"),
+                           "to": main.index[0].strftime("%Y-%m-%d"), "months_checked": int(len(mon)),
+                           "corr": round(corr, 4), "diff_pa": round(diff, 4)})
+    if best is None:
+        return main, None
+    c, s, info = best
+    d0 = main.index[0]
+    ref = s.loc[:d0]
+    if ref.empty:
+        return main, None
+    early = s.loc[s.index < d0] * (main.iloc[0] / ref.iloc[-1])
+    return pd.concat([early, main]).sort_index(), info
+
+
+def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp, log=print,
+                   backfill: list | None = None) -> dict:
     if not ctx.signals:
         ctx.compute_signals()
     p = ctx.params
@@ -118,12 +161,17 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         s = b["eur"].dropna()
         if len(s) < 250:
             continue
+        ext = None
+        if key == "msci_world_eur" and backfill:
+            s, ext = chain_backfill(s, backfill, log=log)
         if key == "sp500_tr":  # Index ohne Kosten: laufende ETF-Kosten (0,07 % p. a.) abziehen
             yrs = (s.index - s.index[0]).days / 365.25
             s = s * np.exp(-0.0007 * yrs)
         ser = s.reindex(s.index.union(pd.DatetimeIndex(points))).ffill(limit=7).reindex(points)
         ser[pd.DatetimeIndex(points) < s.index[0]] = np.nan
         bench_out[key] = {"name": b["name"], "start": s.index[0].strftime("%Y-%m-%d"), "px": [_round(x) for x in ser.values]}
+        if ext:
+            bench_out[key]["extended"] = ext
     # S&P 500: Index (Total Return) bevorzugt, sonst ETF
     if "sp500_tr" in bench_out:
         bench_out["sp500"] = bench_out.pop("sp500_tr")

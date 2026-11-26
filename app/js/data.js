@@ -1,5 +1,6 @@
 // Laden der vom täglichen Datenlauf erzeugten Dateien (gleicher Server, keine Fremdanbieter).
 import { daysBetween, todayISO } from './fmt.js';
+import { applyHiddenScreen, applyHiddenStage2, getHidden } from './hidden.js';
 
 export const SUPPORTED_SCHEMA = 1;
 const base = () => new URL('data/', document.baseURI);
@@ -46,11 +47,17 @@ export function parseScreen(raw) {
 }
 export async function loadScreen(fresh = false) {
   if (!fresh && memo.has('screen')) return memo.get('screen');
-  const s = parseScreen(await getJSON('screen.json', { fresh, timeout: 30000 }));
+  const s = applyHiddenScreen(parseScreen(await getJSON('screen.json', { fresh, timeout: 30000 })), await getHidden());
   memo.set('screen', s);
   return s;
 }
 export function cachedScreen() { return memo.get('screen') || null; }
+/** Nach Ein-/Ausblenden einer Aktie: Listen neu aufbauen. */
+export async function refreshHidden() {
+  const h = await getHidden();
+  if (memo.has('screen')) memo.set('screen', applyHiddenScreen(memo.get('screen'), h));
+  if (memo.has('stage2raw')) memo.set('stage2', applyHiddenStage2(memo.get('stage2raw'), h));
+}
 
 export async function loadDetail(symbol) {
   const fn = `details/${symbol.replace(/[^A-Za-z0-9._-]/g, '_')}.json`;
@@ -99,6 +106,8 @@ export async function loadStage2(fresh = false) {
   } catch (e) {
     if (e instanceof DataError && e.kind === 'fehlt') s = null; else throw e;
   }
+  memo.set('stage2raw', s);
+  s = applyHiddenStage2(s, await getHidden());
   memo.set('stage2', s);
   return s;
 }

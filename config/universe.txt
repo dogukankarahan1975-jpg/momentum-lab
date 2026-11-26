@@ -1,0 +1,5 @@
+# Welche Aktien untersucht werden (eine Zeile, ohne #):
+#   acwi  = MSCI ACWI: Large und Mid Caps aus Industrie- und Schwellenländern,
+#           nur Aktien, die an der Börse Frankfurt handelbar sind (Standard)
+#   world = MSCI World: nur Industrieländer (bis Version 0.6)
+acwi

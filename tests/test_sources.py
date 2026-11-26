@@ -97,6 +97,33 @@ def test_parse_chart_json_dates_and_partial_bar():
         prices.parse_chart_json({"chart": {"result": None, "error": {"description": "No data found"}}})
 
 
+def test_parse_chart_json_overnight_bar_is_redated_not_dropped():
+    # Nachts (vor Handelsbeginn) datiert Yahoo den letzten Schlusskurs auf den nächsten Handelstag vor.
+    # 21.11. und 22.11. normal, letzter Balken mit Zeitstempel 23.11. 14:30 UTC, regularMarketTime = 22.11. 21:00 UTC
+    ts = [1700577000, 1700663400, 1700749800]
+    js = chart_payload(ts, [10.0, 10.2, 10.4], [9.5, 9.7, 9.9], [1, 1, 1],
+                       period={"start": 1700749800, "end": 1700773200})
+    js["chart"]["result"][0]["meta"]["regularMarketTime"] = 1700686800  # 22.11.2023 21:00 UTC
+    # Zeitstempel 22.11. doppelt? Nein: Yahoo liefert 21.11., 23.11.(vordatiert) -> Testfall mit Lücke
+    js["chart"]["result"][0]["timestamp"] = [1700577000, 1700749800]
+    js["chart"]["result"][0]["indicators"]["quote"][0] = {"close": [10.0, 10.4], "volume": [1, 1]}
+    js["chart"]["result"][0]["indicators"]["adjclose"][0] = {"adjclose": [9.5, 9.9]}
+    df, _ = prices.parse_chart_json(js, now=datetime(2023, 11, 23, 2, 0, tzinfo=timezone.utc))
+    assert list(df.index.strftime("%Y-%m-%d")) == ["2023-11-21", "2023-11-22"]
+    assert df["close"].iloc[-1] == 10.4
+    # Markt offen (17:00 UTC): Teilbalken wird weiterhin verworfen
+    df2, _ = prices.parse_chart_json(js, now=datetime(2023, 11, 23, 17, 0, tzinfo=timezone.utc))
+    assert df2.index[-1].strftime("%Y-%m-%d") == "2023-11-21"
+
+
+def test_merge_incremental_keeps_newer_stored_close():
+    idx = pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04"])
+    old = pd.DataFrame({"close": [10.0, 11.0, 12.0], "adj": [10.0, 11.0, 12.0], "volume": [1, 1, 1]}, index=idx)
+    new = old.iloc[:2].copy()
+    merged, _ = prices.merge_incremental(old, new)
+    assert merged.index[-1] == pd.Timestamp("2024-01-04") and merged["close"].iloc[-1] == 12.0
+
+
 def test_merge_incremental_dividend_and_split():
     idx_old = pd.bdate_range("2024-01-01", "2024-03-29")
     old = pd.DataFrame({"close": 100.0, "adj": 95.0, "volume": 1000.0}, index=idx_old)
@@ -274,3 +301,37 @@ def test_crosscheck_tolerates_one_day_list_convention():
     # Liste trägt das Datum 23.11., enthält aber den Kurs vom 20.11.
     dev = crosscheck(close, pd.DataFrame({"symbol": ["MSFT"], "ref_price": [400.0]}), pd.Timestamp("2026-11-23"))
     assert abs(dev["MSFT"]) < 1e-9
+
+
+def test_emerging_market_symbols():
+    y = universe.yahoo_symbol
+    assert y("2330", "Taiwan Stock Exchange", "Taiwan")[0] == "2330.TW"
+    assert y("005930", "Korea Exchange (Stock Market)", "Korea (South)")[0] == "005930.KS"
+    assert y("RELIANCE", "National Stock Exchange Of India", "India")[0] == "RELIANCE.NS"
+    assert y("WALMEX *", "Bolsa Mexicana De Valores", "Mexico")[0] == "WALMEX.MX"
+    assert y("ISA", "Bolsa De Valores De Colombia", "Colombia")[0] == "ISA.CL"
+    assert y("SAN", "Bolsa De Madrid", "Spain")[0] == "SAN.MC"
+
+
+def test_frankfurt_filter(tmp_path):
+    from pipeline import tradable
+    assert tradable.isin_valid("US0378331005") and not tradable.isin_valid("US0378331006")
+    uni = pd.DataFrame({"symbol": ["AAPL", "2330.TW", "600519.SS"], "name": ["Apple", "TSMC", "Moutai"],
+                        "country": ["USA", "Taiwan", "China"], "isin": ["US0378331005", "TW0002330008", "CNE0000018R8"]})
+    out, info = tradable.apply_filter(uni, {"US0378331005"}, tmp_path, "2026-11-26")
+    assert list(out["symbol"]) == ["AAPL"] and info["removed"] == 1 and info["removed_cn_a"] == 1
+    # ohne frische Liste: gespeicherte Prüfung verwenden
+    out2, info2 = tradable.apply_filter(uni, None, tmp_path, "2026-12-10")
+    assert list(out2["symbol"]) == ["AAPL"] and "gespeicherte" in info2["source"]
+    # ohne ISIN: nicht filtern, nur China-A raus
+    out3, info3 = tradable.apply_filter(uni.assign(isin=""), None, tmp_path / "x", "2026-11-26")
+    assert len(out3) == 2 and not info3["checked"]
+
+
+def test_crosscheck_guard_for_currency_convention():
+    from pipeline.run import sanitize_crosscheck
+    idx = [f"S{i}" for i in range(10)] + ["U1"]
+    dev = pd.Series([0.9] * 10 + [0.2], index=idx)
+    cur = pd.Series(["TWD"] * 10 + ["USD"], index=idx)
+    out, off = sanitize_crosscheck(dev, cur, 0.03)
+    assert "TWD" in off and out[idx[:10]].isna().all() and out["U1"] == 0.2

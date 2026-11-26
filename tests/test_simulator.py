@@ -52,3 +52,19 @@ def test_sim_data_shapes_and_no_lookahead():
     assert d["bench"]["msci_world"]["px"][0] is None      # World erst ab 2005
     assert d["bench"]["sp500"]["px"][0] is not None
     json.dumps(d, allow_nan=False)
+
+
+def test_chain_backfill_extends_only_matching_series():
+    from pipeline.simulator import chain_backfill
+    rng = np.random.default_rng(1)
+    idx = pd.bdate_range("2005-01-03", "2012-12-31")
+    r = rng.normal(0.0003, 0.01, len(idx))
+    old = pd.Series(100 * np.exp(np.cumsum(r)), index=idx)
+    main = (old.loc["2009-09-25":] * 0.37)
+    noise = pd.Series(50 * np.exp(np.cumsum(rng.normal(0.0003, 0.01, len(idx)))), index=idx)
+    out, info = chain_backfill(main, [{"symbol": "X", "name": "X", "eur": noise}, {"symbol": "OLD", "name": "Alt", "eur": old}], log=lambda *_: None)
+    assert info["symbol"] == "OLD" and out.index[0] == idx[0]
+    assert abs(out.loc["2009-09-25"] - main.iloc[0]) < 1e-9
+    assert np.allclose(out.pct_change().loc["2006"].dropna(), old.pct_change().loc["2006"].dropna())
+    out2, info2 = chain_backfill(main, [{"symbol": "X", "name": "X", "eur": noise}], log=lambda *_: None)
+    assert info2 is None and out2.index[0] == main.index[0]

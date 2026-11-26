@@ -37,6 +37,8 @@ function finalParts(screen, s2, fr) {
   if (!use.ok) parts.push(note(s2?.status === 'fehler' ? 'error' : 'info', use.reason));
   if (!s2 || !s2.schema || s2.schema < 2) return parts;
   for (const m of (s2.messages || [])) parts.push(html`<p class="xs muted">${m.text}</p>`);
+  const noS2 = (screen.refilled || []).filter((x) => !s2.bySymbol?.has(x));
+  if (noS2.length) parts.push(note('info', `Nachgerückt, aber ohne Stage-2-Bewertung (Stage 2 bewertet nur die Top 10 des Datenlaufs): ${noS2.map((x) => screen.bySymbol.get(x)?.name || x).join(', ')}.`));
   if (!s2.ranking.length) {
     parts.push(empty('Keine Kandidaten für Stage 2', 'Stage 1 hat heute keine Aktie ausgewählt.'));
     return parts;
@@ -63,6 +65,10 @@ async function stage1Parts(screen, s2, fr) {
   const parts = [html`<p class="lede">Höchstens zehn Aktien, die alle Regeln erfüllen. Datenstand ${fmtDate(screen.asof)} (${fr.label}), Methodik v${screen.methodology_version}.${snap ? '' : ' Tipp: Starte ein Screening, damit das Ergebnis mit deinem Depot gespeichert wird.'}</p>`];
   if (!fr.ok || screen.status === 'fehler') parts.push(note('error', `Die Daten sind ${screen.status === 'fehler' ? 'fehlerhaft' : fr.label}. Diese Liste ist keine aktuelle Empfehlung.`));
   else if (screen.status === 'warnung') parts.push(note('warn', 'Der Datenlauf hat Warnungen gemeldet. Details stehen unter Einstellungen > Datenquellen.'));
+  const hiddenCands = (screen.candidatesOrig || []).filter((x) => !screen.candidates.includes(x));
+  if (hiddenCands.length) {
+    parts.push(note('info', html`Ausgeblendet (gibt es bei Trade Republic nicht): ${hiddenCands.map((x) => screen.bySymbol.get(x)?.name || x).join(', ')}.${screen.refilled?.length ? ` Nachgerückt: ${screen.refilled.map((x) => screen.bySymbol.get(x)?.name || x).join(', ')}.` : ''}${screen.topPickHidden ? ' Der Top Pick war ausgeblendet; ein neuer Top Pick wird nur vom Datenlauf bestimmt.' : ''}`));
+  }
 
   if (!screen.candidates.length) {
     parts.push(empty('Keine Aktie erfüllt alle Kriterien', 'Das ist eine bewusste Entscheidung des Systems und kein Fehler. Die Liste wird nie mit schwachen Kandidaten aufgefüllt. Häufige Ursache: Im Markt fehlt positives Momentum.'));

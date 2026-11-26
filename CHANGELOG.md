@@ -1,5 +1,19 @@
 # Änderungen
 
+## Pipeline 0.7.0 – 26.11.2026: MSCI ACWI, nur in Deutschland handelbare Aktien
+- Universum jetzt MSCI ACWI: Large und Mid Caps aus Industrie- und Schwellenländern (vorher nur MSCI World). Regeln unverändert. Zurückschalten über `config/universe.txt` (`world`).
+- Nur Aktien, die an der Börse Frankfurt handelbar sind (offizielle Liste der Deutschen Börse) – Annäherung an das Angebot von Trade Republic. China-A-Aktien werden immer ausgeschlossen.
+- Neu in der App: „Gibt es bei Trade Republic nicht“ bei jeder Aktie. Ausgeblendete Aktien verschwinden aus Top 10, Stage 2 und Simulator, der nächste Kandidat rückt nach. Liste unter Einstellungen, nur lokal gespeichert.
+- Schwellenländer-Börsen (Taiwan, Korea, Indien, Brasilien, Südafrika, Saudi-Arabien, Mexiko u. a.) werden Yahoo-Symbolen zugeordnet; Währungen ohne EZB-Kurs über Yahoo-Devisenkurse.
+- Gegenprüfung mit iShares-Kursen wird je Währung ausgesetzt, wenn mehr als die Hälfte abweicht (Konventionsproblem der Zweitquelle statt Fehler einzelner Aktien).
+
+## Pipeline 0.6.1 – 26.11.2026
+- Kurse: Nachts (vor Handelsbeginn) datiert Yahoo den letzten Schlusskurs auf den nächsten Handelstag vor. Dieser Balken wurde bisher als „laufender Handelstag“ verworfen; bei Datenläufen nach ca. 2 Uhr fehlte dadurch der letzte US-Schlusskurs und der Datenstand fiel um einen Tag zurück (26.11.: Stand 24.11. statt 25.11.). Jetzt wird er auf den richtigen Tag zurückdatiert; bereits gespeicherte neuere Schlusskurse gehen beim Nachladen nie mehr verloren.
+- Quellenstatus: Unternehmensdaten und Nachrichten, die noch aktuell im Zwischenspeicher liegen, gelten als „ok“ statt „Problem“ („0 ok / 0 Fehler“ hieß nur: nichts neu abzurufen).
+- Simulator: MSCI-World-Sparplan vor 09/2009 (Start von EUNL) mit dem älteren iShares MSCI World (Dist) verlängert – nur wenn beide Reihen im gemeinsamen Zeitraum nachweislich übereinstimmen. Vorher wurde jedes Startjahr vor 2010 stillschweigend auf 2010 verschoben (deshalb immer dieselbe Rendite).
+- Simulator: Haltedauer 1 Monat (auch mit „warten bis ±0“), ebenso im Depot. Auswahl „Weniger Kandidaten als Plätze?“ entfernt: Es werden nur echte Kandidaten gekauft, der Rest bleibt auf dem Konto und wird im nächsten Monat mit angelegt.
+- Steuern: Abgeltungsteuer wird wie beim Broker sofort bei jedem Verkauf einbehalten, Verluste im selben Jahr werden erstattet (Verlustverrechnung), Vorabpauschale Anfang Januar; vorher Sammelabrechnung im Januar des Folgejahres.
+
 ## Pipeline 0.6.0 / Stage 2 v2.0.0 – 26.11.2026
 - **Stage 2 komplett neu: Fortsetzungs-Rangfolge.** Die Top-10-Kandidaten aus Stage 1 werden nach Forschungssignalen für das Weiterlaufen von Momentum sortiert (gleichmäßiger Anstieg, Nähe zum 52-Wochen-Hoch, marktbereinigtes Momentum; live zusätzlich Schätzungsänderungen und Gewinnüberraschungen). Die besten 5 sind die Kaufkandidaten. Nichts wird ausgeschlossen. Anti-Peak-Filter und Kategorien von v1 entfallen.
 - Simulator: sechs Strategien – MSCI World, S&P 500, Stage 1 Top 5, Stage 1 Top 10, Stage 2 Top 5 (Kursteil rückwirkend getestet), Minimum Score 4 (nur Stage-1-Kandidaten mit Momentum-Score ab 4, sonst bleibt das Budget auf dem Konto).

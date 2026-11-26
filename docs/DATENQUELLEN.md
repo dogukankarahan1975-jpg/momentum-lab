@@ -6,7 +6,9 @@ Alle Dienste sind ohne Kreditkarte, Abo oder Testzugang nutzbar.
 |---|---|---|---|---|
 | Hosting der App | GitHub Pages | Infrastruktur | kostenlos für **öffentliche** Repositories im Free-Tarif; Website max. 1 GB | Code liegt zusätzlich als ZIP bei dir; jeder andere statische Host funktioniert |
 | Täglicher Datenlauf | GitHub Actions | Infrastruktur | Standard-Runner in öffentlichen Repositories kostenlos und unbegrenzt (Preisänderung 01/2026 betrifft nur private Repos und Self-Hosted) | manueller Start über „Run workflow“ |
-| Aktienuniversum + Zweitkurs | iShares MSCI World ETF (URTH), Bestandsliste | Datenbank (BlackRock) | frei abrufbar | archivierte letzte Liste, danach Notfall-Universum |
+| Aktienuniversum + Zweitkurs | iShares MSCI ACWI, Bestandsliste (bevorzugt mit ISIN); alternativ MSCI World (URTH) | Datenbank (BlackRock) | frei abrufbar | archivierte letzte Liste, danach Notfall-Universum |
+| Handelbarkeit in Deutschland | Deutsche Börse: „T7 (Börse Frankfurt) Alle handelbaren Instrumente“ (CSV) | offiziell | frei | gespeicherte Prüfung (max. 45 Tage), sonst ungefiltert mit Warnung |
+| Wechselkurse ohne EZB-Kurs | Yahoo Finance (EURTWD=X usw.) | Datenbank (inoffiziell) | frei | Aktien in dieser Währung entfallen |
 | Kurse | Yahoo Finance (Chart-Endpunkt; Bibliothek yfinance als Reserve) | **inoffiziell** | frei, aber ohne Vertrag; Drosselung möglich | Cache der Historie; bei Sperre werden ältere Kurse genutzt und deutlich gekennzeichnet |
 | Wechselkurse | Europäische Zentralbank, Referenzkurse | **offiziell** | frei | letzte gespeicherte Kopie |
 | US-Fundamentaldaten, Pflichtmitteilungen | SEC EDGAR (XBRL „companyfacts“, „submissions“) | **offiziell** | frei; max. 10 Anfragen/Sekunde mit Kontaktangabe | Yahoo-Unternehmensdaten |

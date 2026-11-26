@@ -21,7 +21,7 @@ import pandas as pd
 
 from . import backtest as bt
 from . import core
-from .config import (BENCHMARKS, METHODOLOGY, METHODOLOGY_VERSION, PIPELINE_VERSION, REGIME_SYMBOL_ORDER,
+from .config import (BENCHMARKS, MSCI_WORLD_BACKFILL, METHODOLOGY, METHODOLOGY_VERSION, PIPELINE_VERSION, REGIME_SYMBOL_ORDER,
                      BACKTEST_VARIANTS, COST_SCENARIOS, TAX, BACKTEST, params_hash, STAGE2, STAGE2_VERSION,
                      STAGE2_CATEGORIES, STAGE2_MIN, STAGE2_BACKTEST, FUNDAMENTALS, stage2_params_hash)
 from .fx import fx_on_index, load_fx
@@ -103,6 +103,19 @@ def determine_asof(adj: pd.DataFrame) -> pd.Timestamp:
     return ok.index[-1]
 
 
+FX_FROM_YAHOO = ["TWD", "SAR", "AED", "QAR", "KWD", "CLP", "COP", "PEN", "EGP"]
+
+
+def read_universe_kind(path: Path) -> str:
+    """config/universe.txt: „acwi“ (Standard) oder „world“."""
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            w = line.split("#", 1)[0].strip().lower()
+            if w in ("acwi", "world"):
+                return w
+    return "acwi"
+
+
 def read_watchlist(path: Path) -> list[str]:
     if not path.exists():
         return []
@@ -166,6 +179,21 @@ def crosscheck(close: pd.DataFrame, universe: pd.DataFrame, ref_date: pd.Timesta
                 best = d
         dev[sym] = best
     return dev
+
+
+def sanitize_crosscheck(dev: pd.Series, cur: pd.Series, tol: float) -> tuple[pd.Series, dict]:
+    """Weicht in einer Währung mehr als die Hälfte der Kurse ab, liegt ein Konventionsproblem der Zweitquelle vor
+    (z. B. Kurs in USD statt Landeswährung). Dann wird die Gegenprüfung für diese Währung ausgesetzt, statt alle
+    Aktien als fehlerhaft auszuschließen."""
+    dev = dev.copy()
+    off = {}
+    c = cur.reindex(dev.index)
+    for cc in c.dropna().unique():
+        sub = dev[(c == cc) & dev.notna()]
+        if len(sub) >= 8 and (sub.abs() > tol).mean() > 0.5:
+            off[cc] = float((sub.abs() > tol).mean())
+            dev[sub.index] = np.nan
+    return dev, off
 
 
 def find_duplicates(universe: pd.DataFrame, liq: pd.Series) -> set:
@@ -240,15 +268,33 @@ def run(args) -> int:
         pstats = {"requested": len(frames), "ok": len(frames), "failed": 0, "cached_only": 0}
         watch = []
     else:
-        ures = load_universe(lambda u: http_get(u), archive / "universe", offline=False)
+        kind = read_universe_kind(ROOT / "config" / "universe.txt")
+        ures = load_universe(lambda u: http_get(u), archive / "universe", offline=False, kind=kind)
         universe, uni_as_of = ures.frame, ures.as_of
         for w in ures.warnings:
             msg("warnung", w)
         sources["universe"] = {"name": ures.source, "ok": ures.source.startswith("iShares"),
-                               "as_of": uni_as_of, "size": int(len(universe)), "type": "database",
-                               "url": "https://www.ishares.com/us/products/239696/ishares-msci-world-etf"}
+                               "as_of": uni_as_of, "size_index": int(len(universe)), "type": "database", "kind": kind,
+                               "url": ("https://www.ishares.com/uk/individual/en/products/251850/ishares-msci-acwi-ucits-etf"
+                                       if kind == "acwi" else "https://www.ishares.com/us/products/239696/ishares-msci-world-etf")}
+        # Nur Aktien, die in Deutschland (Börse Frankfurt) handelbar sind – Annäherung an das Trade-Republic-Angebot
+        from .tradable import apply_filter, load_frankfurt_isins
+        isins, tstat = (None, {"name": "Deutsche Börse – handelbare Instrumente Börse Frankfurt", "type": "official",
+                               "ok": False, "error": "nicht benötigt"})
+        if "isin" in universe and (universe["isin"].astype(str).str.len() == 12).mean() > 0.8:
+            isins, tstat = load_frankfurt_isins(lambda u: http_get(u, binary=True), lambda u: http_get(u), log)
+        universe, tinfo = apply_filter(universe, isins, archive / "universe", iso(pd.Timestamp.utcnow().tz_localize(None)))
+        tstat["filter"] = tinfo
+        tstat["ok"] = bool(tinfo.get("checked"))
+        sources["tradable_de"] = tstat
+        sources["universe"]["size"] = int(len(universe))
+        if tinfo.get("note"):
+            msg("warnung", tinfo["note"])
+        log(f"Universum: {sources['universe']['size_index']} im Index, {len(universe)} nach Handelbarkeits-Prüfung "
+            f"({tinfo.get('removed', 0)} nicht in Frankfurt, {tinfo.get('removed_cn_a', 0)} China-A)")
         watch = read_watchlist(ROOT / "config" / "watchlist.txt")
-        bench_syms = [b["symbol"] for b in BENCHMARKS.values()]
+        bench_syms = ([b["symbol"] for b in BENCHMARKS.values()] + [b["symbol"] for b in MSCI_WORLD_BACKFILL]
+                      + [f"EUR{c}=X" for c in FX_FROM_YAHOO])
         symbols = list(dict.fromkeys(list(universe["symbol"]) + watch + bench_syms))
         hints = dict(zip(universe["symbol"], universe.get("currency_hint", pd.Series(dtype=str))))
         for s in watch + bench_syms:
@@ -270,6 +316,22 @@ def run(args) -> int:
                          "url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html"}
         if fx is None:
             msg("fehler", "Keine Wechselkurse verfügbar – Screening nicht möglich.")
+        else:
+            # Währungen, die die EZB nicht veröffentlicht (z. B. TWD, SAR): Yahoo-Devisenkurse (inoffiziell)
+            added = []
+            for c in FX_FROM_YAHOO:
+                df = frames.get(f"EUR{c}=X")
+                if c in fx.columns or df is None or df.empty:
+                    continue
+                ser = df["close"].dropna()
+                ser = ser[ser > 0]
+                if len(ser) < 250:
+                    continue
+                fx[c] = ser.reindex(fx.index.union(ser.index)).sort_index().ffill().reindex(fx.index)
+                added.append(c)
+            if added:
+                sources["fx_yahoo"] = {"name": "Yahoo Finance Devisenkurse (inoffiziell)", "ok": True, "type": "database",
+                                       "detail": "für " + ", ".join(added) + " (nicht bei der EZB)"}
 
     bench_frames = {b["symbol"]: frames.get(b["symbol"]) for b in BENCHMARKS.values() if frames.get(b["symbol"]) is not None}
     uni_syms = [s for s in universe["symbol"] if s in frames]
@@ -293,6 +355,10 @@ def run(args) -> int:
     panel = core.prepare_panel(adj, close, volume)
     ref_date = parse_ishares_date(uni_as_of) if not demo else asof
     dev = crosscheck(close, universe, ref_date)
+    dev, off = sanitize_crosscheck(dev, cur_series, METHODOLOGY["crosscheck_tolerance"])
+    for c, share in off.items():
+        msg("warnung", f"Gegenprüfung für {c}-Kurse ausgesetzt: {share:.0%} weichen ab – vermutlich andere Kurs-Konvention "
+                       "in der iShares-Liste, kein Fehler einzelner Aktien.")
     has_ref = universe.set_index("symbol")["ref_price"].reindex(stock_syms).notna() if "ref_price" in universe else pd.Series(False, index=stock_syms)
     pre = core.quality_at(panel, asof, cur_series, fx_row, METHODOLOGY, dev)
     dups = find_duplicates(universe[universe["symbol"].isin(uni_syms)], pre["liq_eur"])
@@ -469,13 +535,25 @@ def run(args) -> int:
                         rate = fx_on_index(fx, s.index)[c]
                         s = s / rate
                     bench_eur[key] = {"name": b["name"], "eur": s.dropna()}
+                backfill = []
+                for b in MSCI_WORLD_BACKFILL:
+                    df = frames.get(b["symbol"])
+                    if df is None or df.empty:
+                        continue
+                    s = df["adj"].dropna()
+                    c = currency.get(b["symbol"], b["currency"])
+                    if c != "EUR":
+                        if c not in fx.columns:
+                            continue
+                        s = s / fx_on_index(fx, s.index)[c]
+                    backfill.append({"symbol": b["symbol"], "name": b["name"], "eur": s.dropna()})
                 upanel = core.prepare_panel(adj[uni_syms], close[uni_syms], volume[uni_syms])
                 ctx = bt.Context(upanel, cur_series.reindex(uni_syms), fx, dups, asof, bench_eur, log=log)
                 bt_res = bt.run_backtest(ctx, log=log)
                 if bt_res.get("available"):
                     try:
                         from .simulator import build_sim_data
-                        sim = build_sim_data(ctx, meta, bench_eur, asof, log=log)
+                        sim = build_sim_data(ctx, meta, bench_eur, asof, log=log, backfill=backfill)
                         sim["key"] = bt_key
                         sim["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                         (cache / "simulator.json").write_text(json.dumps(sanitize(sim), separators=(",", ":"),
@@ -515,7 +593,10 @@ def run(args) -> int:
         "prev_month_end": iso(prev_d), "methodology_version": METHODOLOGY_VERSION, "params_hash": params_hash(),
         "pipeline_version": PIPELINE_VERSION, "status": overall,
         "universe": {"source": sources["universe"]["name"], "as_of": uni_as_of, "size": n_uni, "priced": n_priced,
-                     "eligible": n_elig, "excluded_by_reason": excluded, "watchlist": watch_only},
+                     "eligible": n_elig, "excluded_by_reason": excluded, "watchlist": watch_only,
+                     "kind": sources["universe"].get("kind", "demo"), "size_index": sources["universe"].get("size_index"),
+                     "tradable": (sources.get("tradable_de") or {}).get("filter"),
+                     "emerging": int(universe["emerging"].sum()) if "emerging" in universe else None},
         "fx": {"date": iso(fx.index[fx.index <= asof].max()), "rates": fx_rates},
         "market": regime, "candidates": cands, "top_pick": top_pick,
         "top_pick_checks": {k: v for k, v in tp_info["checks"].items()}, "top_pick_vol_limit": r5(tp_info["vol_limit"]),
@@ -727,7 +808,7 @@ def write_details(out: Path, detail_set: list, panel: core.Panel, meta: pd.DataF
     rng = np.random.default_rng(3)
     if not demo:
         fetcher = DetailFetcher(lambda u, h=None: http_json(u, h), lambda u: http_get(u), cache / "details",
-                                asof, log)
+                                pd.Timestamp.utcnow().tz_localize(None).normalize(), log)
     n = 0
     for s in detail_set:
         if s not in panel.adj.columns:
@@ -756,9 +837,9 @@ def write_details(out: Path, detail_set: list, panel: core.Panel, meta: pd.DataF
         sec_ok = st["sec"] in ("nicht genutzt", "ok") or bool(re.match(r"^[1-9]\d* ok", st["sec"]))
         srcs = {"sec": {"name": "SEC EDGAR (XBRL, Filings)", "ok": sec_ok,
                         "detail": st["sec"], "type": "official", "url": "https://www.sec.gov/edgar/search/"},
-                "fundamentals_yahoo": {"name": "Yahoo Finance (Unternehmensdaten)", "ok": not st["yahoo_info"].startswith("0 ok"),
+                "fundamentals_yahoo": {"name": "Yahoo Finance (Unternehmensdaten)", "ok": fetcher.ok["yahoo_info"],
                                        "detail": st["yahoo_info"], "type": "database"},
-                "news": {"name": "Google News (RSS)", "ok": not st["news"].startswith("0 ok"), "detail": st["news"],
+                "news": {"name": "Google News (RSS)", "ok": fetcher.ok["news"], "detail": st["news"],
                          "type": "secondary"}}
     return {"count": n, "sources": srcs}
 

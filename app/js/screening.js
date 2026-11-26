@@ -70,11 +70,11 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
       stop(I.data, `Der Datenstand (${fmtDate(screen.asof)}) ist ${fr.label}. Das Screening wurde abgebrochen, damit keine veralteten Empfehlungen entstehen.`);
       return { error: 'Daten zu alt', steps };
     }
-    set(I.data, fr.level === 'aktuell' ? 'ok' : 'warn', `Datenstand ${fmtDate(screen.asof)} (${fr.label}), berechnet am ${fmtDateTime(screen.generated_at)}${screen.demo ? '. DEMO-DATEN' : ''}`);
+    set(I.data, fr.level === 'aktuell' ? 'ok' : 'warn', `Schlusskurse vom ${fmtDate(screen.asof)} (${fr.label}), berechnet vom nächtlichen Datenlauf am ${fmtDateTime(screen.generated_at)}. Die App lädt dieses fertige Ergebnis; neue Kurse kommen werktags nach US-Börsenschluss (fertig gegen 23:45 Uhr deutscher Zeit).${screen.demo ? ' DEMO-DATEN' : ''}`);
 
     const u = screen.universe;
     set(I.universe, u.source?.startsWith('iShares') || screen.demo ? 'ok' : 'warn',
-      `${u.size} Aktien, Quelle: ${u.source}${u.as_of ? ` (Stand ${u.as_of})` : ''}${u.watchlist?.length ? `, dazu ${u.watchlist.length} aus der Beobachtungsliste` : ''}`);
+      `${u.size} Aktien, Quelle: ${u.source}${u.as_of ? ` (Stand ${u.as_of})` : ''}${u.emerging ? `, davon ${u.emerging} aus Schwellenländern` : ''}${u.tradable?.checked ? `. Nur in Deutschland handelbare Aktien (${u.tradable.removed} ohne Frankfurt-Notierung und ${u.tradable.removed_cn_a} China-A-Aktien ausgeschlossen)` : u.tradable?.note ? `. ${u.tradable.note}` : ''}${u.watchlist?.length ? `, dazu ${u.watchlist.length} aus der Beobachtungsliste` : ''}`);
 
     const analyzed = screen.rows.filter((r) => Number.isFinite(r.last_close)).length;
     set(I.scan, analyzed / Math.max(u.size, 1) > 0.8 ? 'ok' : 'warn', `${analyzed} Aktien mit Kursdaten untersucht, ${u.size - u.priced} ohne Kursdaten`);

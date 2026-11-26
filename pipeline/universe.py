@@ -1,6 +1,9 @@
-"""Aktienuniversum: MSCI-World-Bestandteile aus der täglichen iShares-Bestandsliste.
+"""Aktienuniversum aus der täglichen iShares-Bestandsliste.
 
-Quelle 1: iShares MSCI World ETF (URTH) – Bestandsliste als CSV (BlackRock, öffentlich).
+Standard (ab Pipeline 0.7.0): MSCI ACWI – Large und Mid Caps aus Industrie- und Schwellenländern.
+Umschaltbar über config/universe.txt („acwi“ oder „world“).
+Quelle 1: iShares-Bestandsliste als CSV (BlackRock, öffentlich). Bevorzugt eine Variante mit ISIN-Spalte,
+          weil die ISIN für die Prüfung „in Deutschland handelbar“ gebraucht wird.
 Quelle 2: zuletzt erfolgreich geladene Liste (im Repository archiviert).
 Quelle 3: statisches Notfall-Universum (seed_universe.py), deutlich kleiner.
 
@@ -25,6 +28,21 @@ ISHARES_URLS = [
     "https://www.ishares.com/us/products/239696/ishares-msci-world-etf/1467271812596.ajax?fileType=csv&fileName=URTH_holdings&dataType=fund",
 ]
 
+# MSCI ACWI: zuerst Seiten, deren Bestandsliste eine ISIN-Spalte hat (Schweiz/Luxemburg), dann ohne ISIN (UK, USA)
+ACWI_URLS = [
+    "https://www.ishares.com/ch/individual/en/products/251850/ishares-msci-acwi-ucits-etf/latest-holdings.csv",
+    "https://www.ishares.com/ch/professionals/en/products/251850/ishares-msci-acwi-ucits-etf/latest-holdings.csv",
+    "https://www.blackrock.com/lu/individual/products/251850/ishares-msci-acwi-ucits-etf/latest-holdings.csv",
+    "https://www.ishares.com/uk/individual/en/products/251850/ishares-msci-acwi-ucits-etf/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239600/x/latest-holdings.csv",
+]
+
+UNIVERSES = {
+    "world": {"label": "iShares MSCI World (URTH)", "urls": ISHARES_URLS, "min": 500},
+    "acwi": {"label": "iShares MSCI ACWI", "urls": ACWI_URLS, "min": 1500},
+}
+
 COLUMN_ALIASES = {
     "ticker": ["ticker", "issuer ticker", "emittententicker"],
     "name": ["name"],
@@ -45,6 +63,19 @@ COLUMN_ALIASES = {
 
 # Börse (Teilstring, klein) -> Yahoo-Suffix. Reihenfolge wichtig (spezifisch vor allgemein).
 EXCHANGE_SUFFIX = [
+    # Schwellenländer (vor den allgemeinen Einträgen, z. B. „bolsa de“)
+    ("shanghai", ".SS"), ("shenzhen", ".SZ"),
+    ("gretai", ".TWO"), ("taipei exchange", ".TWO"), ("taiwan", ".TW"),
+    ("kosdaq", ".KQ"), ("korea", ".KS"),
+    ("national stock exchange of india", ".NS"), ("nse india", ".NS"), ("bombay", ".BO"), ("bse ltd", ".BO"),
+    ("bovespa", ".SA"), ("b3 s.a", ".SA"), ("sao paulo", ".SA"), ("são paulo", ".SA"), ("brasil bolsa", ".SA"),
+    ("johannesburg", ".JO"),
+    ("saudi", ".SR"), ("tadawul", ".SR"),
+    ("mexican", ".MX"), ("bolsa mexicana", ".MX"),
+    ("santiago", ".SN"), ("colombia", ".CL"), ("lima", ".LM"),
+    ("thailand", ".BK"), ("bursa malaysia", ".KL"), ("indonesia", ".JK"), ("philippine", ".PS"),
+    ("istanbul", ".IS"), ("warsaw", ".WA"), ("budapest", ".BD"), ("prague", ".PR"), ("athens", ".AT"),
+    ("qatar", ".QA"), ("abu dhabi", ".AD"), ("dubai", ".AE"), ("kuwait", ".KW"), ("egyptian", ".CA"),
     ("nyse euronext - euronext paris", ".PA"), ("euronext paris", ".PA"),
     ("euronext amsterdam", ".AS"), ("euronext brussels", ".BR"), ("euronext lisbon", ".LS"),
     ("euronext dublin", ".IR"), ("irish stock exchange", ".IR"),
@@ -74,6 +105,11 @@ LOCATION_SUFFIX = {
     "norway": ".OL", "belgium": ".BR", "portugal": ".LS", "austria": ".VI", "ireland": ".IR",
     "australia": ".AX", "hong kong": ".HK", "singapore": ".SI", "israel": ".TA",
     "new zealand": ".NZ",
+    "taiwan": ".TW", "korea (south)": ".KS", "south korea": ".KS", "korea": ".KS", "india": ".NS", "brazil": ".SA",
+    "south africa": ".JO", "saudi arabia": ".SR", "mexico": ".MX", "chile": ".SN", "colombia": ".CL",
+    "thailand": ".BK", "malaysia": ".KL", "indonesia": ".JK", "philippines": ".PS", "turkey": ".IS",
+    "poland": ".WA", "hungary": ".BD", "czech republic": ".PR", "greece": ".AT", "qatar": ".QA",
+    "kuwait": ".KW", "egypt": ".CA",
 }
 
 SUFFIX_CURRENCY = {
@@ -81,6 +117,11 @@ SUFFIX_CURRENCY = {
     ".AS": "EUR", ".BR": "EUR", ".LS": "EUR", ".IR": "EUR", ".HE": "EUR", ".MI": "EUR",
     ".MC": "EUR", ".VI": "EUR", ".SW": "CHF", ".ST": "SEK", ".CO": "DKK", ".OL": "NOK",
     ".AX": "AUD", ".HK": "HKD", ".SI": "SGD", ".TA": "ILA", ".NZ": "NZD",
+    ".SS": "CNY", ".SZ": "CNY", ".TW": "TWD", ".TWO": "TWD", ".KS": "KRW", ".KQ": "KRW", ".NS": "INR",
+    ".BO": "INR", ".SA": "BRL", ".JO": "ZAc", ".SR": "SAR", ".MX": "MXN", ".SN": "CLP", ".CL": "COP",
+    ".LM": "PEN", ".BK": "THB", ".KL": "MYR", ".JK": "IDR", ".PS": "PHP", ".IS": "TRY", ".WA": "PLN",
+    ".BD": "HUF", ".PR": "CZK", ".AT": "EUR", ".QA": "QAR", ".AD": "AED", ".AE": "AED", ".KW": "KWF",
+    ".CA": "EGP",
 }
 
 SUFFIX_COUNTRY = {
@@ -90,6 +131,12 @@ SUFFIX_COUNTRY = {
     ".VI": "Österreich", ".SW": "Schweiz", ".ST": "Schweden", ".CO": "Dänemark",
     ".OL": "Norwegen", ".AX": "Australien", ".HK": "Hongkong", ".SI": "Singapur",
     ".TA": "Israel", ".NZ": "Neuseeland",
+    ".SS": "China", ".SZ": "China", ".TW": "Taiwan", ".TWO": "Taiwan", ".KS": "Südkorea", ".KQ": "Südkorea",
+    ".NS": "Indien", ".BO": "Indien", ".SA": "Brasilien", ".JO": "Südafrika", ".SR": "Saudi-Arabien",
+    ".MX": "Mexiko", ".SN": "Chile", ".CL": "Kolumbien", ".LM": "Peru", ".BK": "Thailand", ".KL": "Malaysia",
+    ".JK": "Indonesien", ".PS": "Philippinen", ".IS": "Türkei", ".WA": "Polen", ".BD": "Ungarn",
+    ".PR": "Tschechien", ".AT": "Griechenland", ".QA": "Katar", ".AD": "VAE", ".AE": "VAE", ".KW": "Kuwait",
+    ".CA": "Ägypten",
 }
 
 LOCATION_DE = {
@@ -101,7 +148,18 @@ LOCATION_DE = {
     "hong kong": "Hongkong", "singapore": "Singapur", "israel": "Israel", "new zealand": "Neuseeland",
     "luxembourg": "Luxemburg", "bermuda": "Bermuda", "jersey": "Jersey", "cayman islands": "Kaimaninseln",
     "curacao": "Curaçao", "macau": "Macau", "china": "China", "puerto rico": "Puerto Rico",
+    "taiwan": "Taiwan", "korea (south)": "Südkorea", "south korea": "Südkorea", "korea": "Südkorea",
+    "india": "Indien", "brazil": "Brasilien", "south africa": "Südafrika", "saudi arabia": "Saudi-Arabien",
+    "mexico": "Mexiko", "chile": "Chile", "colombia": "Kolumbien", "peru": "Peru", "thailand": "Thailand",
+    "malaysia": "Malaysia", "indonesia": "Indonesien", "philippines": "Philippinen", "turkey": "Türkei",
+    "poland": "Polen", "hungary": "Ungarn", "czech republic": "Tschechien", "greece": "Griechenland",
+    "qatar": "Katar", "united arab emirates": "VAE", "kuwait": "Kuwait", "egypt": "Ägypten",
 }
+
+# Schwellenländer (MSCI-Einstufung), für Anzeige und Auswertung
+EMERGING = {"China", "Taiwan", "Südkorea", "Indien", "Brasilien", "Südafrika", "Saudi-Arabien", "Mexiko", "Chile",
+            "Kolumbien", "Peru", "Thailand", "Malaysia", "Indonesien", "Philippinen", "Türkei", "Polen", "Ungarn",
+            "Tschechien", "Griechenland", "Katar", "VAE", "Kuwait", "Ägypten"}
 
 SECTOR_DE = {
     "information technology": "IT", "financials": "Finanzen", "health care": "Gesundheit",
@@ -211,7 +269,7 @@ def parse_ishares_csv(text: str) -> tuple[pd.DataFrame, str | None]:
 
 def yahoo_symbol(ticker: str, exchange: str, location: str) -> tuple[str | None, str]:
     """Liefert (Yahoo-Symbol, Suffix) oder (None, '') wenn keine Zuordnung möglich ist."""
-    t = (ticker or "").strip().upper()
+    t = (ticker or "").strip().upper().replace("*", "").strip()
     if not t or t in ("-", "CASH", "USD", "EUR"):
         return None, ""
     ex = (exchange or "").strip().lower()
@@ -236,6 +294,8 @@ def yahoo_symbol(ticker: str, exchange: str, location: str) -> tuple[str | None,
         return (digits.zfill(4) + suffix, suffix) if digits else (None, "")
     if suffix == ".T":
         return t.replace(" ", "") + suffix, suffix
+    if suffix in (".TW", ".TWO", ".KS", ".KQ", ".SS", ".SZ", ".SR", ".QA", ".KW") and re.fullmatch(r"\d+[A-Z]?", t.replace(" ", "")):
+        return t.replace(" ", "") + suffix, suffix
     core = t.rstrip(".")
     core = re.sub(r"[./ ]+", "-", core)
     return core + suffix, suffix
@@ -252,7 +312,7 @@ def issuer_key(name: str, country: str) -> str:
     return f"{country}|{n}"
 
 
-def build_from_ishares(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+def build_from_ishares(df: pd.DataFrame, label: str = "iShares MSCI World (URTH)") -> tuple[pd.DataFrame, list[str]]:
     warnings = []
     eq = df[df["asset_class"].str.lower().isin(["equity", "aktien"])].copy()
     recs = []
@@ -277,7 +337,8 @@ def build_from_ishares(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
             "index_weight": r.get("weight"),
             "ref_price": r.get("price"),
             "ref_currency": r.get("currency", ""),
-            "universe_source": "iShares MSCI World (URTH)",
+            "universe_source": label,
+            "emerging": country in EMERGING,
         })
     out = pd.DataFrame(recs)
     if unmapped:
@@ -307,35 +368,48 @@ def from_seed() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def load_universe(http_get, snapshot_dir: Path, offline: bool = False) -> UniverseResult:
+def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str = "acwi") -> UniverseResult:
     """http_get(url) -> str. Fällt schrittweise auf Archiv und Notfall-Universum zurück."""
     warnings: list[str] = []
+    spec = UNIVERSES.get(kind, UNIVERSES["acwi"])
     if not offline:
-        for url in ISHARES_URLS:
+        best = None
+        for url in spec["urls"]:
             try:
                 text = http_get(url)
                 raw, as_of = parse_ishares_csv(text)
-                frame, w = build_from_ishares(raw)
-                warnings += w
-                if len(frame) < MIN_UNIVERSE:
+                frame, w = build_from_ishares(raw, spec["label"])
+                if len(frame) < spec["min"]:
                     raise ValueError(f"nur {len(frame)} Aktien erkannt – Liste unvollständig")
-                snapshot_dir.mkdir(parents=True, exist_ok=True)
-                # nur stabile Spalten archivieren: Datei ändert sich nur, wenn sich die Indexmitglieder ändern
-                stable = frame.drop(columns=[c for c in ("ref_price", "index_weight", "ref_currency") if c in frame])
+                has_isin = "isin" in frame and (frame["isin"].astype(str).str.len() == 12).mean() > 0.8
+                cand = (frame, as_of, w, has_isin, url)
+                if best is None or (has_isin and not best[3]):
+                    best = cand
+                if has_isin:
+                    break
+            except Exception as exc:  # noqa: BLE001 – jede Störung führt zum nächsten Versuch
+                warnings.append(f"iShares-Liste nicht ladbar ({url.split('/products/')[0].split('//')[1]}): {str(exc)[:160]}")
+        if best is not None:
+            frame, as_of, w, has_isin, url = best
+            warnings = w + ([] if has_isin else ["Bestandsliste ohne ISIN – Prüfung „in Deutschland handelbar“ nicht möglich"])
+            snapshot_dir.mkdir(parents=True, exist_ok=True)
+            # nur stabile Spalten archivieren: Datei ändert sich nur, wenn sich die Indexmitglieder ändern
+            stable = frame.drop(columns=[c for c in ("ref_price", "index_weight", "ref_currency") if c in frame])
+            stable.to_csv(snapshot_dir / f"latest-{kind}.csv", index=False)
+            if kind == "world":
                 stable.to_csv(snapshot_dir / "latest.csv", index=False)
-                month = pd.Timestamp.utcnow().strftime("%Y-%m")
-                if not (snapshot_dir / f"{month}.csv").exists():
-                    stable.to_csv(snapshot_dir / f"{month}.csv", index=False)
-                return UniverseResult(frame, "iShares MSCI World (URTH)", as_of, warnings)
-            except Exception as exc:  # noqa: BLE001 – jede Störung führt zum Fallback
-                warnings.append(f"iShares-Liste nicht ladbar: {exc}")
-    latest = snapshot_dir / "latest.csv"
-    if latest.exists():
-        frame = pd.read_csv(latest, keep_default_na=False, na_values=[""])
-        frame["universe_source"] = "Archivierte iShares-Liste"
-        frame["ref_price"] = None      # alter Referenzkurs ist für die Gegenprüfung ungeeignet
-        frame["index_weight"] = None
-        warnings.append("Universum aus Archiv verwendet (letzte erfolgreiche Liste)")
-        return UniverseResult(frame, "Archiv", None, warnings)
+            month = pd.Timestamp.utcnow().strftime("%Y-%m")
+            if not (snapshot_dir / f"{month}-{kind}.csv").exists():
+                stable.to_csv(snapshot_dir / f"{month}-{kind}.csv", index=False)
+            return UniverseResult(frame, spec["label"], as_of, warnings)
+    for name in (f"latest-{kind}.csv", "latest.csv"):
+        latest = snapshot_dir / name
+        if latest.exists():
+            frame = pd.read_csv(latest, keep_default_na=False, na_values=[""])
+            frame["universe_source"] = "Archivierte iShares-Liste"
+            frame["ref_price"] = None      # alter Referenzkurs ist für die Gegenprüfung ungeeignet
+            frame["index_weight"] = None
+            warnings.append(f"Universum aus Archiv verwendet ({name})")
+            return UniverseResult(frame, "Archiv", None, warnings)
     warnings.append("Notfall-Universum verwendet – deutlich kleiner als MSCI World")
     return UniverseResult(from_seed(), "Notfall-Universum", None, warnings)

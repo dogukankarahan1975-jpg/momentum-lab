@@ -91,6 +91,11 @@ with sync_playwright() as p:
     assert "Kandidaten" in page.inner_text("main"), "Gemerkte Ansicht (Stage 1) nicht wiederhergestellt"
     page.goto(BASE + first); page.wait_for_selector("text=Stage 2 – Fortsetzungs-Rangfolge"); page.wait_for_selector("text=Kursteil")
     shot("07-stock-stage2")
+    # Ausblenden („Gibt es bei Trade Republic nicht“) und wieder einblenden
+    page.click("#hideTR"); page.wait_for_selector("text=Ausgeblendet:")
+    page.goto(BASE + "#/top10/stage1"); page.wait_for_selector("text=Ausgeblendet (gibt es bei Trade Republic nicht)")
+    assert "Nachgerückt" in page.inner_text("main"); shot("07c-top10-hidden")
+    page.goto(BASE + first); page.wait_for_selector("#hideTR"); page.click("#hideTR"); page.wait_for_selector("text=Gibt es bei Trade Republic nicht")
     page.goto(BASE + "#/aktie/DMO021"); page.wait_for_selector("text=Kursentwicklung"); shot("07-stock")
     page.goto(BASE + "#/aktie/DMO008"); page.wait_for_selector("text=Warum nicht"); shot("07b-stock-excluded")
     page.goto(BASE + "#/depot"); page.wait_for_selector("text=Positionen"); page.wait_for_timeout(800); shot("08-depot")

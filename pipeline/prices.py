@@ -21,7 +21,8 @@ import numpy as np
 import pandas as pd
 
 YAHOO_CHART = "https://query2.finance.yahoo.com/v8/finance/chart/{sym}"
-MINOR_UNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ILA": ("ILS", 100.0), "ZAc": ("ZAR", 100.0)}
+MINOR_UNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ILA": ("ILS", 100.0), "ZAc": ("ZAR", 100.0),
+               "KWF": ("KWD", 1000.0)}
 HISTORY_START = "2000-01-01"
 CACHE_VERSION = 1
 UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 "
@@ -95,7 +96,17 @@ def parse_chart_json(js: dict, now: datetime | None = None) -> tuple[pd.DataFram
     if end and start and not df.empty and now.timestamp() < float(end):
         open_day = pd.to_datetime(int(start) + offset, unit="s").normalize()
         if df.index[-1] == open_day:
-            df = df.iloc[:-1]
+            if now.timestamp() >= float(start):
+                df = df.iloc[:-1]          # Markt ist offen: Teilbalken verwerfen
+            else:
+                # Markt noch nicht offen: Yahoo datiert den letzten Schlusskurs nachts auf den nächsten Handelstag
+                # vor. Den Balken auf den Tag des letzten regulären Schlusskurses zurücksetzen statt ihn zu verwerfen.
+                rmt = meta.get("regularMarketTime")
+                real_day = pd.to_datetime(int(rmt) + offset, unit="s").normalize() if rmt else None
+                if real_day is not None and real_day < open_day and real_day not in df.index[:-1]:
+                    df = df.rename(index={df.index[-1]: real_day})
+                else:
+                    df = df.iloc[:-1]
     info = {
         "currency": meta.get("currency"),
         "exchange": meta.get("fullExchangeName") or meta.get("exchangeName"),
@@ -208,6 +219,7 @@ def merge_incremental(old: pd.DataFrame, new: pd.DataFrame) -> tuple[pd.DataFram
     d0 = overlap.min()
     fc = new.at[d0, "close"] / old.at[d0, "close"]
     fa = new.at[d0, "adj"] / old.at[d0, "adj"] if np.isfinite(old.at[d0, "adj"]) and old.at[d0, "adj"] > 0 else 1.0
+    keep_newer = old.loc[old.index > new.index.max()]   # neuere, bereits gespeicherte Schlusskurse nicht verlieren
     old = old.loc[old.index < d0].copy()
     if np.isfinite(fc) and abs(fc - 1.0) > 1e-4:
         old["close"] *= fc
@@ -216,8 +228,12 @@ def merge_incremental(old: pd.DataFrame, new: pd.DataFrame) -> tuple[pd.DataFram
     if np.isfinite(fa) and abs(fa - 1.0) > 1e-7:
         old["adj"] *= fa
         info["adj_factor"] = float(fa)
-    merged = pd.concat([old, new]).sort_index()
-    merged = merged[~merged.index.duplicated(keep="last")]
+    if len(keep_newer):
+        keep_newer = keep_newer.copy()
+        keep_newer["close"] *= info["close_factor"]
+        keep_newer["adj"] *= info["adj_factor"]
+    merged = pd.concat([old, new, keep_newer]).sort_index()
+    merged = merged[~merged.index.duplicated(keep="first")]
     return merged, info
 
 
@@ -240,7 +256,7 @@ class PriceUpdateResult:
 
 
 def update_prices(symbols: list[str], store: PriceStore, currency_hints: dict, full_refresh: bool,
-                  session=None, deadline_s: float = 2400, delay_s: float = 0.25,
+                  session=None, deadline_s: float = 3600, delay_s: float = 0.25,
                   today: pd.Timestamp | None = None, log=print) -> PriceUpdateResult:
     today = (today or pd.Timestamp.utcnow().tz_localize(None)).normalize()
     if session is None:
