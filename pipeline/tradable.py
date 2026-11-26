@@ -120,8 +120,9 @@ def apply_filter(universe: pd.DataFrame, isins: set[str] | None, archive: Path, 
         info["note"] = "Liste der Deutschen Börse nicht verfügbar – Handelbarkeit diesmal nicht geprüft."
         info["kept"] = len(u)
         return u.reset_index(drop=True), info
-    keep = u["isin"].isin(ok_set)
+    no_isin = u["isin"].astype(str).str.len() != 12
+    keep = u["isin"].isin(ok_set) | no_isin          # ohne ISIN: nicht prüfbar, bleibt drin
     removed = u[~keep]
-    info.update(checked=True, source=src, kept=int(keep.sum()), removed=int(len(removed)),
+    info.update(checked=True, source=src, kept=int(keep.sum()), removed=int(len(removed)), unchecked=int(no_isin.sum()),
                 removed_examples=[f"{n} ({c})" for n, c in zip(removed["name"].head(12), removed["country"].head(12))])
     return u[keep].reset_index(drop=True), info

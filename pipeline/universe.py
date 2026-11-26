@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +38,12 @@ ACWI_URLS = [
     "https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf/latest-holdings.csv",
     "https://www.ishares.com/us/products/239600/x/latest-holdings.csv",
 ]
+
+# JSON-Variante der US-Bestandsliste: enthält je Position auch CUSIP/ISIN/SEDOL (die CSV nicht)
+ISIN_JSON_URLS = {
+    "acwi": ["https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf/1467271812596.ajax?tab=all&fileType=json"],
+    "world": ["https://www.ishares.com/us/products/239696/ishares-msci-world-etf/1467271812596.ajax?tab=all&fileType=json"],
+}
 
 UNIVERSES = {
     "world": {"label": "iShares MSCI World (URTH)", "urls": ISHARES_URLS, "min": 500},
@@ -368,6 +375,54 @@ def from_seed() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+def _norm_name(x: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(x).upper())[:12]
+
+
+def isin_map_from_json(text: str) -> dict:
+    """Liest (Ticker, Name) -> ISIN aus der iShares-JSON-Bestandsliste. Formatunabhängig: je Zeile wird die erste
+    gültige ISIN (mit Prüfziffer) genommen."""
+    from .tradable import isin_valid
+    js = json.loads(text.lstrip("\ufeff"))
+    rows = js.get("aaData") if isinstance(js, dict) else js
+    out = {}
+    for row in rows or []:
+        if not isinstance(row, list) or len(row) < 3:
+            continue
+        vals = [v.get("raw", v.get("display")) if isinstance(v, dict) else v for v in row]
+        isin = next((v for v in vals if isinstance(v, str) and isin_valid(v.strip())), None)
+        if isin and isinstance(vals[0], str):
+            out.setdefault(vals[0].strip().upper(), []).append((_norm_name(vals[1]), isin.strip()))
+    return out
+
+
+def add_isins(frame: pd.DataFrame, http_get, kind: str) -> tuple[pd.DataFrame, str | None]:
+    for url in ISIN_JSON_URLS.get(kind, []):
+        try:
+            m = isin_map_from_json(http_get(url))
+        except Exception as exc:  # noqa: BLE001
+            last = str(exc)[:120]
+            continue
+        if not m:
+            last = "keine ISIN in der JSON-Liste"
+            continue
+        f = frame.copy()
+        isins = []
+        for t, n in zip(f["source_ticker"].astype(str).str.upper(), f["name"]):
+            c = m.get(t.strip(), [])
+            if len(c) == 1:
+                isins.append(c[0][1])
+            elif c:
+                nn = _norm_name(n)
+                hit = [i for nm, i in c if nm[:5] == nn[:5]]
+                isins.append(hit[0] if len(hit) == 1 else "")
+            else:
+                isins.append("")
+        f["isin"] = isins
+        return f, None
+    return frame, locals().get("last", "keine JSON-Liste")
+
+
 def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str = "acwi") -> UniverseResult:
     """http_get(url) -> str. Fällt schrittweise auf Archiv und Notfall-Universum zurück."""
     warnings: list[str] = []
@@ -391,7 +446,13 @@ def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str
                 warnings.append(f"iShares-Liste nicht ladbar ({url.split('/products/')[0].split('//')[1]}): {str(exc)[:160]}")
         if best is not None:
             frame, as_of, w, has_isin, url = best
-            warnings = w + ([] if has_isin else ["Bestandsliste ohne ISIN – Prüfung „in Deutschland handelbar“ nicht möglich"])
+            if not has_isin:
+                frame, err = add_isins(frame, http_get, kind)
+                share = (frame["isin"].astype(str).str.len() == 12).mean() if "isin" in frame else 0.0
+                has_isin = share > 0.8
+                w = w + ([f"ISIN aus der iShares-JSON-Liste ergänzt ({share:.0%} der Aktien)"] if has_isin else
+                         [f"Bestandsliste ohne ISIN – Prüfung „in Deutschland handelbar“ nicht möglich ({err or f'nur {share:.0%} zugeordnet'})"])
+            warnings = w
             snapshot_dir.mkdir(parents=True, exist_ok=True)
             # nur stabile Spalten archivieren: Datei ändert sich nur, wenn sich die Indexmitglieder ändern
             stable = frame.drop(columns=[c for c in ("ref_price", "index_weight", "ref_currency") if c in frame])

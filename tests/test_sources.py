@@ -335,3 +335,12 @@ def test_crosscheck_guard_for_currency_convention():
     cur = pd.Series(["TWD"] * 10 + ["USD"], index=idx)
     out, off = sanitize_crosscheck(dev, cur, 0.03)
     assert "TWD" in off and out[idx[:10]].isna().all() and out["U1"] == 0.2
+
+
+def test_isin_enrichment_from_json():
+    import json as _j
+    frame = pd.DataFrame({"source_ticker": ["AAPL", "700", "XYZ"], "name": ["Apple", "Tencent", "Nix"]})
+    js = _j.dumps({"aaData": [["AAPL", "APPLE INC", "IT", "Equity", {"raw": 1}, "037833100", "US0378331005"],
+                              ["700", "TENCENT HOLDINGS LTD", "x", "Equity", "KYG875721634"]]})
+    out, err = universe.add_isins(frame, lambda u: js, "acwi")
+    assert list(out["isin"]) == ["US0378331005", "KYG875721634", ""] and err is None

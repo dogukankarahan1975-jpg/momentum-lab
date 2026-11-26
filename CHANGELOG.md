@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.7.1 – 26.11.2026
+- Übersicht auf Screening-Knopf und Backtest reduziert (Backup-Erinnerung bleibt).
+- Simulator: Top 5, Top 10 und Stage 2 Top 5 kaufen jeden Monat immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score; fehlende Kandidaten werden mit den nächsten der Momentum-Rangliste aufgefüllt. „Minimum Score“ bleibt die einzige Strategie mit Score-Grenze.
+- Top 10 (Stage 1): Gibt es weniger als 10 Kandidaten, zeigt die App die „Auffüller“ – dieselbe Regel wie im Simulator.
+- Handelbarkeits-Prüfung: Die CSV-Bestandsliste von iShares enthält keine ISIN, deshalb war der Frankfurt-Abgleich im ersten ACWI-Lauf nicht aktiv (nur China-A-Aktien ausgeschlossen). Die ISIN wird jetzt aus der JSON-Variante derselben iShares-Liste ergänzt; Aktien ohne zuordenbare ISIN bleiben drin.
+
 ## Pipeline 0.7.0 – 26.11.2026: MSCI ACWI, nur in Deutschland handelbare Aktien
 - Universum jetzt MSCI ACWI: Large und Mid Caps aus Industrie- und Schwellenländern (vorher nur MSCI World). Regeln unverändert. Zurückschalten über `config/universe.txt` (`world`).
 - Nur Aktien, die an der Börse Frankfurt handelbar sind (offizielle Liste der Deutschen Börse) – Annäherung an das Angebot von Trade Republic. China-A-Aktien werden immer ausgeschlossen.

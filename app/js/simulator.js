@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'cash', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  hold: 'signal', rest: 'top', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -29,7 +29,7 @@ export const BUDGET_LABEL = {
 export const REST_LABEL = {
   etf: 'Rest fließt in den MSCI World ETF',
   cash: 'Nur Kandidaten kaufen, Rest bleibt auf dem Konto (0 % Zins) und wird im nächsten Monat mit angelegt',
-  top: 'Immer die Bestplatzierten kaufen, auch ohne Kandidatenstatus',
+  top: 'Top 5/Top 10 kaufen immer 5 bzw. 10 Aktien (fehlende Kandidaten werden mit den nächsten der Momentum-Rangliste aufgefüllt)',
 };
 
 const TAX = 0.26375;

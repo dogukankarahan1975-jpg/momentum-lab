@@ -130,6 +130,16 @@ async function stage1Parts(screen, s2, fr) {
       <p class="xs muted" style="margin:6px 0 0">Screening-Datum ${fmtDate(screen.asof)}</p>
     </a>`);
   }
+  // Regel „immer 5 bzw. 10 kaufen“ (wie im Simulator): fehlende Plätze mit den nächsten der Momentum-Rangliste auffüllen
+  if (screen.candidates.length < 10) {
+    const hiddenSet = new Set(screen.hiddenSyms || []);
+    const fill = screen.rows.filter((r) => r.eligible && r.Z != null && r.rank != null && !screen.candidates.includes(r.symbol) && !hiddenSet.has(r.symbol))
+      .sort((a, b) => a.rank - b.rank).slice(0, 10 - screen.candidates.length);
+    if (fill.length) {
+      parts.push(html`<h2>Auffüller auf 10</h2><p class="small muted">Für „immer 5 bzw. 10 Aktien kaufen“ (wie im Simulator): die nächsten der Momentum-Rangliste. Sie erfüllen nicht alle Kandidatenregeln (z. B. nicht im besten Zehntel oder 6-Monats-Momentum negativ).</p>
+        <div class="group">${fill.map((r) => html`<a class="row" href="#/aktie/${encodeURIComponent(r.symbol)}" style="color:inherit"><div style="width:30px;text-align:center;font-weight:700">${r.rank}</div><div class="grow"><div class="title">${r.name}</div><div class="sub">Momentum-Score ${fmtNum(r.Z, 2)} · ${r.country}</div></div></a>`)}</div>`);
+    }
+  }
   parts.push(html`<p class="xs muted">Die Halteregeln für gekaufte Aktien sind lockerer als die Aufnahmeregeln. Eine Aktie, die aus den Top 10 fällt, wird nicht automatisch verkauft (siehe Signale).</p>`);
   return parts;
 }
