@@ -223,7 +223,7 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
                 ended[j] = k_end
     px = px.ffill()
     ref_key = "acwi_usd" if (pit_info or {}).get("kind") == "acwi" and bench_eur.get("acwi_usd") else "msci_world_eur"
-    bias = measure_bias(ctx, dates, (bench_eur.get(ref_key) or {}).get("eur"))
+    bias = None if (pit_info or {}).get("active") else measure_bias(ctx, dates, (bench_eur.get(ref_key) or {}).get("eur"))
     if bias:
         bias["ref_name"] = bench_eur[ref_key]["name"]
         log(f"[simulator] gemessene Verzerrung: Liste gleichgewichtet {bias['ew_cagr']:.2%} vs. {bias['ref_name']} "

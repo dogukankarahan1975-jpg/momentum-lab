@@ -1,5 +1,6 @@
 import { barChart, lineChart, SERIES_COLORS } from '../charts.js';
-import { loadBacktest, loadSimulator } from '../data.js';
+import { loadBacktest, loadSimIndex, loadSimulatorFor } from '../data.js';
+import { getSetting, setSetting } from '../store.js';
 import { renderSimulator } from './simulator-view.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct } from '../fmt.js';
 import { html, note, raw } from '../ui.js';
@@ -92,9 +93,36 @@ export async function render(root) {
     <dt>MSCI-Volatilitätsschocks</dt><dd style="white-space:normal">${(bt.vol_shock_months || []).length} Monate</dd></dl></div>`);
   parts.push(raw('</details>'));
   root.innerHTML = parts.join('');
-  let sim = null;
-  try { sim = await loadSimulator(); } catch { sim = null; }
-  renderSimulator(root.querySelector('#sim'), sim);
+  // Aktienliste für den Backtest: damalige Indexzusammensetzung (S&P 500, DAX, Kombination, ACWI ab 2019)
+  const simEl = root.querySelector('#sim');
+  const idx = await loadSimIndex();
+  const avail = (idx?.universes || []).filter((u) => u.available);
+  const missing = (idx?.universes || []).filter((u) => !u.available);
+  const choices = [...avail.map((u) => ({ key: u.key, text: `${u.label} – ab ${String(u.coverage_from).slice(5)}/${String(u.coverage_from).slice(0, 4)}` })),
+    { key: 'current', text: 'MSCI ACWI – heutige Liste (verzerrt, nur zum Vergleich)' }];
+  let cur = await getSetting('simUniverse', null);
+  if (!choices.some((c) => c.key === cur)) cur = avail.some((u) => u.key === 'sp500') ? 'sp500' : choices[0].key;
+  const pick = document.createElement('div');
+  simEl.before(pick);
+  pick.innerHTML = html`<div class="panel"><label class="field" style="margin:0"><span>Aktienliste für den Backtest</span>
+    <select id="simuni">${choices.map((c) => html`<option value="${c.key}" ${c.key === cur ? 'selected' : ''}>${c.text}</option>`)}</select></label>
+    <p class="xs muted" id="simuniinfo" style="margin:8px 0 0"></p>
+    ${missing.length ? html`<p class="xs muted" style="margin:6px 0 0">Noch nicht verfügbar: ${missing.map((u) => `${u.label} (${u.reason || 'wird aufgebaut'})`).join('; ')}</p>` : ''}</div>`;
+  const info = (key) => {
+    const u = avail.find((x) => x.key === key);
+    pick.querySelector('#simuniinfo').textContent = u
+      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Im Schnitt ${Math.round((u.coverage_avg || 0) * 100)} % der damaligen Mitglieder mit Kursen.`
+      : 'Heutige ACWI-Mitglieder rückwirkend angewandt: Firmen, die damals noch nicht im Index waren, werden mitgekauft. Ergebnisse zu günstig.';
+  };
+  const show = async (key) => {
+    info(key);
+    simEl.innerHTML = String(note('info', 'Lade Backtest-Daten …'));
+    let sim = null;
+    try { sim = await loadSimulatorFor(key); } catch { sim = null; }
+    renderSimulator(simEl, sim);
+  };
+  pick.querySelector('#simuni').onchange = async (e) => { await setSetting('simUniverse', e.target.value); show(e.target.value); };
+  await show(cur);
 
   const eqEl = root.querySelector('#eq');
   const drawEq = () => {

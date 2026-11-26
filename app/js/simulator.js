@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'top', biasCorr: false, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  hold: 'signal', rest: 'top', biasCorr: false, endYear: null, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -42,6 +42,15 @@ const ETF_EXEMPT = 0.3;
 const yearOf = (iso) => Number(iso.slice(0, 4));
 const eur = (x) => `${x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const dmy = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+
+/** Letzter Bewertungspunkt bis Ende des Endjahres (null = bis heute). */
+export function endIndex(data, year) {
+  const last = data.points.length - 1;
+  if (!year || yearOf(data.points[last]) <= year) return last;
+  let k = last;
+  while (k > 0 && yearOf(data.points[k]) > year) k -= 1;
+  return k;
+}
 
 export function startIndex(data, year) {
   const i = data.signal_dates.findIndex((d) => yearOf(d) >= year);
@@ -213,7 +222,8 @@ export function simulate(data, key, opts) {
   const idx = new Map(data.syms.map((s, i) => [s, i]));
   const exSet = o.exclude?.length ? new Set(o.exclude.map((s) => idx.get(s)).filter((i) => i != null)) : null;
   const k0 = startIndex(data, o.startYear);
-  const K = data.signal_dates.length;
+  const kStop = endIndex(data, o.endYear);
+  const K = kStop === data.points.length - 1 ? data.signal_dates.length : Math.max(k0 + 1, kStop);
   const b = newBook();
   const series = [];
   const twr = [1];
@@ -330,7 +340,7 @@ export function simulate(data, key, opts) {
     b.yearly[year].etf = b.etfUnits > 0;
   }
   // Endbewertung am letzten Kurstag
-  const kEnd = data.points.length - 1;
+  const kEnd = Math.max(kStop, k0);
   const pxEtf = st.kind === 'etf' ? data.bench?.[st.bench]?.px?.[kEnd] : etfPx(data, kEnd);
   let stockVal = 0, unrealStock = 0;
   const open = [];

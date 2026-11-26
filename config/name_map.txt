@@ -1,0 +1,3 @@
+# Korrekturen für die DAX-Familie im Backtest: Firmenname aus der STOXX-Liste = Yahoo-Symbol
+# Leeres Symbol = bewusst keine Zuordnung. Beispiel:
+# Münchener Rückversicherung = MUV2.DE

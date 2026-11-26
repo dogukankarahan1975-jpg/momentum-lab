@@ -1,5 +1,19 @@
 # Änderungen
 
+## Pipeline 0.9.0 – 26.11.2026: Backtests mit damaliger Indexzusammensetzung
+- Im Simulator wählbar: „S&P 500“, „DAX-Familie (DAX, MDAX, SDAX, TecDAX)“, „S&P 500 + DAX-Familie“ und „MSCI ACWI“. In jedem Monat zählen nur die Aktien, die damals im Index waren.
+  - S&P 500: aktuelle Liste und alle Aufnahmen/Streichungen von Wikipedia, rückwärts rekonstruiert; nur Monate mit 480–520 Mitgliedern.
+  - DAX-Familie: offizielles PDF „Historical Index Compositions“ von STOXX; Firmennamen werden Yahoo-Symbolen zugeordnet (Korrekturen in `config/name_map.txt`).
+  - MSCI ACWI: Pflichtmeldungen des iShares MSCI ACWI ETF an die US-Börsenaufsicht (SEC, Formular N-PORT), vierteljährlich ab Ende 2019, mit ISIN; Börsensymbole über OpenFIGI.
+- Jede Liste wird gegen die Kurse geprüft. Der Backtest beginnt erst ab dem Monat, ab dem durchgehend mindestens 85 % der damaligen Mitglieder Kurse haben. Firmen ohne Kurse (meist Pleiten/Übernahmen) fehlen und werden ausgewiesen.
+- Die bisherige Variante „heutige ACWI-Liste“ bleibt zum Vergleich wählbar, klar als verzerrt gekennzeichnet.
+- Das tägliche Screening ist unverändert (MSCI ACWI).
+
+## App – 26.11.2026 (Pipeline 0.8.1)
+- Simulator: Enddatum wählbar („bis heute“ oder Ende eines Jahres), z. B. 2008–2010 testen.
+- Aktienseite: „ISIN kopieren“ (wenn die ISIN bekannt ist, sonst wird der Name kopiert).
+- Historische Indexlisten: iShares ignoriert das Stichtags-Datum und liefert immer die aktuelle Liste. Die Pipeline erkennt das, verwendet nichts Falsches und versucht es erst nach 30 Tagen erneut.
+
 ## Pipeline 0.8.0 – 26.11.2026: Backtest mit historischer Indexzusammensetzung
 - Der Backtest verwendet in jedem Monat nur die Aktien, die damals im Index waren (iShares-Bestandslisten zu früheren Stichtagen, kostenlos). MSCI ACWI ab 04/2008, MSCI World ab 02/2012. Die Liste wird über mehrere Nächte aufgebaut, vom jüngsten Monat rückwärts; erst ab 24 zusammenhängenden Monaten wird sie verwendet.
 - Ehemalige Indexmitglieder werden mitgerechnet, wenn Yahoo noch Kurse hat und diese zu den iShares-Kursen der Stichtage passen (Schutz vor wiederverwendeten Tickern). Enden die Kurse (Delisting/Übernahme), wird zum letzten Kurs verkauft und das im Protokoll gekennzeichnet.

@@ -54,4 +54,7 @@ def test_history_rejects_current_list_instead_of_old(tmp_path):
         return fake_csv(pd.Timestamp("2026-11-24"), [("AAA", 1.0)])
 
     h, info = pit.update_history(http_get, tmp_path / "h.json.gz", "acwi", today, log=lambda *_: None)
-    assert info["coverage_months"] == 0 and h["failed"]
+    assert info["coverage_months"] == 0 and h["failed"] and h.get("disabled_until")
+    calls = []
+    pit.update_history(lambda u: calls.append(u) or "", tmp_path / "h.json.gz", "acwi", today, log=lambda *_: None)
+    assert not calls        # 30 Tage Pause

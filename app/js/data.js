@@ -112,6 +112,25 @@ export async function loadStage2(fresh = false) {
   return s;
 }
 export function cachedStage2() { return memo.has('stage2') ? memo.get('stage2') : undefined; }
+/** Übersicht der Backtest-Aktienlisten mit damaliger Zusammensetzung. */
+export async function loadSimIndex() {
+  try { return await getJSON('simulators.json', { timeout: 20000 }); } catch { return null; }
+}
+
+/** Simulator-Daten einer bestimmten Aktienliste (simulator-<key>.json). */
+export async function loadSimulatorFor(key) {
+  if (!key || key === 'current') return loadSimulator();
+  const mk = `sim-${key}`;
+  if (memo.has(mk)) return memo.get(mk);
+  let a = null;
+  try {
+    a = await getJSON(`simulator-${key}.json`, { timeout: 60000 });
+    if (!a || !Array.isArray(a.signal_dates)) a = null;
+  } catch { a = null; }
+  memo.set(mk, a);
+  return a;
+}
+
 export async function loadSimulator(fresh = false) {
   if (!fresh && memo.has('simulator')) return memo.get('simulator');
   let a;

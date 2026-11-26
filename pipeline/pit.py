@@ -66,6 +66,11 @@ def update_history(http_get, path: Path, kind: str, today: pd.Timestamp, max_dow
     """Lädt fehlende Monats-Bestandslisten nach (jüngste zuerst). Gibt (Historie, Info) zurück."""
     h = load(path)
     months = month_list(START[kind], today)
+    if h.get("disabled_until") and today < pd.Timestamp(h["disabled_until"]):
+        cov = coverage(h, months)
+        return h, {"kind": kind, "months_total": len(months), "months_have": len(h["months"]), "downloads": 0,
+                   "coverage_from": cov[0], "coverage_to": cov[1], "coverage_months": cov[2],
+                   "error": f"iShares liefert keine alten Listen (nächster Versuch ab {h['disabled_until']})"}
     todo = []
     for m in reversed(months):
         if m in h["months"]:
@@ -102,6 +107,9 @@ def update_history(http_get, path: Path, kind: str, today: pd.Timestamp, max_dow
             fails_in_row += 1
             if fails_in_row >= 4:
                 log(f"[historie] 4 Monate in Folge ohne Liste – Abbruch für heute ({err})")
+                if not h["months"]:
+                    # Quelle liefert grundsätzlich keine alten Listen: 30 Tage Pause statt täglicher Fehlabrufe
+                    h["disabled_until"] = (today + pd.Timedelta(days=30)).strftime("%Y-%m-%d")
                 break
             continue
         fails_in_row = 0

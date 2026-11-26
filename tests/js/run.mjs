@@ -375,5 +375,13 @@ test('Korrektur Überlebenden-Effekt senkt nur Aktien-Strategien', () => {
   assert.ok(b.final < a.final);
 });
 
+test('Simulator: Enddatum begrenzt den Zeitraum', () => {
+  const d = simData();
+  const full = simRun(d, 's1top5', { ...simOpts });
+  const yEnd = Number(d.points[2].slice(0, 4));
+  const part = simRun(d, 's1top5', { ...simOpts, endYear: yEnd });
+  assert.ok(part.end <= `${yEnd}-12-31` && part.contrib <= full.contrib);
+});
+
 console.log(`${passed} bestanden, ${failed} fehlgeschlagen`);
 process.exit(failed ? 1 : 0);

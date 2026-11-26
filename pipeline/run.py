@@ -72,6 +72,54 @@ def http_json(url: str, headers: dict | None = None):
     return json.loads(http_get(url, headers))
 
 
+def http_post_json(url: str, payload, retries: int = 3):
+    global _S
+    if _S is None:
+        _S = _session()
+    err = None
+    for attempt in range(retries):
+        try:
+            r = _S.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=40)
+            if r.status_code == 429:
+                time.sleep(20 * (attempt + 1))
+                err = "429"
+                continue
+            r.raise_for_status()
+            return r.json()
+        except Exception as exc:  # noqa: BLE001
+            err = exc
+            time.sleep(3 * (attempt + 1))
+    raise RuntimeError(f"{url}: {err}")
+
+
+def make_bench(bench_frames: dict, frames: dict, currency: dict, fx: pd.DataFrame) -> tuple[dict, list]:
+    bench_eur = {}
+    for key, b in BENCHMARKS.items():
+        df = bench_frames.get(b["symbol"])
+        if df is None:
+            continue
+        s = df["adj"].dropna()
+        c = currency.get(b["symbol"], b["currency"])
+        if c != "EUR":
+            if c not in fx.columns:
+                continue
+            s = s / fx_on_index(fx, s.index)[c]
+        bench_eur[key] = {"name": b["name"], "eur": s.dropna()}
+    backfill = []
+    for b in MSCI_WORLD_BACKFILL:
+        df = frames.get(b["symbol"])
+        if df is None or df.empty:
+            continue
+        s = df["adj"].dropna()
+        c = currency.get(b["symbol"], b["currency"])
+        if c != "EUR":
+            if c not in fx.columns:
+                continue
+            s = s / fx_on_index(fx, s.index)[c]
+        backfill.append({"symbol": b["symbol"], "name": b["name"], "eur": s.dropna()})
+    return bench_eur, backfill
+
+
 # ------------------------------------------------------------------ Hilfsfunktionen
 def r5(x, digits: int = 5):
     if x is None:
@@ -104,6 +152,17 @@ def determine_asof(adj: pd.DataFrame) -> pd.Timestamp:
 
 
 FX_FROM_YAHOO = ["TWD", "SAR", "AED", "QAR", "KWD", "CLP", "COP", "PEN", "EGP"]
+
+
+def demo_bt_sources(universe: pd.DataFrame, frames: dict) -> dict:
+    """DEMO: synthetische Stichtagslisten (wie S&P 500 / DAX / ACWI aufgebaut)."""
+    h = demo_history(universe, frames)
+    months = {m: [[r[0], r[1], "USA", "", None, "USD"] for r in v["rows"]] for m, v in h["months"].items()}
+    half = {m: rows[: len(rows) // 2] for m, rows in months.items()}
+    rest = {m: rows[len(rows) // 2:] for m, rows in months.items()}
+    return {"sp500": {"months": half, "source": "DEMO", "info": {}},
+            "dax": {"months": rest, "source": "DEMO", "info": {}},
+            "acwi": {"months": {m: v for m, v in months.items() if m >= "2019-10"}, "source": "DEMO", "info": {}}}
 
 
 def demo_history(universe: pd.DataFrame, frames: dict) -> dict:
@@ -612,29 +671,7 @@ def run(args) -> int:
                 log("Backtest aus Cache (gleicher Monat und gleiche Methodik)")
         if bt_res is None:
             try:
-                bench_eur = {}
-                for key, b in BENCHMARKS.items():
-                    df = bench_frames.get(b["symbol"])
-                    if df is None:
-                        continue
-                    s = df["adj"].dropna()
-                    c = currency.get(b["symbol"], b["currency"])
-                    if c != "EUR":
-                        rate = fx_on_index(fx, s.index)[c]
-                        s = s / rate
-                    bench_eur[key] = {"name": b["name"], "eur": s.dropna()}
-                backfill = []
-                for b in MSCI_WORLD_BACKFILL:
-                    df = frames.get(b["symbol"])
-                    if df is None or df.empty:
-                        continue
-                    s = df["adj"].dropna()
-                    c = currency.get(b["symbol"], b["currency"])
-                    if c != "EUR":
-                        if c not in fx.columns:
-                            continue
-                        s = s / fx_on_index(fx, s.index)[c]
-                    backfill.append({"symbol": b["symbol"], "name": b["name"], "eur": s.dropna()})
+                bench_eur, backfill = make_bench(bench_frames, frames, currency, fx)
                 if members:
                     badj = to_wide({x: bt_frames[x] for x in bt_syms}, "adj", "2000-01-01")
                     bclose = to_wide({x: bt_frames[x] for x in bt_syms}, "close", "2000-01-01")
@@ -674,6 +711,35 @@ def run(args) -> int:
     if bt_res is not None:
         bt_res = dict(bt_res, demo=demo, methodology_version=METHODOLOGY_VERSION)
         (out / "backtest.json").write_text(json.dumps(sanitize(bt_res), default=_json_default, separators=(",", ":"), allow_nan=False))
+
+    # 8b) Backtests mit damaliger Indexzusammensetzung (S&P 500, DAX-Familie, Kombination, ACWI ab 2019)
+    if not args.skip_backtest and not getattr(args, "skip_pit", False):
+        try:
+            from .bt_run import run_all
+            from .simulator import build_sim_data
+            b_eur, b_fill = make_bench(bench_frames, frames, currency, fx)
+            idx = run_all(
+                http_get=http_get, http_json=http_json, http_post_json=http_post_json, archive=archive / "universe",
+                cache=cache, out=out, root=ROOT, universe=universe, frames=frames, currency=currency,
+                store=None if demo else store, fx=fx, asof=asof, today=today, bench_eur=b_eur, backfill=b_fill,
+                build_sim_data=build_sim_data, sanitize=sanitize, log=log,
+                price_deadline_s=max(0, min(2400, 115 * 60 - (time.time() - t0) - 25 * 60)),
+                key_base=f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}",
+                sources=demo_bt_sources(universe, frames) if demo else None)
+            if not demo:
+                store.save(cache / "prices.pkl.gz")
+            (out / "simulators.json").write_text(json.dumps(sanitize({"generated_at": datetime.now(timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"), "universes": idx}), ensure_ascii=False, separators=(",", ":"), allow_nan=False))
+            if demo:
+                for e in idx:
+                    f = out / f"simulator-{e['key']}.json"
+                    if f.exists():
+                        f.write_text(f.read_text().replace('"schema":1,', '"schema":1,"demo":true,', 1))
+            for e in idx:
+                log(f"[bt] {e['label']}: {'ok ab ' + str(e.get('coverage_from')) if e['available'] else e.get('reason')}")
+        except Exception as exc:  # noqa: BLE001
+            traceback.print_exc()
+            msg("warnung", f"Backtests mit damaliger Indexzusammensetzung fehlgeschlagen: {exc}")
 
     sim_cache = cache / "simulator.json"
     if sim_cache.exists():

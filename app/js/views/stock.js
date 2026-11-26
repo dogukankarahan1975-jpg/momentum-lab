@@ -124,6 +124,7 @@ export async function render(root, symbol) {
   links.push([`https://news.google.com/search?q=${encodeURIComponent(r.name)}`, 'Nachrichtensuche', 'secondary']);
   parts.push(html`<h2>Quellen</h2><div class="group">${links.map(([u, l, t]) => html`<a class="row" href="${safeUrl(u)}" target="_blank" rel="noopener"><div class="grow">${l} ${srcTag(t)}</div></a>`)}</div>`);
   parts.push(html`<div class="btn-row" style="margin:16px 0"><button class="btn primary" id="add">${held ? 'Transaktion erfassen' : 'Zum Depot hinzufügen'}</button>${held ? html`<a class="btn" href="#/position/${encodeURIComponent(held.id)}">Position öffnen</a>` : ''}</div>
+    <div class="btn-row" style="margin:0 0 10px"><button class="btn" id="copyId">${/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(r.isin || '') ? `ISIN kopieren (${r.isin})` : 'Namen kopieren (ISIN nicht verfügbar)'}</button></div>
     <div class="btn-row" style="margin:0 0 16px"><button class="btn" id="hideTR">${isHidden ? 'Wieder einblenden' : 'Gibt es bei Trade Republic nicht'}</button></div>
     <p class="xs muted" style="margin-top:-8px">Die App nimmt nur Aktien auf, die an der Börse Frankfurt handelbar sind. Das passt gut, aber nicht zu 100 % zum Angebot von Trade Republic. Findest du eine Aktie dort nicht, blende sie hier aus: Der nächste Kandidat rückt nach. Wird nur auf deinem iPhone gespeichert.</p>`);
   root.innerHTML = parts.join('');
@@ -138,6 +139,16 @@ export async function render(root, symbol) {
   } else {
     root.querySelector('#pchart').innerHTML = '<p class="muted small" style="margin:0">Kein Kursverlauf in den Detaildaten. Detaildaten gibt es nur für Kandidaten, die besten 50, frühere Kandidaten und die Beobachtungsliste.</p>';
   }
+  root.querySelector('#copyId').onclick = async (ev) => {
+    const val = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(r.isin || '') ? r.isin : r.name;
+    let ok = false;
+    try { await navigator.clipboard.writeText(val); ok = true; } catch {
+      const ta = document.createElement('textarea'); ta.value = val; document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch { ok = false; }
+      ta.remove();
+    }
+    ev.target.textContent = ok ? `Kopiert: ${val}` : `Kopieren nicht möglich: ${val}`;
+  };
   root.querySelector('#hideTR').onclick = async () => {
     await setHidden(symbol, !isHidden);
     await refreshHidden();

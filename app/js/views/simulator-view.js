@@ -21,6 +21,7 @@ export async function renderSimulator(el, data) {
   const o = { ...DEFAULTS, ...(saved || {}) };
   if (!['signal', '1', '1be', '3', '3be', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
   o.biasCorr = o.biasCorr === true;
+  if (!(Number.isInteger(o.endYear))) o.endYear = null;
   o.rest = 'top'; // feste Regel: Top 5/Top 10/Stage 2 Top 5 kaufen immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score
   o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
   if (saved && !saved.v6) { for (const x of ['s2top5', 's1min4']) if (!o.strategies.includes(x)) o.strategies.push(x); o.v6 = true; }
@@ -30,6 +31,7 @@ export async function renderSimulator(el, data) {
   for (const f of ['spread', 'spreadEtf']) if (!(o[f] >= 0) || o[f] > 5) o[f] = DEFAULTS[f];
   const firstYear = Number(data.signal_dates[0].slice(0, 4));
   const lastYear = Number(data.signal_dates[data.signal_dates.length - 1].slice(0, 4)) - 2;
+  const dataLastYear = Number(data.points[data.points.length - 1].slice(0, 4));
   const benchStart = (k) => data.bench?.[k]?.start || null;
 
   const form = html`
@@ -51,6 +53,7 @@ export async function renderSimulator(el, data) {
       <div class="legend" id="simstrat">${Object.entries(STRATEGIES).map(([k, s]) => html`<button data-k="${k}" aria-pressed="${o.strategies.includes(k)}"><span class="swatch" style="background:${COLORS[k]}"></span>${s.short}</button>`)}</div>
       <div class="grid2" style="margin-top:10px">
         <label class="field"><span>Start</span><select name="startYear">${Array.from({ length: lastYear - firstYear + 1 }, (_, i) => firstYear + i).map((y) => html`<option value="${y}" ${y === o.startYear ? 'selected' : ''}>${y}</option>`)}</select></label>
+        <label class="field"><span>Ende</span><select name="endYear"><option value="" ${!o.endYear ? 'selected' : ''}>bis heute</option>${Array.from({ length: dataLastYear - firstYear }, (_, i) => firstYear + i).map((y) => html`<option value="${y}" ${y === o.endYear ? 'selected' : ''}>Ende ${y}</option>`)}</select></label>
         <label class="field"><span>Monatsbudget (€)</span><input name="budget" inputmode="decimal" value="${o.budget}"></label>
         <label class="field"><span>Dynamik pro Jahr (%)</span><input name="dyn" inputmode="decimal" value="${String(o.dyn).replace('.', ',')}"></label>
         <label class="field"><span>Gebühr je Kauf (€)</span><input name="feeBuy" inputmode="decimal" value="${String(o.feeBuy).replace('.', ',')}"></label>
@@ -92,6 +95,7 @@ export async function renderSimulator(el, data) {
     const keys = opts.strategies.filter((k) => STRATEGIES[k].kind !== 'etf' || benchStart(STRATEGIES[k].bench));
     if (!keys.length) { out.innerHTML = String(note('info', 'Wähle oben mindestens eine Strategie.')); return; }
     if (opts.biasCorr && data.bias?.pa > 0) notes.push(`Mit Korrektur: Alle Aktienkurse wurden um ${fmtNum(data.bias.pa * 100, 1)} % p. a. gemindert (gemessener Überlebenden-Effekt).`);
+    if (opts.endYear && opts.endYear < opts.startYear) { notes.push('Das Endjahr liegt vor dem Start – es wird bis heute gerechnet.'); opts.endYear = null; }
     const hidden = [...(await getHidden())];
     if (hidden.length) notes.push(`${hidden.length} von dir ausgeblendete Aktie(n) (gibt es bei Trade Republic nicht) werden auch rückwirkend nicht gekauft.`);
     const res = keys.map((k) => simulate(data, k, { ...opts, exclude: hidden }));
@@ -99,7 +103,7 @@ export async function renderSimulator(el, data) {
     const k0 = startIndex(data, opts.startYear);
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
-    parts.push(html`<h3>Ergebnis: ${fmtEUR(opts.budget, 0)} pro Monat ab ${fmtDate(data.points[k0])}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
+    parts.push(html`<h3>Ergebnis${data.universe ? ` (${data.universe.label})` : ''}: ${fmtEUR(opts.budget, 0)} pro Monat ab ${fmtDate(data.points[k0])}${opts.endYear ? ` bis ${fmtDate(res[0]?.end || data.points[data.points.length - 1])}` : ''}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
       <p class="xs muted">Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
       <div class="panel"><div id="simchart"></div><p class="xs muted" style="margin:6px 0 0">Depotwert in Euro vor Steuern. Graue Linie = eingezahltes Geld.</p></div>`);
     for (const r of res) {
@@ -219,6 +223,7 @@ export async function renderSimulator(el, data) {
     if (t.name === 'biasCorr') o.biasCorr = !!t.checked;
     else if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
+    else if (t.name === 'endYear') o.endYear = t.value ? Number(t.value) : null;
     else o[t.name] = num(t.value, DEFAULTS[t.name]);
     const maxFee = Math.max(0, o.budget * 0.1);
     for (const f of ['feeBuy', 'feeSell', 'feeEtf']) {
