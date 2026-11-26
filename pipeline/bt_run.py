@@ -33,26 +33,45 @@ def load_sp500(http_get, archive: Path, today, log) -> dict:
     if _age_ok(st, REFRESH_DAYS["sp500"], today):
         return st
     errs = []
-    cur = chg = None
-    for getter in (lambda: http_get(bu.WIKI_SP500, bu.WIKI_UA),
-                   lambda: json.loads(http_get(bu.WIKI_SP500_API, bu.WIKI_UA))["parse"]["text"]):
+    cur = None
+    for name, getter in (("Wikipedia", lambda: bu.parse_sp500_wiki_current(http_get(bu.WIKI_SP500, bu.WIKI_UA))),
+                         ("GitHub-Liste", lambda: bu.parse_sp500_current_csv(http_get(bu.SP500_CUR_CSV)))):
         try:
-            cur, chg = bu.parse_sp500(getter())
+            cur = getter()
+            if len(cur) < 450:
+                raise ValueError(f"nur {len(cur)} Zeilen")
             break
         except Exception as exc:  # noqa: BLE001
-            errs.append(f"{type(exc).__name__}: {str(exc)[:120]}")
+            cur = None
+            errs.append(f"aktuelle Liste {name}: {type(exc).__name__}: {str(exc)[:100]}")
+    h = None
     try:
-        if cur is None:
-            raise RuntimeError(" | ".join(errs))
-        h = bu.sp500_history(cur, chg, today)
+        snaps = bu.parse_sp500_snapshots(http_get(bu.SP500_HIST_CSV))
+        h = bu.sp500_from_snapshots(snaps, cur, today)
         if not h["months"]:
-            raise RuntimeError(f"Rekonstruktion unplausibel (Größe {h['info']})")
-        st = {"fetched": today.strftime("%Y-%m-%d"), **h, "error": None}
-        bu.save_store(p, st)
-        log(f"[bt-sp500] {len(h['months'])} Monate ab {h['info']['plausible_from']}, {len(chg)} Änderungen")
+            raise RuntimeError(f"Rekonstruktion unplausibel ({h['info']})")
     except Exception as exc:  # noqa: BLE001
-        log(f"[bt-sp500] Fehler: {exc}")
-        st = dict(st or {}, error=str(exc)[:240])
+        errs.append(f"historische Liste: {type(exc).__name__}: {str(exc)[:120]}")
+        h = None
+    if h is None:                                   # Ausweichweg: Wikipedia-Änderungstabelle (falls wieder vorhanden)
+        for getter in (lambda: http_get(bu.WIKI_SP500, bu.WIKI_UA),
+                       lambda: json.loads(http_get(bu.WIKI_SP500_API, bu.WIKI_UA))["parse"]["text"]):
+            try:
+                c2, chg = bu.parse_sp500(getter())
+                h = bu.sp500_history(c2, chg, today)
+                if h["months"]:
+                    break
+                h = None
+            except Exception as exc:  # noqa: BLE001
+                errs.append(f"Wikipedia-Änderungen: {type(exc).__name__}: {str(exc)[:80]}")
+    if h:
+        st = {"fetched": today.strftime("%Y-%m-%d"), **h, "error": None, "warnings": errs}
+        bu.save_store(p, st)
+        log(f"[bt-sp500] {len(h['months'])} Monate, {json.dumps(h['info'])}" + (f" | {errs}" if errs else ""))
+    else:
+        msg = " | ".join(errs)
+        log(f"[bt-sp500] Fehler: {msg}")
+        st = dict(st or {}, error=msg[:300])
         bu.save_store(p, dict(st, fetched=None))
     return st
 
@@ -63,14 +82,24 @@ def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.
     names_hist, info = st.get("names"), st.get("info")
     if not _age_ok({"fetched": st.get("fetched"), "months": names_hist}, REFRESH_DAYS["dax"], today):
         try:
-            parsed = bu.parse_stoxx_words(bu.pdf_words(http_get_bytes(bu.STOXX_PDF)))
+            raw = http_get_bytes(bu.STOXX_PDF)
+            if not raw[:5].startswith(b"%PDF"):
+                raise ValueError(f"Antwort ist kein PDF ({len(raw)} Bytes, Anfang {raw[:40]!r})")
+            words = bu.pdf_words(raw)
+            parsed = bu.parse_stoxx_words(words)
+            if not parsed:
+                sample = []
+                for pg in words[2:4]:
+                    sample += [" ".join(w["text"] for w in ln) for ln in bu._lines(pg)][:14]
+                st["debug_sample"] = sample
+                raise ValueError(f"{len(words)} Seiten, aber keine Indexlisten erkannt. Seite 3: " + " / ".join(sample)[:300])
             h = bu.stoxx_history(parsed, today)
             names_hist, info = h["names"], h["info"]
             st.update(fetched=today.strftime("%Y-%m-%d"), names=names_hist, info=info, error=None)
             log(f"[bt-dax] PDF gelesen: {json.dumps(info, ensure_ascii=False)}")
         except Exception as exc:  # noqa: BLE001
             log(f"[bt-dax] Fehler: {exc}")
-            st["error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+            st["error"] = f"{type(exc).__name__}: {str(exc)[:420]}"
     if not names_hist:
         bu.save_store(p, dict(st, fetched=None))
         return {"months": {}, "error": st.get("error") or f"PDF ohne erkennbare Indexlisten ({json.dumps(info or {})[:160]})",
@@ -109,7 +138,10 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
     p = bu.store_path(archive, "acwi")
     st = bu.load_store(p)
     filings = st.get("filings", {})
-    if not (st.get("fetched") and (today - pd.Timestamp(st["fetched"])).days < REFRESH_DAYS["acwi"]):
+    old_fmt = [a for a, f in filings.items() if f.get("rows") and len(f["rows"][0]) < 6]
+    for a in old_fmt:                       # ältere Speicherung ohne Positionswert -> einmalig neu laden
+        filings.pop(a)
+    if old_fmt or not (st.get("fetched") and (today - pd.Timestamp(st["fetched"])).days < REFRESH_DAYS["acwi"]):
         try:
             hdr = sec_headers()
             ser = st.get("series") or bu.find_series(json.loads(http_get(bu.SEC_MF, hdr)), "ACWI")
@@ -128,8 +160,8 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
                     continue
                 if d["series"] and d["series"] != series:
                     continue
-                filings[acc] = {"date": d["date"], "rows": [[r["isin"], r["name"], r["country"], r["cur"], r["px_usd"]]
-                                                            for r in d["rows"]]}
+                filings[acc] = {"date": d["date"], "rows": [[r["isin"], r["name"], r["country"], r["cur"], r["px_usd"],
+                                                             round(r["val_usd"], 2)] for r in d["rows"]]}
                 new += 1
             st.update(fetched=today.strftime("%Y-%m-%d"), series=[cik, series], filings=filings, error=None)
             log(f"[bt-acwi] {len(accs)} N-PORT-Meldungen, {new} neu")
@@ -140,7 +172,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
     by_date = {}
     for acc in sorted(filings):
         f = filings[acc]
-        if f.get("date") and len(f["rows"]) > 500:
+        if f.get("date") and len(f["rows"]) > 500 and len(f["rows"][0]) >= 6:
             by_date[f["date"][:7]] = f["rows"]
     # ISIN -> Symbol: heutige ACWI-Liste (Name), sonst OpenFIGI
     imap = st.get("isin_map", {})
@@ -149,7 +181,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         by_norm.setdefault(bu.norm_name(n)[:10], s)
     todo, countries = [], {}
     for rows in by_date.values():
-        for isin, name, country, _c, _p in rows:
+        for isin, name, country, *_ in rows:
             if isin in imap:
                 continue
             k = bu.norm_name(name)[:10]
@@ -166,7 +198,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
     st["isin_map"] = imap
     bu.save_store(p, st)
     # nicht zuordenbare ISIN zählen als fehlende Mitglieder (außer vermutlich China-A, die bewusst ausgeschlossen sind)
-    ref = {m: [[imap.get(i), n, c, "", px, cur] for i, n, c, cur, px in rows
+    ref = {m: [[imap.get(i), n, c, "", px, cur, val] for i, n, c, cur, px, val in rows
                if not (imap.get(i) or "").endswith((".SS", ".SZ")) and (imap.get(i) or c != "CN")]
            for m, rows in by_date.items()}
     months = bu.fill_quarterly(ref, bu.last_month(today))
@@ -231,20 +263,36 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                 index.append(entry)
                 continue
             refm = combine(parts, "ref_months") if any(p.get("ref_months") for p in parts) else None
+            if refm:   # Yahoo-Kurse sind in der Handelswährung des Symbols -> mit dieser umrechnen, nicht mit curCd
+                refm = {m: [r[:5] + [currency.get(r[0]) or r[5]] + r[6:] if r[0] else r for r in rows]
+                        for m, rows in refm.items()}
             valid, vstats = bu.validate_rows(months, close_local, local_per_usd, ref_months=refm)
             start, cov = bu.coverage_start(months, valid)
+            ccov = bu.count_coverage(months, valid)
+            weighted = any(len(r) > 6 for rows in months.values() for r in rows[:1])
             n_months = sum(1 for m in months if start and m >= start)
             entry.update(source=" + ".join(p.get("source", "") for p in parts), validation=vstats,
                          coverage_from=start, months=n_months, info=[p.get("info") for p in parts])
+            if months:
+                lm = max(months)
+                entry["coverage_last"] = {"month": lm, "share": round(cov[lm], 3), "count_share": round(ccov[lm], 3),
+                                          "by_weight": weighted}
             if not start or n_months < bu.MIN_MONTHS:
-                entry["reason"] = (f"Zu wenige Monate, in denen mindestens {bu.MIN_COVERAGE:.0%} der damaligen Mitglieder "
-                                   f"Kurse haben ({n_months}).")
+                what = "des damaligen Indexgewichts" if weighted else "der damaligen Mitglieder"
+                low = min(cov.values()) if cov else 0
+                entry["reason"] = (f"Zu wenige Monate, in denen mindestens {bu.MIN_COVERAGE:.0%} {what} "
+                                   f"Kurse haben ({n_months}; niedrigster Monat {low:.0%}, "
+                                   f"geprüft {vstats.get('ok', 0)} ok / {vstats.get('no_prices', 0)} ohne Kurse / "
+                                   f"{vstats.get('mismatch', 0)} unstimmig).")
                 index.append(entry)
                 continue
             mem = bu.monthly_membership(months, valid, start)
             syms = sorted({x for v in mem.values() for x in v})
             cov_avg = sum(cov[m] for m in mem) / len(mem)
+            ccov_avg = sum(ccov[m] for m in mem) / len(mem)
             entry["coverage_avg"] = round(cov_avg, 3)
+            entry["coverage_count_avg"] = round(ccov_avg, 3)
+            entry["coverage_by_weight"] = weighted
             key = f"{key_base}|{name}|{start}|{len(syms)}"
             cpath = cache / f"simulator-{name}.json"
             cached = json.loads(cpath.read_text()) if cpath.exists() else None
@@ -267,14 +315,16 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                 pit = {"active": True, "kind": name, "coverage_from": start, "coverage_to": max(mem),
                        "months": len(mem), "symbols_total": len({r[0] for v in months.values() for r in v}),
                        "former_members_used": len(syms), "members_without_prices": vstats.get("no_prices", 0),
-                       "coverage_avg": round(cov_avg, 3), "source": entry["source"]}
+                       "coverage_avg": round(cov_avg, 3), "coverage_count_avg": round(ccov_avg, 3),
+                       "coverage_by_weight": weighted, "source": entry["source"]}
                 sim = build_sim_data(ctx, meta, bench_eur, asof, log=log, backfill=backfill, pit_info=pit)
                 sim["key"] = key
                 sim["universe"] = {"key": name, "label": spec["label"]}
                 sim["notes"]["survivorship"] = (
                     f"Damalige Indexzusammensetzung ({entry['source']}): In jedem Monat nur die Aktien, die damals im "
-                    f"Index waren. Im Schnitt {cov_avg:.0%} der damaligen Mitglieder mit Kursen; Firmen ohne Kurse "
-                    "(meist Pleiten oder Übernahmen) fehlen.")
+                    f"Index waren. Im Schnitt {ccov_avg:.0%} der damaligen Mitglieder mit Kursen"
+                    + (f" ({cov_avg:.0%} des Indexgewichts)" if weighted else "")
+                    + "; Firmen ohne Kurse (meist Pleiten, Übernahmen oder kleine Schwellenland-Werte) fehlen.")
                 cpath.write_text(json.dumps(sanitize(sim), separators=(",", ":"), ensure_ascii=False, allow_nan=False))
                 log(f"[bt] {spec['label']}: ab {start}, {len(syms)} Aktien, Abdeckung {cov_avg:.0%}")
             (out / f"simulator-{name}.json").write_text(cpath.read_text())

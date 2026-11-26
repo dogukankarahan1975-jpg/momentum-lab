@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 
-PIPELINE_VERSION = "0.9.1"
+PIPELINE_VERSION = "0.9.2"
 METHODOLOGY_VERSION = "1.0.0"   # Stage 1 (Momentum-Screening) – unverändert
 STAGE2_VERSION = "2.0.0"        # Stage 2 (Fortsetzungsanalyse) – eigene Version
 

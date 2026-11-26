@@ -1,5 +1,12 @@
 # Änderungen
 
+## Pipeline 0.9.2 – 26.11.2026
+- S&P 500: Wikipedia hat die Tabelle der Aufnahmen/Streichungen 2026 von der Listenseite entfernt. Neue Quelle für die Zusammensetzung an jedem Änderungstag seit 1996: gepflegter Datensatz github.com/fja05680/sp500 (MIT-Lizenz, zuletzt aktualisiert Sept. 2026). Aufnahmen danach aus der aktuellen Wikipedia-Liste („Date added“). Umbenennungen (z. B. FB → META) werden nur bei eindeutigem Nachweis übernommen.
+- DAX-Familie: Index wird jetzt über die Beschriftung „DAX®“, „TecDAX®“, „MDAX®“, „SDAX®“ vor der Änderungstabelle erkannt (im echten PDF gibt es keine Überschrift als Text). ESG- und Strategie-Indizes werden übersprungen. Bei erneutem Fehlschlag wird ein Textausschnitt gespeichert.
+- MSCI ACWI: Abdeckung wird am Indexgewicht gemessen (Positionswerte aus der SEC-Meldung), wie MSCI selbst. Zahl der Mitglieder mit Kursen wird zusätzlich angezeigt. Kursprüfung rechnet mit der Handelswährung der Yahoo-Kurse; Fremdwährungen aus `currencyConditional` werden gelesen.
+- Screening: ISIN für rund 90 % der ACWI-Aktien aus den SEC-Meldungen (Name wird gegengeprüft) → die Prüfung „an der Börse Frankfurt handelbar“ und „ISIN kopieren“ funktionieren jetzt.
+- Russische Titel (seit 2022 eingefroren) erzeugen keine Warnung mehr.
+
 ## Pipeline 0.9.1 – 26.11.2026
 - Simulator: „Wie oft wird gescreent und gekauft?“ – monatlich, vierteljährlich, halbjährlich oder jährlich. Dazwischen sammeln sich Budget und Verkaufserlöse auf dem Konto und werden beim nächsten Screening verteilt.
 - ACWI: Kursprüfung verglich vierteljährliche Meldekurse mit jedem Monatsende (Fehlalarm bei 733 Aktien). Jetzt nur an den echten Meldestichtagen. Nicht zuordenbare ISIN zählen als fehlende Mitglieder.

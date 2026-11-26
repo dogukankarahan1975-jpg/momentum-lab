@@ -324,10 +324,15 @@ def build_from_ishares(df: pd.DataFrame, label: str = "iShares MSCI World (URTH)
     eq = df[df["asset_class"].str.lower().isin(["equity", "aktien"])].copy()
     recs = []
     unmapped = []
+    skipped_ru = 0
     for _, r in eq.iterrows():
         sym, suf = yahoo_symbol(r.get("ticker", ""), r.get("exchange", ""), r.get("location", ""))
         loc = str(r.get("location", "")).strip().lower()
         if sym is None:
+            exch = str(r.get("exchange", ""))
+            if "forts" in exch.lower() or "moscow" in exch.lower() or str(r.get("ticker", "")).strip() in ("-", ""):
+                skipped_ru += 1          # russische Titel (seit 2022 eingefroren) und Platzhalter ohne Kürzel
+                continue
             unmapped.append(f"{r.get('ticker')} ({r.get('exchange')})")
             continue
         country = LOCATION_DE.get(loc, SUFFIX_COUNTRY.get(suf, r.get("location", "")))
@@ -423,6 +428,45 @@ def add_isins(frame: pd.DataFrame, http_get, kind: str) -> tuple[pd.DataFrame, s
     return frame, locals().get("last", "keine JSON-Liste")
 
 
+def isins_from_sec(frame: pd.DataFrame, store: Path) -> tuple[pd.DataFrame, float]:
+    """ISIN aus den SEC-Meldungen (N-PORT) des iShares MSCI ACWI ETF ergänzen – dieselben Daten wie im Backtest.
+    Zuordnung über das dort ermittelte Symbol; zur Sicherheit muss der Firmenname grob passen (erste 4 Zeichen),
+    sonst bleibt die ISIN leer (Aktie wird dann nicht geprüft, aber auch nicht entfernt)."""
+    import gzip
+    if not store.exists() or frame.empty:
+        return frame, 0.0
+    try:
+        st = json.loads(gzip.decompress(store.read_bytes()).decode("utf-8"))
+    except Exception:  # noqa: BLE001
+        return frame, 0.0
+    imap = st.get("isin_map", {})
+    by_sym: dict[str, tuple[str, str, str]] = {}
+    for f in sorted(st.get("filings", {}).values(), key=lambda f: f.get("date") or ""):
+        for r in f.get("rows", []):
+            sym = imap.get(r[0])
+            if sym:
+                by_sym[sym] = (r[0], r[1], f.get("date") or "")       # neueste Meldung gewinnt
+    from .bt_universes import norm_name
+
+    def same(a: str, b: str) -> bool:
+        x, y = norm_name(a), norm_name(b)
+        k = min(4, len(x), len(y))
+        return k >= 2 and x[:k] == y[:k]
+    f = frame.copy()
+    if "isin" not in f:
+        f["isin"] = ""
+    out = []
+    for sym, name, cur in zip(f["symbol"], f["name"], f["isin"].astype(str)):
+        if len(cur) == 12:
+            out.append(cur)
+            continue
+        hit = by_sym.get(sym)
+        out.append(hit[0] if hit and same(hit[1], name) else "")
+    f["isin"] = out
+    rel = ~f["symbol"].astype(str).str.endswith((".SS", ".SZ"))     # China-A wird ohnehin ausgeschlossen
+    return f, float((f.loc[rel, "isin"].astype(str).str.len() == 12).mean()) if rel.any() else 0.0
+
+
 def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str = "acwi") -> UniverseResult:
     """http_get(url) -> str. Fällt schrittweise auf Archiv und Notfall-Universum zurück."""
     warnings: list[str] = []
@@ -450,7 +494,11 @@ def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str
                 frame, err = add_isins(frame, http_get, kind)
                 share = (frame["isin"].astype(str).str.len() == 12).mean() if "isin" in frame else 0.0
                 has_isin = share > 0.8
-                w = w + ([f"ISIN aus der iShares-JSON-Liste ergänzt ({share:.0%} der Aktien)"] if has_isin else
+                src = "iShares-JSON-Liste"
+                if not has_isin:
+                    frame, share = isins_from_sec(frame, snapshot_dir / "bt-acwi.json.gz")
+                    has_isin, src = share > 0.8, "SEC-Meldungen (N-PORT) des iShares MSCI ACWI ETF"
+                w = w + ([] if has_isin else
                          [f"Bestandsliste ohne ISIN – Prüfung „in Deutschland handelbar“ nicht möglich ({err or f'nur {share:.0%} zugeordnet'})"])
             warnings = w
             snapshot_dir.mkdir(parents=True, exist_ok=True)

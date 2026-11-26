@@ -40,6 +40,11 @@ WIKI_SP500 = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 WIKI_SP500_API = ("https://en.wikipedia.org/w/api.php?action=parse&page=List_of_S%26P_500_companies&prop=text"
                   "&format=json&formatversion=2")
 WIKI_UA = {"User-Agent": "MomentumLab/0.9 (https://github.com/dogukankarahan1975-jpg/momentum-lab; private backtest)"}
+# Gepflegter Datensatz (MIT-Lizenz) mit der S&P-500-Zusammensetzung an jedem Änderungstag seit 1996:
+# github.com/fja05680/sp500 – Wikipedia hat die Änderungstabelle 2026 von der Listenseite entfernt.
+SP500_HIST_CSV = ("https://raw.githubusercontent.com/fja05680/sp500/master/"
+                  "S%26P%20500%20Historical%20Components%20%26%20Changes%20(Updated).csv")
+SP500_CUR_CSV = "https://raw.githubusercontent.com/fja05680/sp500/master/sp500.csv"
 STOXX_PDF = "https://www.stoxx.com/document/Indices/Common/Indexguide/Historical_Index_Compositions.pdf"
 SEC_MF = "https://www.sec.gov/files/company_tickers_mf.json"
 SEC_SERIES_ATOM = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={series}&type=NPORT-P"
@@ -176,6 +181,138 @@ def sp500_history(cur: pd.DataFrame, chg: pd.DataFrame, today: pd.Timestamp, fir
                      "size_max": max(sizes[m] for m in rows) if rows else None}}
 
 
+def parse_sp500_wiki_current(html: str) -> pd.DataFrame:
+    """Nur die aktuelle Liste (Symbol, Security, GICS Sector, Date added) von der Wikipedia-Seite."""
+    for t in pd.read_html(io.StringIO(html)):
+        cols = _flat(t.columns)
+        low = [c.lower() for c in cols]
+        if any(c.startswith("symbol") for c in low) and any("security" in c for c in low):
+            g = lambda f: next((cols[i] for i, c in enumerate(low) if f(c)), None)  # noqa: E731
+            sym, sec, sect, add = g(lambda c: c.startswith("symbol")), g(lambda c: "security" in c), \
+                g(lambda c: "sector" in c), g(lambda c: "date added" in c)
+            return pd.DataFrame({"ticker": t[sym].astype(str).str.strip(), "name": t[sec].astype(str).str.strip(),
+                                 "sector": t[sect].astype(str) if sect else "",
+                                 "added": pd.to_datetime(t[add].astype(str).str[:10], errors="coerce") if add else pd.NaT})
+    raise ValueError("Aktuelle Liste auf der Wikipedia-Seite nicht gefunden")
+
+
+def parse_sp500_snapshots(text: str) -> list[tuple[pd.Timestamp, list[str]]]:
+    """CSV „date,tickers“ (Zusammensetzung nach jeder Änderung) -> sortierte Liste (Datum, Ticker)."""
+    import csv
+    out = []
+    for row in csv.reader(io.StringIO(text)):
+        if len(row) < 2 or not re.match(r"^\d{4}-\d{2}-\d{2}$", row[0].strip()):
+            continue
+        tick = [t.strip() for t in ",".join(row[1:]).split(",") if t.strip()]
+        out.append((pd.Timestamp(row[0].strip()), tick))
+    if len(out) < 100:
+        raise ValueError(f"Historische S&P-500-Liste unvollständig ({len(out)} Stichtage)")
+    return sorted(out, key=lambda x: x[0])
+
+
+def parse_sp500_current_csv(text: str) -> pd.DataFrame:
+    t = pd.read_csv(io.StringIO(text))
+    low = {c.lower(): c for c in t.columns}
+    sym, sec = low.get("symbol"), low.get("security")
+    if not sym or not sec:
+        raise ValueError("Aktuelle S&P-500-Liste ohne Spalten Symbol/Security")
+    sect = next((c for k, c in low.items() if "sector" in k), None)
+    added = next((c for k, c in low.items() if "date added" in k or k == "date_added"), None)
+    return pd.DataFrame({"ticker": t[sym].astype(str).str.strip(), "name": t[sec].astype(str).str.strip(),
+                         "sector": t[sect].astype(str) if sect else "",
+                         "added": pd.to_datetime(t[added], errors="coerce") if added else pd.NaT})
+
+
+def sp500_renames(snaps: list, cur: pd.DataFrame | None) -> dict:
+    """Umbenennungen erkennen (z. B. FB -> META): Ein heutiges Mitglied, dessen „Date added“ VOR seinem ersten
+    Auftauchen im Datensatz liegt, war vorher unter anderem Kürzel im Index. Das alte Kürzel ist das, das genau an
+    diesem Tag verschwand – nur wenn es genau eines ist, wird zugeordnet. Yahoo führt die Kurse unter dem neuen Kürzel."""
+    if cur is None or "added" not in cur:
+        return {}
+    first_seen, prev, gone_at = {}, set(), {}
+    for d, ts in snaps:
+        now = {yahoo_us(t) for t in ts}
+        for t in now - prev:
+            first_seen.setdefault(t, d)
+        gone = prev - now
+        if gone:
+            gone_at.setdefault(d, set()).update(gone)
+        prev = now
+    ren = {}
+    for t, added in zip(cur["ticker"], cur["added"]):
+        y = yahoo_us(t)
+        f = first_seen.get(y)
+        if f is None or pd.isna(added) or added >= f - pd.Timedelta(days=7) or f == snaps[0][0]:
+            continue
+        cand = gone_at.get(f, set())
+        if len(cand) != 1:
+            continue
+        old = next(iter(cand))
+        # Absicherung gegen zufällig gleichzeitige Tausche (z. B. CA raus / LIN rein): Das alte Kürzel muss genau
+        # zum „Date added“ des neuen in den Index gekommen sein. Vor 1996 aufgenommene Titel bleiben deshalb ungeändert.
+        fo = first_seen.get(old)
+        if fo is None or fo == snaps[0][0] or abs((fo - added).days) > 10:
+            continue
+        ren[old] = y
+    # Ketten auflösen (A -> B -> C)
+    for k in list(ren):
+        seen = {k}
+        while ren[k] in ren and ren[k] not in seen:
+            seen.add(ren[k])
+            ren[k] = ren[ren[k]]
+    return ren
+
+
+def sp500_from_snapshots(snaps: list, cur: pd.DataFrame | None, today: pd.Timestamp, first: str = "1996-01") -> dict:
+    """Monatsende -> Mitglieder laut letztem Stichtag davor. Nach dem letzten Stichtag des Datensatzes werden
+    Aufnahmen aus der aktuellen Liste („Date added“) ergänzt; gestrichene Titel fallen zum selben Datum heraus."""
+    names, sectors = {}, {}
+    if cur is not None:
+        names = {yahoo_us(t): n for t, n in zip(cur["ticker"], cur["name"])}
+        sectors = {yahoo_us(t): s for t, s in zip(cur["ticker"], cur["sector"])}
+    ren = sp500_renames(snaps, cur)
+    if ren:
+        snaps = [(d, [ren.get(yahoo_us(t), yahoo_us(t)) for t in ts]) for d, ts in snaps]
+    last_d, last_set = snaps[-1][0], {yahoo_us(t) for t in snaps[-1][1]}
+    late_adds = []
+    if cur is not None and "added" in cur:
+        cur_set = {yahoo_us(t) for t in cur["ticker"]}
+        late_adds = sorted((d, yahoo_us(t)) for t, d in zip(cur["ticker"], cur["added"])
+                           if pd.notna(d) and d > last_d and yahoo_us(t) not in last_set)
+        gone = sorted(last_set - cur_set)
+    else:
+        gone = []
+    months = month_ends(max(first, snaps[0][0].strftime("%Y-%m")), last_month(today))
+    out, j = {}, 0
+    for ym in months:
+        e = _me(ym)
+        while j + 1 < len(snaps) and snaps[j + 1][0] <= e:
+            j += 1
+        if snaps[j][0] > e:
+            continue
+        mem = {yahoo_us(t) for t in snaps[j][1]}
+        if e > last_d and late_adds:
+            adds = [t for d, t in late_adds if d <= e]
+            mem |= set(adds)
+            mem -= set(gone[:len(adds)])          # je Aufnahme fällt ein (unbekannt wann) gestrichener Titel heraus
+        out[ym] = sorted(mem)
+    sizes = {m: len(v) for m, v in out.items()}
+    ok_from = None
+    for ym in sorted(out, reverse=True):
+        if 480 <= sizes[ym] <= 520:
+            ok_from = ym
+        else:
+            break
+    rows = {m: [[s, names.get(s, s), "USA", sectors.get(s, ""), None, "USD"] for s in v]
+            for m, v in out.items() if ok_from and m >= ok_from}
+    return {"source": "S&P-500-Zusammensetzung je Änderungstag (github.com/fja05680/sp500, MIT-Lizenz) + Wikipedia",
+            "months": rows,
+            "info": {"snapshots": len(snaps), "last_snapshot": last_d.strftime("%Y-%m-%d"),
+                     "late_additions": len(late_adds), "renamed": len(ren), "plausible_from": ok_from,
+                     "size_min": min(sizes[m] for m in rows) if rows else None,
+                     "size_max": max(sizes[m] for m in rows) if rows else None}}
+
+
 # ------------------------------------------------------------------ DAX-Familie (STOXX-PDF)
 SECTIONS = {"DAX": "DAX", "TECDAX": "TecDAX", "MDAX": "MDAX", "SDAX": "SDAX"}
 EXPECTED = {  # Sollgröße je Zeitraum (Stichtag der Regeländerung)
@@ -225,11 +362,11 @@ LABELS = {"DAX", "TECDAX", "MDAX", "SDAX"}
 def parse_stoxx_words(pages: list[list[dict]]) -> dict:
     """pages: je Seite Wörter (text, x0, x1, top) wie von pdfplumber.
     Aufbau des STOXX-PDFs: „30 December 1987: Initial Composition“, danach die Namen in mehreren Spalten, dann die
-    Überschrift „1. DAX® INDEX COMPOSITION“, dann die Änderungstabelle (Date of change | Date of announcement |
-    Deletion | Addition). Seitenkopf „HISTORICAL INDEX COMPOSITIONS …“ und Seitenzahlen werden übersprungen.
+    Beschriftung „DAX®“ (bzw. TecDAX®, MDAX®, SDAX®), dann die Änderungstabelle (Date of change | Date of
+    announcement | Deletion | Addition). Indizes mit anderer Beschriftung (ESG, DivDAX …) werden übersprungen. Seitenkopf „HISTORICAL INDEX COMPOSITIONS …“ und Seitenzahlen werden übersprungen.
     Ergebnis je Index: {"initial": (Datum, [Namen]), "changes": [(Datum, [gestrichen], [aufgenommen])]}"""
     res: dict = {}
-    section, pending, cols, rec = None, None, None, None
+    section, pending, cols, rec, label = None, None, None, None, None
     for words in pages:
         for ln in _lines(words):
             text = " ".join(w["text"] for w in ln).strip()
@@ -240,22 +377,33 @@ def parse_stoxx_words(pages: list[list[dict]]) -> dict:
             mi = INITIAL_RE.search(text)
             if mi:
                 pending = (mi.group(1), [])
-                section, cols, rec = None, None, None
+                section, cols, rec, label = None, None, None, None
                 continue
             mh = HEADING_RE.match(up)
-            if mh:
-                name = mh.group(1).strip()
-                section = SECTIONS.get(name)
-                if section and pending:
-                    res[section] = {"initial": pending, "changes": []}
-                elif section:
-                    section = None          # ohne Anfangszusammensetzung nicht verwendbar
-                pending, cols, rec = None, None, None
+            if mh:                          # Überschrift „1. DAX INDEX COMPOSITION“ (falls als Text vorhanden)
+                if pending is not None:
+                    label = mh.group(1).strip()
                 continue
             if pending is not None:
-                if up in LABELS:
+                if "DELETION" in up and "ADDITION" in up:
+                    # Ende der Anfangszusammensetzung: Tabelle beginnt; Index über die Beschriftung davor erkannt
+                    section = SECTIONS.get(label or "")
+                    if section and pending[1]:
+                        res[section] = {"initial": pending, "changes": []}
+                    else:
+                        section = None
+                    pending, rec = None, None
+                    xd = next(w["x0"] for w in ln if w["text"].upper().startswith("DELETION"))
+                    xa = next(w["x0"] for w in ln if w["text"].upper().startswith("ADDITION"))
+                    cols = (xd - 4, xa - 4)
                     continue
-                for part in _cells(ln):
+                if set(up.split()) <= {"DATE", "OF", "CHANGE", "ANNOUNCEMENT"}:   # Tabellenkopf über mehrere Zeilen
+                    continue
+                if up.replace(" ", "") in LABELS:   # Beschriftung „DAX®“, „TecDAX®“ … als eigene Zeile
+                    label = up.replace(" ", "")
+                    continue
+                keep = ln
+                for part in _cells(keep):
                     part = part.strip()
                     if part and len(part) > 1 and not DATE_RE.match(part):
                         pending[1].append(part)
@@ -421,10 +569,13 @@ def parse_nport(xml_text: str) -> dict:
             continue
         if not isin or bal <= 0:
             continue
+        cur = g["curCd"].text if g.get("curCd") is not None else ""
+        if not cur:                                  # Fremdwährung steht teils in <currencyConditional curCd=".."/>
+            cc = find(inv, "currencyConditional")
+            cur = (cc.get("curCd") or "") if cc is not None else ""
         rows.append({"isin": isin, "name": (g["name"].text or "").strip() if g.get("name") is not None else "",
                      "country": g["invCountry"].text if g.get("invCountry") is not None else "",
-                     "cur": g["curCd"].text if g.get("curCd") is not None else "",
-                     "px_usd": val / bal})
+                     "cur": cur, "px_usd": val / bal, "val_usd": val})
     return {"date": rep.text if rep is not None else None, "series": series.text if series is not None else None,
             "rows": rows}
 
@@ -541,7 +692,16 @@ def validate_rows(months: dict, close: dict, fx_local_per_usd=None, ref_months: 
 
 
 def coverage_start(months: dict, valid: set) -> tuple[str | None, dict]:
-    cov = {m: (sum(1 for r in rows if r[0] and r[0] in valid) / len(rows) if rows else 0.0) for m, rows in months.items()}
+    """Abdeckung je Monat. Liegt der Positionswert vor (ACWI: SEC-Meldung), zählt der Anteil am Indexgewicht – so
+    misst auch MSCI die Abdeckung; sonst der Anteil an der Zahl der Mitglieder."""
+    def one(rows):
+        if not rows:
+            return 0.0
+        if all(len(r) > 6 and r[6] for r in rows):
+            tot = sum(r[6] for r in rows)
+            return sum(r[6] for r in rows if r[0] and r[0] in valid) / tot if tot else 0.0
+        return sum(1 for r in rows if r[0] and r[0] in valid) / len(rows)
+    cov = {m: one(rows) for m, rows in months.items()}
     start = None
     for m in sorted(cov, reverse=True):
         if cov[m] >= MIN_COVERAGE:
@@ -549,6 +709,10 @@ def coverage_start(months: dict, valid: set) -> tuple[str | None, dict]:
         else:
             break
     return start, cov
+
+
+def count_coverage(months: dict, valid: set) -> dict:
+    return {m: (sum(1 for r in rows if r[0] and r[0] in valid) / len(rows) if rows else 0.0) for m, rows in months.items()}
 
 
 def monthly_membership(months: dict, valid: set, start: str) -> dict:

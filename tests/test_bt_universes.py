@@ -86,7 +86,7 @@ def test_stoxx_pdf_parse_and_history():
     assert "Bayer. Hypo.- und Wechsel-Bank" in dax["initial"][1]
     assert dax["changes"][1] == ("03.09.1990", ["Feldmühle Nobel", "Nixdorf *"], ["Metallgesellschaft", "Preussag"])
     assert dax["changes"][3][2][:2] == ["Neu A", "Neu 0"] and len(dax["changes"][3][2]) == 10
-    assert parsed["MDAX"]["initial"] == ("11 April 1994", ["Alpha"])
+    assert "MDAX" not in parsed          # Anfangsliste ohne folgende Änderungstabelle wird nicht übernommen
     h = bu.stoxx_history({"DAX": dax}, pd.Timestamp("2022-01-15"))
     assert "Preussag" in h["names"]["1990-09"] and "Nixdorf" not in h["names"]["1990-09"]
     assert "SAP" in h["names"]["1995-12"] and "Firma 3" not in h["names"]["1995-12"]
@@ -146,3 +146,53 @@ def test_validation_coverage_and_quarterly_fill():
     q = bu.fill_quarterly(months, "2020-12")
     assert q["2020-05"] == months["2020-04"] and q["2020-12"] == months["2020-10"]
 
+
+
+def test_stoxx_real_layout_label_after_names():
+    """Echter Aufbau (Sept. 2026): Namen, dann nur die Beschriftung „DAX®“, Tabellenkopf über zwei Zeilen."""
+    w = lambda t, x, y: {"text": t, "x0": x, "x1": x + 6 * len(t), "top": y}
+    toc = [w("1.", 50, 10), w("DAX®INDEX", 62, 10), w("COMPOSITION", 140, 10), w("3", 400, 10)]
+    page = [w("HISTORICAL", 50, 5), w("INDEX", 120, 5), w("COMPOSITIONS", 160, 5), w("3/59", 500, 5)]
+    page += [w("30", 50, 20), w("December", 65, 20), w("1987:", 120, 20), w("Initial", 155, 20), w("Composition", 195, 20)]
+    page += [w(f"Firma{i}", 50 + (i % 3) * 170, 40 + (i // 3) * 15) for i in range(30)]
+    y = 40 + 10 * 15 + 5
+    page += [w("DAX®", 50, y)]
+    y += 15
+    page += [w("Date", 50, y), w("of", 75, y)]
+    y += 12
+    page += [w("change", 50, y), w("announcement", 150, y), w("Deletion", 300, y), w("Addition", 430, y)]
+    page += [w("18.09.1989", 50, y + 15), w("-", 300, y + 15), w("-", 430, y + 15)]
+    page += [w("18.09.1995", 50, y + 30), w("18.07.1995", 150, y + 30), w("Firma3", 300, y + 30), w("SAP", 430, y + 30)]
+    esg = [w("1", 50, 20), w("March", 65, 20), w("2020:", 110, 20), w("Initial", 150, 20), w("Composition", 190, 20),
+           w("Esg1", 50, 40), w("DAX®", 50, 60), w("50", 85, 60), w("ESG", 100, 60),
+           w("Deletion", 300, 80), w("Addition", 430, 80), w("01.01.2021", 50, 95), w("Esg1", 300, 95), w("Esg2", 430, 95)]
+    parsed = bu.parse_stoxx_words([toc, page, esg])
+    assert list(parsed) == ["DAX"]
+    assert len(parsed["DAX"]["initial"][1]) == 30
+    assert parsed["DAX"]["changes"] == [("18.09.1989", [], []), ("18.09.1995", ["Firma3"], ["SAP"])]
+
+
+def test_sp500_snapshots_and_renames():
+    csv_text = ("date,tickers\n2010-01-04,\"AAA,BBB,FB,OLD\"\n2015-03-02,\"AAA,BBB,FB,NEW1\"\n"
+                "2022-06-09,\"AAA,BBB,META,NEW1\"\n")
+    snaps = bu.parse_sp500_snapshots(csv_text * 1 + "".join(f"2009-01-{d:02d},\"AAA,BBB,FB,OLD\"\n" for d in range(1, 29))
+                                     + "".join(f"2008-{m:02d}-{d:02d},\"AAA,BBB,FB,OLD\"\n" for m in range(1, 13) for d in range(1, 7)))
+    cur = pd.DataFrame({"ticker": ["AAA", "BBB", "META", "NEW1"], "name": ["A", "B", "Meta", "N"], "sector": "",
+                        "added": pd.to_datetime(["1990-01-01", "1990-01-01", "2008-01-01", "2015-03-02"])})
+    # FB taucht ab Datensatzbeginn auf -> keine sichere Zuordnung; mit späterem Beginn klappt sie
+    assert bu.sp500_renames(snaps, cur) == {}
+    snaps2 = [(pd.Timestamp("2007-01-02"), ["AAA", "BBB", "OLD"])] + snaps
+    assert bu.sp500_renames(snaps2, cur) == {"FB": "META"}
+    h = bu.sp500_from_snapshots(snaps2, cur, pd.Timestamp("2022-12-15"), first="2007-01")
+    assert h["info"]["renamed"] == 1
+
+
+def test_weight_coverage_and_currency_conditional():
+    rows = [["BIG", "", "", "", 1, "USD", 900.0], ["S1", "", "", "", 1, "USD", 50.0], ["S2", "", "", "", 1, "USD", 50.0]]
+    months = {"2024-01": rows, "2024-02": rows}
+    start, cov = bu.coverage_start(months, {"BIG"})
+    assert start == "2024-01" and abs(cov["2024-01"] - 0.9) < 1e-9          # 1 von 3 Titeln, aber 90 % Gewicht
+    assert abs(bu.count_coverage(months, {"BIG"})["2024-01"] - 1 / 3) < 1e-9
+    xml = NPORT.replace("<curCd>USD</curCd>", '<currencyConditional curCd="CAD" exchangeRt="1.35"/>')
+    r = bu.parse_nport(xml)["rows"][0]
+    assert r["cur"] == "CAD" and r["val_usd"] == 19000
