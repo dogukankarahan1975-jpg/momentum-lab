@@ -206,6 +206,15 @@ test('Simulator: ETF-Sparplan = Summe der Anteile', () => {
   near(r.final, 2500);          // Kurs konstant
   assert.equal(r.taxesPaid, 0);
 });
+test('Simulator: Startkapital + Budget nur als Starthilfe', () => {
+  const r = simRun(simData(), 'sp500', { ...simOpts, initial: 1000, budgetMonths: 6 });
+  near(r.contrib, 1000 + 6 * 100);           // danach keine Einzahlungen mehr
+  const r2 = simRun(simData(), 's1top10', { ...simOpts, initial: 1000, budget: 0 });
+  near(r2.contrib, 1000);
+  const r3 = simRun(simData(), 's1top10', { ...simOpts, budgetMode: 'fixed', budgetMonths: 3 });
+  near(r3.contrib, 300);
+  assert.ok(r3.log.some((l) => l.name === 'Starthilfe beendet'));
+});
 test('Simulator: Verkauf nach zwei Signalen, Erlös neu verteilt', () => {
   const r = simRun(simData(), 's1top10', simOpts);
   // B hat ab Monat 3 die Bedingung -> Verkauf in Monat 4

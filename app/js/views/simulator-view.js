@@ -23,12 +23,14 @@ export async function renderSimulator(el, data) {
   o.biasCorr = o.biasCorr === true;
   if (!FREQ_LABEL[o.freq]) o.freq = 'monthly';
   if (!(Number.isInteger(o.endYear))) o.endYear = null;
+  if (!(Number.isInteger(o.budgetMonths) && o.budgetMonths > 0)) o.budgetMonths = null;
+  if (!(o.initial >= 0)) o.initial = 0;
   o.rest = 'top'; // feste Regel: Top 5/Top 10/Stage 2 Top 5 kaufen immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score
   o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
   if (saved && !saved.v6) { for (const x of ['s2top5', 's1min4']) if (!o.strategies.includes(x)) o.strategies.push(x); o.v6 = true; }
   if (!(o.minScore >= 0 && o.minScore <= 10)) o.minScore = 4;
   // Schutz gegen versehentlich hohe Gebühren (z. B. Sparrate ins Gebührenfeld getippt)
-  for (const f of ['feeBuy', 'feeSell', 'feeEtf']) if (!(o[f] >= 0) || o[f] > Math.min(Math.max(0, o.budget * 0.1), 50)) o[f] = DEFAULTS[f];
+  for (const f of ['feeBuy', 'feeSell', 'feeEtf']) if (!(o[f] >= 0) || o[f] > Math.min(Math.max(0, Math.max(o.budget, (o.initial || 0) / 12) * 0.1), 50)) o[f] = DEFAULTS[f];
   for (const f of ['spread', 'spreadEtf']) if (!(o[f] >= 0) || o[f] > 5) o[f] = DEFAULTS[f];
   const firstYear = Number(data.signal_dates[0].slice(0, 4));
   const lastYear = Number(data.signal_dates[data.signal_dates.length - 1].slice(0, 4)) - 2;
@@ -57,6 +59,9 @@ export async function renderSimulator(el, data) {
         <label class="field"><span>Ende</span><select name="endYear"><option value="" ${!o.endYear ? 'selected' : ''}>bis heute</option>${Array.from({ length: dataLastYear - firstYear }, (_, i) => firstYear + i).map((y) => html`<option value="${y}" ${y === o.endYear ? 'selected' : ''}>Ende ${y}</option>`)}</select></label>
         <label class="field"><span>Monatsbudget (€)</span><input name="budget" inputmode="decimal" value="${o.budget}"></label>
         <label class="field"><span>Dynamik pro Jahr (%)</span><input name="dyn" inputmode="decimal" value="${String(o.dyn).replace('.', ',')}"></label>
+        <label class="field"><span>Startkapital (€, einmalig)</span><input name="initial" inputmode="decimal" value="${o.initial || 0}"></label>
+        <label class="field"><span>Monatsbudget einzahlen</span><select name="budgetMonths">
+          ${[null, 6, 12, 24, 36, 48, 60, 120].map((n) => html`<option value="${n ?? ''}" ${o.budgetMonths === n ? 'selected' : ''}>${n ? `nur die ersten ${n} Monate (Starthilfe)` : 'immer (jeden Monat)'}</option>`)}</select></label>
         <label class="field"><span>Gebühr je Kauf (€)</span><input name="feeBuy" inputmode="decimal" value="${String(o.feeBuy).replace('.', ',')}"></label>
         <label class="field"><span>Gebühr je Verkauf (€)</span><input name="feeSell" inputmode="decimal" value="${String(o.feeSell).replace('.', ',')}"></label>
         <label class="field"><span>Gebühr je ETF-Sparrate (€)</span><input name="feeEtf" inputmode="decimal" value="${String(o.feeEtf).replace('.', ',')}"></label>
@@ -105,7 +110,7 @@ export async function renderSimulator(el, data) {
     const k0 = startIndex(data, opts.startYear);
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
-    parts.push(html`<h3>Ergebnis${data.universe ? ` (${data.universe.label})` : ''}: ${fmtEUR(opts.budget, 0)} pro Monat ab ${fmtDate(data.points[k0])}${opts.endYear ? ` bis ${fmtDate(res[0]?.end || data.points[data.points.length - 1])}` : ''}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
+    parts.push(html`<h3>Ergebnis${data.universe ? ` (${data.universe.label})` : ''}: ${opts.initial ? `${fmtEUR(opts.initial, 0)} Startkapital${opts.budget ? ' + ' : ''}` : ''}${opts.budget || !opts.initial ? `${fmtEUR(opts.budget, 0)} pro Monat${opts.budgetMonths ? ` (nur die ersten ${opts.budgetMonths} Monate)` : ''}` : ''} ab ${fmtDate(data.points[k0])}${opts.endYear ? ` bis ${fmtDate(res[0]?.end || data.points[data.points.length - 1])}` : ''}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
       <p class="xs muted">Screening: ${FREQ_LABEL[opts.freq] || 'monatlich'}. Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
       <div class="panel"><div id="simchart"></div><p class="xs muted" style="margin:6px 0 0">Depotwert in Euro vor Steuern. Graue Linie = eingezahltes Geld.</p></div>`);
     for (const r of res) {
@@ -121,8 +126,8 @@ export async function renderSimulator(el, data) {
           <div class="stat"><div class="l">Rendite pro Jahr</div><div class="v">${fmtPct(r.irr)}</div></div>
         </div>
         <p class="xs muted" style="margin:8px 0 0">${isEtf
-          ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
-          : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
+          ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
+          : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
           Größter Rückgang ${fmtPct(r.maxDD, 0)}. ${fmtNum(r.trades, 0)} Orders, Gebühren ${fmtEUR(r.fees, 0)}, Spread ${fmtEUR(r.spreadCost, 0)}.</p>
       </div>`);
     }
@@ -157,7 +162,7 @@ export async function renderSimulator(el, data) {
         return html`<tr><td class="sticky">${y}</td><td class="n">${fmtEUR(cum, 0)}</td><td class="n">${fmtEUR(v.value, 0)}</td><td class="n">${fmtEUR(v.tax, 0)}</td><td class="n">${v.trades}</td><td class="n">${fmtEUR(v.cash, 0)}</td><td style="min-width:220px;white-space:normal" class="xs">${hold}${v.etf && STRATEGIES[r.key].kind !== 'etf' ? ' + MSCI World ETF' : ''}</td></tr>`;
       });
       out.querySelector('#simyt').innerHTML = String(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Jahr</th><th class="n">Eingezahlt</th><th class="n">Wert Jahresende</th><th class="n">Steuer</th><th class="n">Orders</th><th class="n">Konto</th><th>Bestand am Jahresende</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="xs muted">Steuer = im Folgejahr gezahlte Abgeltungsteuer auf die Gewinne dieses Jahres. Letzte Zeile: Wert am letzten Kurstag.</p>`);
+        <p class="xs muted">Steuer = in diesem Jahr einbehaltene Abgeltungsteuer inkl. Soli (bei jedem Verkauf sofort abgezogen, Erstattungen bei Verlusten im selben Jahr verrechnet; beim ETF die Vorabpauschale). Letzte Zeile: Wert am letzten Kurstag.</p>`);
     };
     const drawMonth = () => {
       const k = Number(out.querySelector('#simmonth').value);
@@ -227,8 +232,9 @@ export async function renderSimulator(el, data) {
     else if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
     else if (t.name === 'endYear') o.endYear = t.value ? Number(t.value) : null;
+    else if (t.name === 'budgetMonths') o.budgetMonths = t.value ? Number(t.value) : null;
     else o[t.name] = num(t.value, DEFAULTS[t.name]);
-    const maxFee = Math.max(0, o.budget * 0.1);
+    const maxFee = Math.max(0, Math.max(o.budget, (o.initial || 0) / 12) * 0.1);
     for (const f of ['feeBuy', 'feeSell', 'feeEtf']) {
       if (o[f] > Math.min(maxFee, 50)) { o[f] = DEFAULTS[f]; const inp = el.querySelector(`[name=${f}]`); if (inp) inp.value = String(o[f]).replace('.', ','); toastFee(); }
     }

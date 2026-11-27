@@ -295,6 +295,17 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                 lm = max(months)
                 entry["coverage_last"] = {"month": lm, "share": round(cov[lm], 3), "count_share": round(ccov[lm], 3),
                                           "by_weight": weighted}
+            dinfo = next((p.get("info") for p in parts if isinstance(p.get("info"), dict) and "names_mapped" in p["info"]), None)
+            if dinfo and dinfo.get("names") and dinfo.get("names_mapped", 0) / dinfo["names"] < 0.9:
+                entry["reason"] = (f"DAX-Namen erst zu {dinfo['names_mapped'] / dinfo['names']:.0%} Kurskürzeln zugeordnet "
+                                   "(nötig 90 %) – gesperrt, bis die geprüfte Namensliste fertig ist.")
+                index.append(entry)
+                continue
+            stale = bool(months) and max(months) < (pd.Timestamp(bu.last_month(today) + "-01") - pd.DateOffset(months=2)).strftime("%Y-%m")
+            if stale:
+                entry["reason"] = f"Indexliste endet {max(months)} statt im letzten Monat – gesperrt, bis das behoben ist."
+                index.append(entry)
+                continue
             if not start or n_months < bu.MIN_MONTHS:
                 what = "des damaligen Indexgewichts" if weighted else "der damaligen Mitglieder"
                 low = min(cov.values()) if cov else 0

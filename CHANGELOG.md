@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.9.5 – 27.11.2026
+- Simulator: neues Feld „Startkapital (€, einmalig)“ und Auswahl „Monatsbudget einzahlen: immer / nur die ersten 6–120 Monate (Starthilfe)“. Nach der Starthilfe wird nichts mehr eingezahlt; es werden nur noch die Verkaufserlöse angelegt. „Eingezahlt“ zählt nur echtes Geld (Startkapital + gezahlte Budgets).
+- Backtest „alles heute verkaufen“: Ordergebühren und Spread des Schlussverkaufs werden jetzt abgezogen (auch steuerlich).
+- Text unter „Jahr für Jahr“ korrigiert: Steuer wird bei jedem Verkauf sofort einbehalten, nicht im Folgejahr.
+- DAX-Backtest gesperrt, solange weniger als 90 % der Firmennamen einem Kurskürzel zugeordnet sind oder die Liste nicht bis heute reicht.
+
 ## Pipeline 0.9.3/0.9.4 – 27.11.2026
 - Fehler aus 0.9.2 behoben: Einige ISINs aus den SEC-Meldungen waren falsch zugeordnet (z. B. Siemens Energy → Siemens Energy India, Banco Santander → Santander Chile, veraltete ISIN von Linde/Aon). Jetzt nur noch aus der neuesten Meldung und nur, wenn das ISIN-Länderkürzel zur Heimatbörse passt; sonst bleibt die ISIN leer.
 - Zeitlimit: Der Lauf vom 26.11. abends lief in GitHubs 150-Minuten-Grenze (viele neue Kurse, SEC-Meldungen neu, DAX-Namenssuche). Der Backtest-Teil hat jetzt eine feste Endzeit (118 Minuten nach Start der Pipeline): Was dann noch fehlt, holt der nächste Lauf nach; bereits Berechnetes bleibt sichtbar. Reihenfolge: ACWI, DAX, S&P 500, Kombination.

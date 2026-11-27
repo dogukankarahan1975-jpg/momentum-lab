@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  initial: 0, budgetMonths: null, hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -24,7 +24,7 @@ export const HOLD_LABEL = {
 };
 export const BUDGET_LABEL = {
   reinvest: 'Monatsbudget plus Verkaufserlöse werden angelegt',
-  fixed: 'Nur das feste Monatsbudget wird angelegt, Verkaufserlöse bleiben auf dem Konto',
+  fixed: 'Nur das feste Monatsbudget wird angelegt, Verkaufserlöse bleiben auf dem Konto (nach Ende der Starthilfe werden auch die Erlöse angelegt)',
 };
 export const REST_LABEL = {
   etf: 'Rest fließt in den MSCI World ETF',
@@ -246,7 +246,13 @@ export function simulate(data, key, opts) {
     newYear(b, year, k, pxE);
     if (!b.etfYear || b.etfYear.year !== year) b.etfYear = { year, v0: b.etfUnits * (pxE || 0), buys: [] };
     const taxPaid = b.monthTax;
-    const budget = o.budget * Math.pow(1 + o.dyn / 100, Math.floor((k - k0) / 12));
+    // Monatsbudget nur in den ersten o.budgetMonths Monaten (Starthilfe), danach trägt sich die Strategie selbst
+    const paying = !(o.budgetMonths > 0) || k - k0 < o.budgetMonths;
+    const budget = (paying ? o.budget * Math.pow(1 + o.dyn / 100, Math.floor((k - k0) / 12)) : 0)
+      + (k === k0 ? (o.initial || 0) : 0);
+    if (!paying && k - k0 === o.budgetMonths && o.budget > 0) {
+      b.log.push({ k, type: 'Info', name: 'Starthilfe beendet', amount: 0, why: `Nach ${o.budgetMonths} Monaten kein Monatsbudget mehr – ab jetzt werden nur noch die Verkaufserlöse angelegt.`, cash: b.cash });
+    }
     const cashBefore = b.cash;
     b.cash += budget; b.contrib += budget;
     b.flows.push([k, -budget]);
@@ -315,7 +321,7 @@ export function simulate(data, key, opts) {
       //    Zwischen zwei Screening-Terminen wird nichts gekauft: Budget und Erlöse sammeln sich auf dem Konto.
       b.pendingBudget = (b.pendingBudget || 0) + budget;
       const avail = Math.max(0, b.cash);
-      const invest = !screenNow ? 0 : o.budgetMode === 'fixed' ? Math.min(b.pendingBudget, avail) : avail;
+      const invest = !screenNow ? 0 : o.budgetMode === 'fixed' && paying ? Math.min(b.pendingBudget, avail) : avail;
       if (screenNow) b.pendingBudget = 0;
       m.screen = screenNow;
       const slots = st.n || target.length;
@@ -370,9 +376,12 @@ export function simulate(data, key, opts) {
   series.push([data.points[kEnd], final, b.contrib]);
   // Steuer, falls am Ende alles verkauft würde (rein rechnerisch)
   const endYear = yearOf(data.points[kEnd]);
-  const etfGain = (etfVal - b.etfBasis - (b.vpTotal || 0)) * (1 - ETF_EXEMPT);
-  const endTax = liability(b, endYear, unrealStock, etfGain) - (b.paidYear[endYear] || 0);
-  const afterTax = final - endTax;
+  // Kosten des Schlussverkaufs (Ordergebühr + halber Spread je Position) mindern Erlös und Gewinn
+  const liqStock = open.reduce((a, p) => a + (p.value > 0 ? o.feeSell + p.value * (o.spread / 200) : 0), 0);
+  const liqEtf = etfVal > 0 ? o.feeEtf + etfVal * (o.spreadEtf / 200) : 0;
+  const etfGain = (etfVal - liqEtf - b.etfBasis - (b.vpTotal || 0)) * (1 - ETF_EXEMPT);
+  const endTax = liability(b, endYear, unrealStock - liqStock, etfGain) - (b.paidYear[endYear] || 0);
+  const afterTax = final - liqStock - liqEtf - endTax;
   const years = (Date.parse(data.points[kEnd]) - Date.parse(data.points[k0])) / (365.25 * 864e5);
   const ys = Object.keys(b.yearly).map(Number).sort((a, c) => a - c);
   ys.forEach((y, j) => { b.yearly[y].trades = (j + 1 < ys.length ? b.yearly[ys[j + 1]].trades0 : b.trades) - b.yearly[y].trades0; });
