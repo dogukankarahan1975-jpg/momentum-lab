@@ -196,3 +196,32 @@ def test_weight_coverage_and_currency_conditional():
     xml = NPORT.replace("<curCd>USD</curCd>", '<currencyConditional curCd="CAD" exchangeRt="1.35"/>')
     r = bu.parse_nport(xml)["rows"][0]
     assert r["cur"] == "CAD" and r["val_usd"] == 19000
+
+
+def test_parse_nq_acwi_and_name_matching():
+    from pathlib import Path
+    raw = (Path(__file__).parent / "data_nq_sample.html").read_text()
+    d = bu.parse_nq_acwi(raw)
+    assert d["date"] == "2015-11-30"
+    names = [r[0] for r in d["rows"]]
+    assert "Sony Corp." not in names and "Exxon" not in names          # andere Fonds (ex US, Low Carbon) ignoriert
+    assert "Apple Inc." in names                                          # Fortsetzungsseite gehört dazu
+    assert not any(n.startswith(("iShares", "BlackRock")) for n in names)
+    idx = bu.build_name_index([["I1", "Alphabet Inc Class A", "US"], ["I2", "Alphabet Inc Class C", "US"],
+                               ["I3", "AES Corp/VA", "US"], ["I4", "America Movil SAB de CV", "MX"]], [])
+    assert bu.match_name(idx, "Alphabet Inc. Class C", "US") == "I2"
+    assert bu.match_name(idx, "AES Corp. (The)", "US") == "I3"
+    assert bu.match_name(idx, "America Movil SAB de CV Series L", "MX") == "I4"
+    assert bu.match_name(idx, "Unbekannt AG", "DE") is None
+
+
+def test_bad_early_mappings():
+    idx = pd.date_range("2014-01-01", "2020-12-31", freq="D")
+    good = pd.Series(100.0, index=idx)
+    wrong = pd.Series(100.0, index=idx)
+    wrong[:"2016-12-31"] = 40.0                       # vor 2017 ein ganz anderer Kurs -> falsche Namenszuordnung
+    ref = {"2015-05": [["G", "", "", "", 100.0, "USD", 1], ["W", "", "", "", 100.0, "USD", 1]],
+           "2016-05": [["G", "", "", "", 100.0, "USD", 1], ["W", "", "", "", 100.0, "USD", 1]],
+           "2019-10": [["G", "", "", "", 100.0, "USD", 1], ["W", "", "", "", 100.0, "USD", 1]]}
+    bad, st = bu.bad_early_mappings(ref, {"G": good, "W": wrong}, lambda c, e: 1.0, "2019-10")
+    assert bad == {"W"} and st["early_checked"] == 2

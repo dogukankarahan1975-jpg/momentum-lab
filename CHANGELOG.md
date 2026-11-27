@@ -1,5 +1,11 @@
 # Änderungen
 
+## Pipeline 0.9.6 – 27.11.2026
+- MSCI ACWI vor 2019: ältere SEC-Meldungen des iShares MSCI ACWI ETF (N-Q und N-CSR/N-CSRS, ab 2008) werden ausgelesen (Name, Stückzahl, Wert je Aktie). Zuordnung zu Kurskürzeln nur über den exakten Namen aus den späteren N-PORT-Meldungen (mit ISIN) bzw. der heutigen Liste; mehrdeutige Namen werden nicht verwendet. Strenge Kursprüfung: Das Verhältnis Yahoo-Kurs / gemeldeter Kurs darf sich zwischen zwei Stichtagen höchstens um 12 % ändern (außer um typische Split-Faktoren), sonst gilt die Aktie in diesem Zeitraum als nicht zugeordnet. Der Backtest beginnt erst, wenn durchgehend mindestens 85 % des damaligen Indexgewichts geprüfte Kurse haben.
+- Die älteren Meldungen werden über mehrere Läufe verteilt geladen (Zeitlimit).
+- DAX-Familie und „S&P 500 + DAX“ aus dem Backtest entfernt.
+- Installation: holt vor dem Installieren den neuesten Stand; ein bereits installiertes Paket wird übersprungen.
+
 ## Pipeline 0.9.5 – 27.11.2026
 - Optional Tiingo (kostenloser Starter-Tarif, Registrierung nötig, GitHub-Secret `TIINGO_API_KEY`): Kurse ehemaliger S&P-500-Mitglieder, die bei Yahoo fehlen. Höchstens 40 Abrufe pro Lauf und 450 Symbole pro Monat (Limit 50/Stunde, 500/Monat). Jede Aktie wird einmal geladen und unter archive/tiingo/ gespeichert. Nutzungsbedingung von Tiingo: nur private Nutzung.
 - Simulator: neue Auswahl „In welchen Monaten?“ bei vierteljährlichem, halbjährlichem und jährlichem Screening (z. B. Jan/Apr/Jul/Okt, Feb/Mai/Aug/Nov oder Mär/Jun/Sep/Dez). Damit lässt sich prüfen, wie viel vom Ergebnis Timing-Glück ist.

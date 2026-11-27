@@ -173,6 +173,53 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         except Exception as exc:  # noqa: BLE001
             log(f"[bt-acwi] Fehler: {exc}")
             st["error"] = str(exc)[:200]
+    # vor 2019: N-Q (Quartale 1/3) und N-CSR/N-CSRS (Halbjahres-/Jahresbericht) – einmalig, verteilt auf mehrere Läufe
+    NQ_VER = 1
+    if st.get("nq_ver") != NQ_VER:
+        st["nq"] = {a: f for a, f in st.get("nq", {}).items() if f.get("rows")}
+        st["nq_ver"], st["nq_done"] = NQ_VER, False
+    if st.get("series") and not st.get("nq_done"):
+        try:
+            hdr = sec_headers()
+            cik, series = st["series"]
+            complete = True
+            nq = st.setdefault("nq", {})
+            n_new = 0
+            for typ in ("N-Q", "N-CSR"):
+                try:
+                    nq_accs = bu.parse_atom_filings(http_get(bu.SEC_SERIES_ATOM_TYPE.format(series=series, type=typ), hdr))
+                except Exception as exc:  # noqa: BLE001
+                    log(f"[bt-acwi] {typ}-Liste: {str(exc)[:100]}")
+                    complete = False
+                    continue
+                for acc in nq_accs:
+                    if acc in nq or acc in filings:
+                        continue
+                    if time.time() > deadline - 65 * 60:
+                        log("[bt-acwi] Zeitlimit – restliche ältere Meldungen im nächsten Lauf")
+                        complete = False
+                        break
+                    try:
+                        items = json.loads(http_get(bu.SEC_INDEX_JSON.format(cik=cik, acc=acc), hdr))["directory"]["item"]
+                        docs = sorted((it for it in items if str(it.get("name", "")).lower().endswith((".htm", ".html", ".txt"))
+                                       and "ex" not in str(it.get("name", "")).lower().split(".")[0][-6:]
+                                       and not str(it.get("name", "")).startswith(acc[:10])),
+                                      key=lambda it: -int(str(it.get("size") or 0) or 0))[:3]
+                        got = None
+                        for it in docs:
+                            raw = http_get(f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/{it['name']}", hdr)
+                            got = bu.parse_nq_acwi(raw)
+                            if got and len(got["rows"]) > 300 and got.get("date"):
+                                break
+                            got = None
+                        nq[acc] = got or {"none": True}
+                        n_new += 1 if got else 0
+                    except Exception as exc:  # noqa: BLE001
+                        log(f"[bt-acwi] {acc}: {str(exc)[:100]}")
+            log(f"[bt-acwi] ältere Meldungen (N-Q/N-CSR): {sum(1 for v in nq.values() if v.get('rows'))} mit Bestandsliste, {n_new} neu")
+            st["nq_done"] = complete
+        except Exception as exc:  # noqa: BLE001
+            log(f"[bt-acwi] ältere Meldungen: {exc}")
     # je Stichtag die zuletzt eingereichte Meldung
     by_date = {}
     for acc in sorted(filings):
@@ -206,10 +253,41 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
     ref = {m: [[imap.get(i), n, c, "", px, cur, val] for i, n, c, cur, px, val in rows
                if not (imap.get(i) or "").endswith((".SS", ".SZ")) and (imap.get(i) or c != "CN")]
            for m, rows in by_date.items()}
+    # ältere Meldungen (vor der ersten N-PORT-Meldung): Zuordnung über den exakten Namen
+    nport_start = min(by_date) if by_date else None
+    nq_info = {"filings": 0, "rows": 0, "mapped": 0, "weight_mapped": 0.0}
+    if nport_start:
+        idx = bu.build_name_index([r for rows in by_date.values() for r in rows], [])
+        uni_idx = bu.build_name_index([[sym, n, bu.COUNTRY_ISO.get(str(c).upper(), "")] for sym, n, c in
+                                       zip(universe.get("symbol", []), universe.get("name", []),
+                                           universe.get("country", [""] * len(universe)))], [])
+        wt_all = wt_map = 0.0
+        for acc, f in sorted(st.get("nq", {}).items(), key=lambda kv: (kv[1].get("date") or "")):
+            if not f.get("rows") or not f.get("date") or f["date"][:7] >= nport_start:
+                continue
+            out = []
+            for name, cc, shares, val in f["rows"]:
+                isin = bu.match_name(idx, name, cc)
+                sym = imap.get(isin) if isin else None
+                if not sym:
+                    sym = bu.match_name(uni_idx, name, cc)
+                if sym and sym.endswith((".SS", ".SZ")):
+                    continue
+                out.append([sym, name, cc, "", val / shares, "USD", round(val, 2)])
+                wt_all += val
+                wt_map += val if sym else 0.0
+            ref[f["date"][:7]] = out
+            nq_info["filings"] += 1
+            nq_info["rows"] += len(out)
+            nq_info["mapped"] += sum(1 for r in out if r[0])
+        nq_info["weight_mapped"] = round(wt_map / wt_all, 3) if wt_all else 0.0
     months = bu.fill_quarterly(ref, bu.last_month(today))
     n_isin = len({r[0] for v in by_date.values() for r in v})
-    return {"months": months, "ref_months": ref, "source": "SEC Formular N-PORT (iShares MSCI ACWI ETF)", "error": st.get("error"),
-            "info": {"filings": len(by_date), "isins": n_isin, "isins_mapped": sum(1 for v in imap.values() if v)}}
+    src = "SEC-Meldungen des iShares MSCI ACWI ETF (N-PORT ab 2019" + (", davor N-Q/N-CSR)" if nq_info["filings"] else ")")
+    return {"months": months, "ref_months": ref, "source": src, "error": st.get("error"), "nport_start": nport_start,
+            "info": {"filings": len(by_date), "isins": n_isin, "isins_mapped": sum(1 for v in imap.values() if v),
+                     "older_filings": nq_info["filings"], "older_rows": nq_info["rows"],
+                     "older_mapped": nq_info["mapped"], "older_weight_mapped": nq_info["weight_mapped"]}}
 
 
 # ------------------------------------------------------------------ Backtests
@@ -232,8 +310,7 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
         for key, fn in (("sp500", lambda: load_sp500(http_get, archive, today, log)),
                         ("acwi", lambda: load_acwi(http_get, http_json, http_post_json, archive, universe, today, log,
                                                    deadline=deadline)),
-                        ("dax", lambda: load_dax(lambda u: http_get(u, binary=True), http_json, archive, root, universe,
-                                                 today, log, deadline=deadline))):
+                        ):                 # DAX-Familie auf Wunsch entfernt (Namenszuordnung zu unzuverlässig)
             if left() < 60 * 60:
                 log(f"[bt] {key}: Zeitlimit – Liste wird im nächsten Lauf geladen")
                 st = bu.load_store(bu.store_path(archive, key)) or {}
@@ -299,7 +376,16 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
             if refm:   # Yahoo-Kurse sind in der Handelswährung des Symbols -> mit dieser umrechnen, nicht mit curCd
                 refm = {m: [r[:5] + [currency.get(r[0]) or r[5]] + r[6:] if r[0] else r for r in rows]
                         for m, rows in refm.items()}
+            cut = next((p.get("nport_start") for p in parts if p.get("nport_start")), None)
+            early = {}
+            if refm and cut and any(m < cut for m in refm):
+                bad, early = bu.bad_early_mappings(refm, close_local, local_per_usd, cut)
+                if bad:   # über den Namen zugeordnet, aber Kurs passt nicht -> vor `cut` als nicht zugeordnet behandeln
+                    fix = lambda rows: [[None] + r[1:] if r[0] in bad else r for r in rows]  # noqa: E731
+                    months = {m: (fix(rows) if m < cut else rows) for m, rows in months.items()}
+                    refm = {m: (fix(rows) if m < cut else rows) for m, rows in refm.items()}
             valid, vstats = bu.validate_rows(months, close_local, local_per_usd, ref_months=refm)
+            vstats.update(early)
             start, cov = bu.coverage_start(months, valid)
             ccov = bu.count_coverage(months, valid)
             weighted = any(len(r) > 6 for rows in months.values() for r in rows[:1])

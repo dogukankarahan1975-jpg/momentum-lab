@@ -29,8 +29,6 @@ import pandas as pd
 
 BT_UNIVERSES = {
     "sp500": {"label": "S&P 500", "providers": ["sp500"]},
-    "dax": {"label": "DAX-Familie (DAX, MDAX, SDAX, TecDAX)", "providers": ["dax"]},
-    "spdax": {"label": "S&P 500 + DAX-Familie", "providers": ["sp500", "dax"]},
     "acwi": {"label": "MSCI ACWI (SEC-Meldungen)", "providers": ["acwi"]},
 }
 MIN_COVERAGE = 0.85
@@ -731,3 +729,236 @@ def fill_quarterly(months: dict, last: str) -> dict:
             j += 1
         out[m] = months[keys[j]]
     return out
+
+
+# ------------------------------------------------------------------ ACWI vor 2019: SEC-Formulare N-Q / N-CSR
+# Vor N-PORT (ab 2019) meldete der iShares MSCI ACWI ETF seine Bestände als HTML-Tabelle (Name | Stückzahl | Wert,
+# gruppiert nach Ländern) in den Sammel-Meldungen des iShares Trust. Ohne ISIN -> Zuordnung über den exakten Namen
+# (BlackRock benennt identisch wie in N-PORT) und anschließende Kursprüfung (Wert/Stückzahl vs. Yahoo).
+SEC_SERIES_ATOM_TYPE = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={series}&type={type}"
+                        "&dateb=&owner=include&count=100&output=atom")
+SEC_INDEX_JSON = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/index.json"
+
+COUNTRY_ISO = {
+    "UNITED STATES": "US", "JAPAN": "JP", "UNITED KINGDOM": "GB", "CANADA": "CA", "FRANCE": "FR", "GERMANY": "DE",
+    "SWITZERLAND": "CH", "AUSTRALIA": "AU", "NETHERLANDS": "NL", "SPAIN": "ES", "SWEDEN": "SE", "HONG KONG": "HK",
+    "ITALY": "IT", "DENMARK": "DK", "SINGAPORE": "SG", "BELGIUM": "BE", "FINLAND": "FI", "NORWAY": "NO",
+    "ISRAEL": "IL", "IRELAND": "IE", "AUSTRIA": "AT", "PORTUGAL": "PT", "NEW ZEALAND": "NZ", "CHINA": "CN",
+    "TAIWAN": "TW", "SOUTH KOREA": "KR", "KOREA": "KR", "REPUBLIC OF KOREA": "KR", "INDIA": "IN", "BRAZIL": "BR",
+    "SOUTH AFRICA": "ZA", "RUSSIA": "RU", "MEXICO": "MX", "MALAYSIA": "MY", "INDONESIA": "ID", "THAILAND": "TH",
+    "POLAND": "PL", "TURKEY": "TR", "CHILE": "CL", "PHILIPPINES": "PH", "COLOMBIA": "CO", "PERU": "PE",
+    "GREECE": "GR", "EGYPT": "EG", "HUNGARY": "HU", "CZECH REPUBLIC": "CZ", "QATAR": "QA", "UNITED ARAB EMIRATES": "AE",
+    "SAUDI ARABIA": "SA", "KUWAIT": "KW", "PAKISTAN": "PK", "ARGENTINA": "AR", "LUXEMBOURG": "LU", "BERMUDA": "BM",
+    "MACAU": "MO", "CAYMAN ISLANDS": "KY", "JERSEY": "JE", "GUERNSEY": "GG", "ISLE OF MAN": "IM",
+}
+
+
+def _strip_suffix(x: str) -> str:
+    return re.sub(r"\s*/\s*[A-Za-z .]+$", "", str(x))        # „AES Corp/VA“, „Constellation Software Inc/Canada“
+
+
+def norm_full(x: str) -> str:
+    """Wie norm_name, aber Aktiengattung (Class A/B …) bleibt erhalten – trennt z. B. GOOGL und GOOG."""
+    x = _strip_suffix(x)
+    x = unicodedata.normalize("NFKD", str(x)).encode("ascii", "ignore").decode().upper()
+    x = re.sub(r"\b(AG|SE|KGAA|KG|GMBH|CO|INC|CORP|CORPORATION|LTD|LIMITED|PLC|NV|N V|SA|S A|HOLDINGS?|GROUP|THE)\b",
+               " ", x)
+    return re.sub(r"[^A-Z0-9]", "", x)
+
+
+def html_lines(raw: str) -> list[str]:
+    """HTML -> Zeilen; Tabellenzellen durch Tabulator getrennt, Fußnoten-Hochzeichen entfernt."""
+    import html as _html
+    h = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", raw)
+    h = re.sub(r"(?is)<sup\b.*?</sup>", "", h)
+    h = re.sub(r"(?i)</t[dh]\s*>", "\t", h)
+    h = re.sub(r"(?i)</tr\s*>|<br\s*/?>|</p\s*>|</div\s*>|</h\d\s*>|</li\s*>", "\n", h)
+    h = re.sub(r"(?s)<[^>]+>", "", h)
+    h = _html.unescape(h).replace("\xa0", " ").replace("​", "")
+    out = []
+    for ln in h.split("\n"):
+        cells = [re.sub(r"\s+", " ", c).strip() for c in ln.split("\t")]
+        cells = [c for c in cells if c]
+        if cells:
+            out.append("\t".join(cells))
+    return out
+
+
+_NUM = re.compile(r"^\(?\$?\s*\(?([\d,]+(?:\.\d+)?)\)?$")
+_DATE = re.compile(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+"
+                   r"(\d{1,2}),\s+(\d{4})")
+_COUNTRY = re.compile(r"^([A-Za-z][A-Za-z .,'&()-]*?)\s*[—–-]+\s*\(?[\d.]+\)?\s*%")
+_STOP = re.compile(r"SHORT[- ]TERM INVESTMENTS|MONEY MARKET|TOTAL INVESTMENTS|INVESTMENT COMPANIES|"
+                   r"OTHER ASSETS|NET ASSETS|FUTURES CONTRACTS|SECURITIES LENDING", re.I)
+_SKIP_NAME = re.compile(r"^(iShares|BlackRock|SL Agency)|\b(Rights?|Warrants?|Futures)\b", re.I)
+
+
+def _fund_title(lines: list[str], i: int) -> str | None:
+    """Titel nach „Schedule of Investments“: z. B. „iShares® MSCI ACWI ETF“ oder „iShares ®MSCI ACWI Index Fund“."""
+    for j in range(i, min(i + 6, len(lines))):
+        t = lines[j].replace("\t", " ")
+        m = re.search(r"i\s*shares\s*®?\s*(.+)", t, re.I)
+        if m:
+            name = re.sub(r"\(.*?\)", "", m.group(1)).replace("®", "")
+            return re.sub(r"\s+", " ", name).strip().upper()
+    return None
+
+
+def is_acwi_title(title: str | None) -> bool:
+    return bool(title) and bool(re.fullmatch(r"MSCI ACWI (INDEX FUND|ETF)", title))
+
+
+def parse_nq_acwi(raw_html: str) -> dict | None:
+    """Liest den Abschnitt „iShares MSCI ACWI ETF/Index Fund“ aus einer N-Q/N-CSR-Meldung.
+    Ergebnis: {"date": "YYYY-MM-DD", "rows": [[name, iso2, shares, value_usd], ...]} oder None."""
+    lines = html_lines(raw_html)
+    rows, date, inside, stop, country, pending = [], None, False, False, "", None
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        flat = ln.replace("\t", " ")
+        if re.search(r"schedule of investments", flat, re.I) and len(flat) < 160:
+            title = _fund_title(lines, i)
+            if title is not None:
+                if is_acwi_title(title):
+                    if not inside:
+                        inside, stop = True, False
+                    for j in range(i, min(i + 6, len(lines))):
+                        m = _DATE.search(lines[j])
+                        if m and date is None:
+                            date = pd.Timestamp(f"{m.group(1)} {m.group(2)} {m.group(3)}").strftime("%Y-%m-%d")
+                elif inside and "CONTINUED" not in flat.upper():
+                    break                            # nächster Fonds beginnt
+                elif inside and not is_acwi_title(title):
+                    break
+            i += 1
+            continue
+        if not inside or stop:
+            i += 1
+            continue
+        if _STOP.search(flat) and not re.search(r"COMMON STOCKS|PREFERRED STOCKS", flat, re.I):
+            stop = True
+            i += 1
+            continue
+        mc = _COUNTRY.match(flat.strip())
+        cells = ln.split("\t")
+        if mc and not any(_NUM.match(c) for c in cells[1:] if c not in ("$",)):
+            cname = mc.group(1).strip().upper()
+            if not re.search(r"COMMON STOCKS|PREFERRED|TOTAL", cname):
+                country = COUNTRY_ISO.get(cname, cname[:2])
+            pending = None
+            i += 1
+            continue
+        name = next((c for c in cells if re.search(r"[A-Za-z]{2}", c)), None)
+        nums = []
+        for c in cells:
+            if c == name or c == "$":
+                continue
+            m = _NUM.match(c.replace(" ", ""))
+            if m:
+                nums.append(float(m.group(1).replace(",", "")))
+        if name and not nums:
+            pending = name if len(name) < 80 and not re.search(r"TOTAL|STOCKS|%", name, re.I) else None
+        elif nums and len(nums) >= 2:
+            nm = name if name else pending
+            if name and pending and name[:1].islower():
+                nm = f"{pending} {name}"
+            pending = None
+            if nm:
+                nm = re.sub(r"(\s*\([a-z]{1,2}\))+\s*$", "", nm).strip()
+            if nm and not _SKIP_NAME.search(nm) and not re.search(r"^TOTAL", nm, re.I) and nums[0] > 0 and nums[-1] > 0:
+                rows.append([nm, country, nums[0], nums[-1]])
+        else:
+            pending = None
+        i += 1
+    if not rows:
+        return None
+    if date is None:
+        for ln in lines[:400]:
+            if re.search(r"date of reporting period", ln, re.I):
+                m = _DATE.search(ln) or (_DATE.search(lines[lines.index(ln) + 1]) if lines.index(ln) + 1 < len(lines) else None)
+                if m:
+                    date = pd.Timestamp(f"{m.group(1)} {m.group(2)} {m.group(3)}").strftime("%Y-%m-%d")
+                break
+    return {"date": date, "rows": rows}
+
+
+def build_name_index(nport_rows: list, universe_names: list[tuple[str, str]]) -> dict:
+    """Name -> ISIN aus den N-PORT-Meldungen (BlackRock-Schreibweise). Mehrdeutige Namen werden nicht verwendet."""
+    by_full, by_norm, by_loose = {}, {}, {}
+    for isin, name, country, *_ in nport_rows:
+        by_full.setdefault(norm_full(name), set()).add((isin, country))
+        by_norm.setdefault(norm_name(_strip_suffix(name)), set()).add((isin, country))
+        by_loose.setdefault(norm_loose(name), set()).add((isin, country))
+    return {"full": by_full, "norm": by_norm, "loose": by_loose}
+
+
+def norm_loose(x: str) -> str:
+    """Zusätzlich „Series L“, „NVS“ u. ä. Zusätze entfernen (Vorzugsaktien bleiben unterscheidbar)."""
+    x = re.sub(r"\b(SERIES\s+[A-Z0-9]+|NVS|NON[- ]VOTING|REG(ISTERED)?|BEARER|ORDINARY SHARES?)\b", " ",
+               _strip_suffix(x).upper())
+    return norm_name(x)
+
+
+def match_name(idx: dict, name: str, country: str) -> str | None:
+    idx.setdefault("loose", {})
+    for key, d in ((norm_full(name), idx["full"]), (norm_name(_strip_suffix(name)), idx["norm"]),
+                   (norm_loose(name), idx["loose"])):
+        if not key or len(key) < 3:
+            continue
+        cand = d.get(key)
+        if not cand:
+            continue
+        isins = {i for i, _ in cand}
+        if len(isins) == 1:
+            return next(iter(isins))
+        same = {i for i, c in cand if c == country}
+        if len(same) == 1:
+            return next(iter(same))
+    return None
+
+
+SPLIT_LOGS = [math.log(f) for f in (2, 3, 4, 5, 10, 20, 1.5, 1.25, 0.5, 1 / 3, 0.25, 0.2, 0.1, 0.05, 2 / 3, 0.8)]
+
+
+def bad_early_mappings(ref_months: dict, close: dict, fx_local_per_usd, cut: str) -> tuple[set, dict]:
+    """Strenge Prüfung der über den NAMEN zugeordneten Titel vor `cut` (Monat der ersten N-PORT-Meldung):
+    Zwischen allen aufeinanderfolgenden Stichtagen (inkl. Übergang zur ersten N-PORT-Meldung) darf sich das Verhältnis
+    Yahoo-Kurs / gemeldeter Kurs höchstens um 12 % ändern – außer um einen typischen Split-Faktor.
+    Wer das nicht erfüllt oder vor `cut` keine Kurse hat, gilt dort als nicht zugeordnet."""
+    pts: dict[str, list] = {}
+    for m in sorted(ref_months):
+        e = _me(m)
+        for r in ref_months[m]:
+            if r[0] and r[4] and r[4] > 0:
+                pts.setdefault(r[0], []).append((m, e, r[4], r[5]))
+    bad, st = set(), {"early_checked": 0, "early_bad": 0}
+    for s, lst in pts.items():
+        early = [p for p in lst if p[0] < cut]
+        if not early:
+            continue
+        st["early_checked"] += 1
+        seq = early + [p for p in lst if p[0] >= cut][:1]
+        ser = close.get(s)
+        ser = ser.dropna() if ser is not None else None
+        lr = []
+        for m, e, pu, cur in seq:
+            try:
+                k = fx_local_per_usd(cur, e)
+            except Exception:  # noqa: BLE001
+                k = None
+            v = ser.asof(e) if ser is not None and not ser.empty and ser.index[0] <= e else None
+            lr.append(math.log(v / (pu * k)) if k and v and v > 0 else None)
+        ok = all(x is not None for x in lr[:len(early)]) and len(lr) >= 2
+        if ok:
+            for a, b in zip(lr, lr[1:]):
+                if a is None or b is None:
+                    continue
+                d = b - a
+                if abs(d) >= 0.12 and min(abs(d - sl) for sl in SPLIT_LOGS) > 0.05:
+                    ok = False
+                    break
+        if not ok:
+            bad.add(s)
+            st["early_bad"] += 1
+    return bad, st

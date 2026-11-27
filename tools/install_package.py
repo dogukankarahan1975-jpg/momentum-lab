@@ -40,17 +40,28 @@ def git(*args: str) -> None:
 
 def main() -> None:
     src, zips = sys.argv[1], sys.argv[2:]
+    git("config", "user.name", "momentum-lab-bot")
+    git("config", "user.email", "momentum-lab-bot@users.noreply.github.com")
+    # Neuesten Stand holen: Hat ein früherer Lauf dasselbe Paket schon installiert, ist die ZIP dort bereits
+    # gelöscht -> nichts mehr zu tun (sonst würde der Push wegen des neueren Stands abgelehnt).
+    subprocess.run(["git", "pull", "-q", "--rebase"], check=False)
+    if not any(os.path.exists(z) for z in zips):
+        print("Paket wurde bereits von einem früheren Lauf installiert – aktueller Stand übernommen.")
+        return
     sync(src)
     for z in zips:
         subprocess.run(["git", "rm", "-q", "--cached", z], check=False)
         if os.path.exists(z):
             os.remove(z)
-    git("config", "user.name", "momentum-lab-bot")
-    git("config", "user.email", "momentum-lab-bot@users.noreply.github.com")
     git("add", "-A")
     if subprocess.run(["git", "diff", "--cached", "--quiet"]).returncode != 0:
         git("commit", "-q", "-m", f"Code-Paket {', '.join(zips)} installiert")
-        git("push", "-q")
+        for _ in range(3):
+            if subprocess.run(["git", "push", "-q"]).returncode == 0:
+                break
+            subprocess.run(["git", "pull", "-q", "--rebase"], check=False)
+        else:
+            git("push", "-q")
     print(f"Installiert aus {', '.join(zips)}")
 
 
