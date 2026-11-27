@@ -2,9 +2,11 @@
 import { lineChart } from '../charts.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct, parseDec } from '../fmt.js';
 import { getHidden } from '../hidden.js';
-import { FREQ_LABEL, BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, simulate, startIndex } from '../simulator.js';
+import { FREQ_LABEL, FREQ_NAME, FREQ_STEP, freqText, monthsText, BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, simulate, startIndex } from '../simulator.js';
 import { getSetting, setSetting } from '../store.js';
 import { html, note } from '../ui.js';
+
+const shiftOpts = (freq, shift) => html`${Array.from({ length: FREQ_STEP[freq] || 1 }, (_, i) => html`<option value="${i}" ${shift === i ? 'selected' : ''}>${monthsText(freq, i)}${i === 0 ? ' (wie bisher)' : ''}</option>`)}`;
 
 const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2top5: 'var(--s5)', s1min4: 'var(--ink-2)' };
 
@@ -22,6 +24,7 @@ export async function renderSimulator(el, data) {
   if (!['signal', '1', '1be', '3', '3be', '6', '12', '6be', '12be'].includes(String(o.hold))) o.hold = DEFAULTS.hold;
   o.biasCorr = o.biasCorr === true;
   if (!FREQ_LABEL[o.freq]) o.freq = 'monthly';
+  if (!(Number.isInteger(o.shift) && o.shift >= 0 && o.shift < (FREQ_STEP[o.freq] || 1))) o.shift = 0;
   if (!(Number.isInteger(o.endYear))) o.endYear = null;
   if (!(Number.isInteger(o.budgetMonths) && o.budgetMonths > 0)) o.budgetMonths = null;
   if (!(o.initial >= 0)) o.initial = 0;
@@ -70,7 +73,8 @@ export async function renderSimulator(el, data) {
       </div>
       <label class="field"><span>Budget der Aktien-Strategien</span><select name="budgetMode">
         ${['reinvest', 'fixed'].map((m) => html`<option value="${m}" ${o.budgetMode === m ? 'selected' : ''}>${m === 'reinvest' ? 'Budget + Verkaufserlöse anlegen' : 'Nur festes Monatsbudget anlegen'}</option>`)}</select></label>
-      <label class="field"><span>Wie oft wird gescreent und gekauft?</span><select name="freq">${Object.entries(FREQ_LABEL).map(([k, v]) => html`<option value="${k}" ${o.freq === k ? 'selected' : ''}>${v[0].toUpperCase() + v.slice(1)}</option>`)}</select></label>
+      <label class="field"><span>Wie oft wird gescreent und gekauft?</span><select name="freq">${Object.entries(FREQ_NAME).map(([k, v]) => html`<option value="${k}" ${o.freq === k ? 'selected' : ''}>${v[0].toUpperCase() + v.slice(1)}</option>`)}</select></label>
+      <label class="field" id="shiftf" ${o.freq === 'monthly' ? 'hidden' : ''}><span>In welchen Monaten? (testet Timing-Glück)</span><select name="shift">${shiftOpts(o.freq, o.shift)}</select></label>
       <label class="field"><span>Wie lange werden Aktien gehalten?</span><select name="hold">
         ${['signal', '1', '1be', '3', '3be', '6', '6be', '12', '12be'].map((h) => html`<option value="${h}" ${String(o.hold) === h ? 'selected' : ''}>${{ signal: 'Bis zum Verkaufssignal der App', 1: '1 Monat, dann verkaufen', '1be': '1 Monat, im Minus warten bis ±0', 3: '3 Monate, dann verkaufen', '3be': '3 Monate, im Minus warten bis ±0', 6: '6 Monate, dann verkaufen', '6be': '6 Monate, im Minus warten bis ±0', 12: '12 Monate, dann verkaufen', '12be': '12 Monate, im Minus warten bis ±0' }[h]}</option>`)}</select></label>
       <label class="field"><span>Mindest-Score für „Minimum Score“ (Stage 1)</span><input name="minScore" inputmode="decimal" value="${String(o.minScore).replace('.', ',')}">
@@ -111,7 +115,7 @@ export async function renderSimulator(el, data) {
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
     parts.push(html`<h3>Ergebnis${data.universe ? ` (${data.universe.label})` : ''}: ${opts.initial ? `${fmtEUR(opts.initial, 0)} Startkapital${opts.budget ? ' + ' : ''}` : ''}${opts.budget || !opts.initial ? `${fmtEUR(opts.budget, 0)} pro Monat${opts.budgetMonths ? ` (nur die ersten ${opts.budgetMonths} Monate)` : ''}` : ''} ab ${fmtDate(data.points[k0])}${opts.endYear ? ` bis ${fmtDate(res[0]?.end || data.points[data.points.length - 1])}` : ''}${opts.dyn ? `, +${fmtNum(opts.dyn, 1)} % pro Jahr` : ''}</h3>
-      <p class="xs muted">Screening: ${FREQ_LABEL[opts.freq] || 'monatlich'}. Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
+      <p class="xs muted">Screening: ${freqText(opts.freq, opts.shift)}. Haltedauer: ${HOLD_LABEL[opts.hold]}. ${REST_LABEL.top}. Minimum Score: ab ${fmtNum(opts.minScore, 1)}. ${BUDGET_LABEL[opts.budgetMode]}.</p>
       <div class="panel"><div id="simchart"></div><p class="xs muted" style="margin:6px 0 0">Depotwert in Euro vor Steuern. Graue Linie = eingezahltes Geld.</p></div>`);
     for (const r of res) {
       const isEtf = r.kind === 'etf';
@@ -228,7 +232,13 @@ export async function renderSimulator(el, data) {
     const t = e.target;
     if (!t.name) return;
     if (t.name === 'biasCorr') o.biasCorr = !!t.checked;
-    else if (t.name === 'freq') o.freq = t.value;
+    else if (t.name === 'freq') {
+      o.freq = t.value;
+      if (o.shift >= (FREQ_STEP[o.freq] || 1)) o.shift = 0;
+      const f = el.querySelector('#shiftf');
+      f.hidden = o.freq === 'monthly';
+      f.querySelector('select').innerHTML = String(shiftOpts(o.freq, o.shift));
+    } else if (t.name === 'shift') o.shift = Number(t.value) || 0;
     else if (t.name === 'hold' || t.name === 'budgetMode') o[t.name] = t.value;
     else if (t.name === 'startYear') o.startYear = Number(t.value);
     else if (t.name === 'endYear') o.endYear = t.value ? Number(t.value) : null;

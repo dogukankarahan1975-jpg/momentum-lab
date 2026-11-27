@@ -9,7 +9,7 @@ import { parseStage2 } from '../../app/js/data.js';
 import { fmtSignal, stage2Usable } from '../../app/js/stage2.js';
 import { applyHiddenScreen, applyHiddenStage2 } from '../../app/js/hidden.js';
 import { holdEnd, holdStatus, buildICS, splitBuy, nextScreeningDay } from '../../app/js/holding.js';
-import { simulate as simRun, irr as simIrr, monthList, allowance as simAllowance } from '../../app/js/simulator.js';
+import { simulate as simRun, irr as simIrr, monthList, allowance as simAllowance, screenMonths, isScreenMonth, freqText } from '../../app/js/simulator.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -205,6 +205,18 @@ test('Simulator: ETF-Sparplan = Summe der Anteile', () => {
   near(r.contrib, 2500);
   near(r.final, 2500);          // Kurs konstant
   assert.equal(r.taxesPaid, 0);
+});
+test('Screening-Monate verschieben', () => {
+  assert.deepEqual(screenMonths('quarterly', 0), [1, 4, 7, 10]);
+  assert.deepEqual(screenMonths('quarterly', 1), [2, 5, 8, 11]);
+  assert.deepEqual(screenMonths('semiannual', 5), [6, 12]);
+  assert.equal(screenMonths('monthly', 2), null);
+  assert.ok(isScreenMonth('2024-03-01', 'quarterly', 2) && !isScreenMonth('2024-04-01', 'quarterly', 2));
+  assert.equal(freqText('quarterly', 1), 'vierteljährlich (Feb, Mai, Aug, Nov)');
+  assert.equal(freqText('annual', 6), 'jährlich (Juli)');
+  const a = simRun(simData(), 's1top10', { ...simOpts, freq: 'quarterly', shift: 0 });
+  const b = simRun(simData(), 's1top10', { ...simOpts, freq: 'quarterly', shift: 1 });
+  assert.notEqual(a.months.filter((m) => m.screen).map((m) => m.k).join(), b.months.filter((m) => m.screen).map((m) => m.k).join());
 });
 test('Simulator: Startkapital + Budget nur als Starthilfe', () => {
   const r = simRun(simData(), 'sp500', { ...simOpts, initial: 1000, budgetMonths: 6 });

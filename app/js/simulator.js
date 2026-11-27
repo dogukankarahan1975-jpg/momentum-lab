@@ -12,7 +12,7 @@ export const STRATEGIES = {
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  initial: 0, budgetMonths: null, hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  initial: 0, budgetMonths: null, hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', shift: 0, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
 };
 
 export const HOLD_LABEL = {
@@ -44,10 +44,30 @@ const eur = (x) => `${x.toLocaleString('de-DE', { minimumFractionDigits: 2, maxi
 const dmy = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
 
 /** Wie oft gescreent (und gekauft) wird. Stichtage: erster Handelstag im Januar/April/Juli/Oktober usw. */
+export const FREQ_STEP = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
+const MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+const MON_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+/** Screening-Monate (1–12) für Häufigkeit und Verschiebung (0 = ab Januar, 1 = ab Februar …). */
+export function screenMonths(freq, shift = 0) {
+  const st = FREQ_STEP[freq] || 1;
+  if (st === 1) return null;
+  const sh = ((Number(shift) || 0) % st + st) % st;
+  return Array.from({ length: 12 / st }, (_, j) => 1 + sh + j * st);
+}
 export const FREQ_MONTHS = { monthly: null, quarterly: [1, 4, 7, 10], semiannual: [1, 7], annual: [1] };
+export function monthsText(freq, shift = 0) {
+  const ms = screenMonths(freq, shift);
+  if (!ms) return '';
+  return ms.length === 1 ? MON_LONG[ms[0] - 1] : ms.map((m) => MON[m - 1]).join(', ');
+}
 export const FREQ_LABEL = { monthly: 'monatlich', quarterly: 'vierteljährlich (Jan, Apr, Jul, Okt)', semiannual: 'halbjährlich (Jan, Jul)', annual: 'jährlich (Januar)' };
-export function isScreenMonth(date, freq) {
-  const ms = FREQ_MONTHS[freq];
+export const FREQ_NAME = { monthly: 'monatlich', quarterly: 'vierteljährlich', semiannual: 'halbjährlich', annual: 'jährlich' };
+export function freqText(freq, shift = 0) {
+  const t = monthsText(freq, shift);
+  return t ? `${FREQ_NAME[freq]} (${t})` : 'monatlich';
+}
+export function isScreenMonth(date, freq, shift = 0) {
+  const ms = screenMonths(freq, shift);
   return !ms || ms.includes(Number(String(date).slice(5, 7)));
 }
 
@@ -270,7 +290,7 @@ export function simulate(data, key, opts) {
         m.invest = b.cash; b.cash = 0;
       }
     } else {
-      const screenNow = k === k0 || isScreenMonth(date, o.freq);
+      const screenNow = k === k0 || isScreenMonth(date, o.freq, o.shift);
       const target = screenNow ? targetList(data, key, k, o.rest, o.minScore, exSet) : [];
       const targetSyms = new Set(target.map((i) => data.syms[i]));
       // 1) Verkäufe
