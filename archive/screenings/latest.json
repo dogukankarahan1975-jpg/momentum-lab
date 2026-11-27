@@ -44,9 +44,9 @@
    "short_history": 34,
    "penny": 79,
    "gaps": 8,
-   "liquidity": 13,
+   "liquidity": 10,
    "zero_volume": 22,
-   "crosscheck": 7,
+   "crosscheck": 6,
    "jump": 1,
    "stale": 1,
    "no_data": 59
