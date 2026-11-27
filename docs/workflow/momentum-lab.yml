@@ -67,6 +67,7 @@ jobs:
         env:
           FULL_REFRESH: ${{ (github.event_name == 'schedule' && github.event.schedule == '41 6 * * 6') || inputs.full_refresh == true }}
           SEC_CONTACT: ${{ vars.SEC_CONTACT }}
+          TIINGO_API_KEY: ${{ secrets.TIINGO_API_KEY }}
         run: |
           python tools/build_site.py --out site --build "$(git rev-parse --short HEAD)"
           python -m pipeline.run --out site/data --cache cache --archive archive

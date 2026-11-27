@@ -111,7 +111,7 @@ export async function render(root) {
   const info = (key) => {
     const u = avail.find((x) => x.key === key);
     pick.querySelector('#simuniinfo').textContent = u
-      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.`
+      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.${u.tiingo ? (u.tiingo.key ? ` Kurse ehemaliger Mitglieder von Tiingo: ${u.tiingo.stored}${u.tiingo.open ? `, noch ${u.tiingo.open} offen (werden in den nächsten Läufen geladen)` : ''}.` : ' Tiingo-Schlüssel nicht hinterlegt – frühere Jahre nur mit Yahoo-Kursen.') : ''}`
       : 'Heutige ACWI-Mitglieder rückwirkend angewandt: Firmen, die damals noch nicht im Index waren, werden mitgekauft. Ergebnisse zu günstig.';
   };
   const show = async (key) => {

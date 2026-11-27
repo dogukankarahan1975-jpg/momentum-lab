@@ -17,6 +17,7 @@ from .backtest import Context
 from .core import prepare_panel
 from .fx import fx_on_index
 from .prices import update_prices
+from . import tiingo
 from .universe import SUFFIX_CURRENCY
 
 REFRESH_DAYS = {"sp500": 7, "dax": 28, "acwi": 7}
@@ -247,6 +248,8 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
     dead_p = archive / "bt-dead.json"
     dead = json.loads(dead_p.read_text()) if dead_p.exists() else {}
     skip = {x for x, d in dead.items() if (today - pd.Timestamp(d)).days < 60}
+    tarc = tiingo.TiingoArchive(archive.parent)
+    skip |= tarc.have()          # schon von Tiingo geladen -> nicht bei Yahoo (evtl. neu vergebenes Kürzel) suchen
     if need and price_deadline_s < 120:
         log("[bt] Zu wenig Zeit für zusätzliche Kurse in diesem Lauf – nächster Lauf holt sie nach")
         need = []
@@ -260,6 +263,18 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
         dead_p.write_text(json.dumps(dead, separators=(",", ":")))
         frames = {**frames, **res.frames}
         currency = {**currency, **res.currency}
+    # US-Aktien ohne Yahoo-Kurse (Pleiten/Übernahmen): Tiingo, falls Schlüssel hinterlegt (nur S&P 500)
+    us_hist = sorted({r[0] for r in (x for rows in sources.get("sp500", {}).get("months", {}).values() for x in rows)
+                      if r[0] and "." not in r[0]} - set(frames))
+    tinfo = {}
+    if us_hist:
+        try:
+            tframes, tinfo = tiingo.fill_missing(us_hist, archive.parent, today, log=log,
+                                                 deadline=min(deadline - 30 * 60, time.time() + 8 * 60))
+            frames = {**frames, **tframes}
+            currency = {**currency, **{x: "USD" for x in tframes}}
+        except Exception as exc:  # noqa: BLE001
+            log(f"[tiingo] Fehler: {type(exc).__name__}: {exc}")
     close_local = {x: df["close"] for x, df in frames.items()}
 
     def local_per_usd(cur, e):
@@ -289,6 +304,8 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
             ccov = bu.count_coverage(months, valid)
             weighted = any(len(r) > 6 for rows in months.values() for r in rows[:1])
             n_months = sum(1 for m in months if start and m >= start)
+            if "sp500" in spec["providers"] and tinfo:
+                entry["tiingo"] = {k: tinfo.get(k) for k in ("key", "stored", "open")}
             entry.update(source=" + ".join(p.get("source", "") for p in parts), validation=vstats,
                          coverage_from=start, months=n_months, info=[p.get("info") for p in parts])
             if months:

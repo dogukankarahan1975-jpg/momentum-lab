@@ -1,6 +1,7 @@
 # Änderungen
 
 ## Pipeline 0.9.5 – 27.11.2026
+- Optional Tiingo (kostenloser Starter-Tarif, Registrierung nötig, GitHub-Secret `TIINGO_API_KEY`): Kurse ehemaliger S&P-500-Mitglieder, die bei Yahoo fehlen. Höchstens 40 Abrufe pro Lauf und 450 Symbole pro Monat (Limit 50/Stunde, 500/Monat). Jede Aktie wird einmal geladen und unter archive/tiingo/ gespeichert. Nutzungsbedingung von Tiingo: nur private Nutzung.
 - Simulator: neue Auswahl „In welchen Monaten?“ bei vierteljährlichem, halbjährlichem und jährlichem Screening (z. B. Jan/Apr/Jul/Okt, Feb/Mai/Aug/Nov oder Mär/Jun/Sep/Dez). Damit lässt sich prüfen, wie viel vom Ergebnis Timing-Glück ist.
 - Simulator: neues Feld „Startkapital (€, einmalig)“ und Auswahl „Monatsbudget einzahlen: immer / nur die ersten 6–120 Monate (Starthilfe)“. Nach der Starthilfe wird nichts mehr eingezahlt; es werden nur noch die Verkaufserlöse angelegt. „Eingezahlt“ zählt nur echtes Geld (Startkapital + gezahlte Budgets).
 - Backtest „alles heute verkaufen“: Ordergebühren und Spread des Schlussverkaufs werden jetzt abgezogen (auch steuerlich).

@@ -34,3 +34,7 @@ Alle Dienste sind ohne Kreditkarte, Abo oder Testzugang nutzbar.
 
 - Hat das Repository 60 Tage keine Aktivität, pausiert GitHub zeitgesteuerte Läufe. Der tägliche Lauf schreibt ein Protokoll (`archive/runs.log`) und hält das Repository damit aktiv. Falls doch pausiert: Reiter „Actions“ → Workflow → „Enable workflow“.
 - Optional: unter Settings → Secrets and variables → Actions → Variables die Variable `SEC_CONTACT` mit deiner E-Mail anlegen (empfohlen von der SEC für automatisierte Abrufe).
+
+
+## Tiingo (optional, ab 0.9.5)
+Kostenloser Starter-Tarif nach Registrierung (tiingo.com). Wird nur genutzt, wenn das GitHub-Secret `TIINGO_API_KEY` gesetzt ist, und nur für US-Aktien aus der historischen S&P-500-Liste, die bei Yahoo keine Kurse haben. Tiingo führt Kurse delisteter Titel, solange das Kürzel nicht neu vergeben wurde. Grenzen laut tiingo.com/about/pricing (Nov. 2026): 50 Abrufe/Stunde, 1.000/Tag, 500 Symbole/Monat, nur private Nutzung („Internal Use Only“). Die Pipeline nutzt höchstens 40 Abrufe pro Lauf und 450 Symbole pro Monat.
