@@ -24,7 +24,7 @@
    "name": "Marathon Petroleum",
    "stage1_rank": 5,
    "stage2_rank": 2,
-   "score": 7.428,
+   "score": 7.409,
    "decision": "TOP5",
    "price_only": false
   },
@@ -42,7 +42,7 @@
    "name": "Valero Energy Corp",
    "stage1_rank": 9,
    "stage2_rank": 4,
-   "score": 7.091,
+   "score": 7.072,
    "decision": "TOP5",
    "price_only": false
   },
@@ -51,7 +51,7 @@
    "name": "Motor Oil (Hellas) Corinth Refiner",
    "stage1_rank": 2,
    "stage2_rank": 5,
-   "score": 6.839,
+   "score": 6.914,
    "decision": "TOP5",
    "price_only": false
   },
@@ -60,7 +60,7 @@
    "name": "Nan Ya Plastics Corp",
    "stage1_rank": 1,
    "stage2_rank": 6,
-   "score": 6.747,
+   "score": 6.738,
    "decision": "REST",
    "price_only": false
   },
@@ -69,7 +69,7 @@
    "name": "Recruit Holdings",
    "stage1_rank": 4,
    "stage2_rank": 7,
-   "score": 5.986,
+   "score": 5.977,
    "decision": "REST",
    "price_only": false
   },
@@ -78,7 +78,7 @@
    "name": "Okta Class A",
    "stage1_rank": 8,
    "stage2_rank": 8,
-   "score": 5.172,
+   "score": 5.153,
    "decision": "REST",
    "price_only": false
   },
@@ -87,7 +87,7 @@
    "name": "Fubon Financial Holding",
    "stage1_rank": 7,
    "stage2_rank": 9,
-   "score": 4.481,
+   "score": 4.416,
    "decision": "REST",
    "price_only": false
   },
@@ -96,7 +96,7 @@
    "name": "Largan Precision Ltd",
    "stage1_rank": 10,
    "stage2_rank": 10,
-   "score": 1.732,
+   "score": 1.714,
    "decision": "REST",
    "price_only": false
   }
