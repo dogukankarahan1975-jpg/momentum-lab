@@ -364,11 +364,12 @@ def run(args) -> int:
             isins, tstat = load_frankfurt_isins(lambda u: http_get(u, binary=True), lambda u: http_get(u), log)
         universe, tinfo = apply_filter(universe, isins, archive / "universe", iso(pd.Timestamp.utcnow().tz_localize(None)))
         untradable = set(tinfo.pop("removed_symbols", []))
+        tinfo.pop("not_found_symbols", None)
         tstat["filter"] = tinfo
         tstat["ok"] = bool(tinfo.get("checked"))
         sources["tradable_de"] = tstat
         sources["universe"]["size"] = int(len(universe))
-        if tinfo.get("note"):
+        if tinfo.get("note") and not tinfo.get("checked"):
             msg("warnung", tinfo["note"])
         log(f"Universum: {sources['universe']['size_index']} im Index, {len(universe)} nach Handelbarkeits-Prüfung "
             f"({tinfo.get('removed', 0)} nicht in Frankfurt, {tinfo.get('removed_cn_a', 0)} China-A)")
@@ -723,7 +724,7 @@ def run(args) -> int:
                 cache=cache, out=out, root=ROOT, universe=universe, frames=frames, currency=currency,
                 store=None if demo else store, fx=fx, asof=asof, today=today, bench_eur=b_eur, backfill=b_fill,
                 build_sim_data=build_sim_data, sanitize=sanitize, log=log,
-                price_deadline_s=max(0, min(2400, 115 * 60 - (time.time() - t0) - 25 * 60)),
+                price_deadline_s=2400, deadline=t0 + 118 * 60,
                 key_base=f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}",
                 sources=demo_bt_sources(universe, frames) if demo else None)
             if not demo:

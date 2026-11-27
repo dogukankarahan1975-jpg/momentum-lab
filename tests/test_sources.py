@@ -319,10 +319,11 @@ def test_frankfurt_filter(tmp_path):
     uni = pd.DataFrame({"symbol": ["AAPL", "2330.TW", "600519.SS"], "name": ["Apple", "TSMC", "Moutai"],
                         "country": ["USA", "Taiwan", "China"], "isin": ["US0378331005", "TW0002330008", "CNE0000018R8"]})
     out, info = tradable.apply_filter(uni, {"US0378331005"}, tmp_path, "2026-11-26")
-    assert list(out["symbol"]) == ["AAPL"] and info["removed"] == 1 and info["removed_cn_a"] == 1
-    # ohne frische Liste: gespeicherte Prüfung verwenden
+    # Frankfurt-Liste ist nur Hinweis (ADR/GDR haben andere ISINs) -> nichts streichen außer China-A
+    assert list(out["symbol"]) == ["AAPL", "2330.TW"] and info["removed"] == 0 and info["removed_cn_a"] == 1
+    assert info["not_found_symbols"] == ["2330.TW"]
     out2, info2 = tradable.apply_filter(uni, None, tmp_path, "2026-12-10")
-    assert list(out2["symbol"]) == ["AAPL"] and "gespeicherte" in info2["source"]
+    assert len(out2) == 2 and "gespeicherte" in info2["source"]
     # ohne ISIN: nicht filtern, nur China-A raus
     out3, info3 = tradable.apply_filter(uni.assign(isin=""), None, tmp_path / "x", "2026-11-26")
     assert len(out3) == 2 and not info3["checked"]

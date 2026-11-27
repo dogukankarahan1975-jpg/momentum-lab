@@ -6,6 +6,7 @@ Das tägliche Screening bleibt davon unberührt.
 from __future__ import annotations
 
 import json
+import time
 import traceback
 from pathlib import Path
 
@@ -76,7 +77,8 @@ def load_sp500(http_get, archive: Path, today, log) -> dict:
     return st
 
 
-def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.DataFrame, today, log) -> dict:
+def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.DataFrame, today, log,
+             deadline: float = float("inf")) -> dict:
     p = bu.store_path(archive, "dax")
     st = bu.load_store(p)
     names_hist, info = st.get("names"), st.get("info")
@@ -121,7 +123,7 @@ def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.
         if k[:10] in by_norm:
             nmap[n] = by_norm[k[:10]]
             continue
-        if looked >= 150:
+        if looked >= 150 or time.time() > deadline - 75 * 60:
             continue
         nmap[n] = bu.yahoo_symbol_for_name(http_json, n)
         looked += 1
@@ -133,14 +135,13 @@ def load_dax(http_get_bytes, http_json, archive: Path, root: Path, universe: pd.
             "info": dict(info or {}, names=len(all_names), names_mapped=mapped)}
 
 
-def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.DataFrame, today, log) -> dict:
+def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.DataFrame, today, log,
+              deadline: float = float("inf")) -> dict:
     from .details import sec_headers
     p = bu.store_path(archive, "acwi")
     st = bu.load_store(p)
     filings = st.get("filings", {})
-    old_fmt = [a for a, f in filings.items() if f.get("rows") and len(f["rows"][0]) < 6]
-    for a in old_fmt:                       # ältere Speicherung ohne Positionswert -> einmalig neu laden
-        filings.pop(a)
+    old_fmt = {a for a, f in filings.items() if f.get("rows") and len(f["rows"][0]) < 6}
     if old_fmt or not (st.get("fetched") and (today - pd.Timestamp(st["fetched"])).days < REFRESH_DAYS["acwi"]):
         try:
             hdr = sec_headers()
@@ -151,8 +152,11 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
             accs = bu.parse_atom_filings(http_get(bu.SEC_SERIES_ATOM.format(series=series), hdr))
             new = 0
             for acc in accs:
-                if acc in filings:
+                if acc in filings and acc not in old_fmt:   # ältere Speicherung ohne Positionswert -> neu laden
                     continue
+                if time.time() > deadline - 70 * 60:
+                    log("[bt-acwi] Zeitlimit – restliche Meldungen im nächsten Lauf")
+                    break
                 try:
                     d = bu.parse_nport(http_get(f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/primary_doc.xml", hdr))
                 except Exception as exc:  # noqa: BLE001
@@ -217,13 +221,26 @@ def combine(parts: list[dict], key: str = "months") -> dict:
 def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, out: Path, root: Path,
             universe: pd.DataFrame, frames: dict, currency: dict, store, fx: pd.DataFrame, asof, today,
             bench_eur: dict, backfill: list, build_sim_data, sanitize, key_base: str, log=print,
-            sources: dict | None = None, price_deadline_s: float = 2400) -> list[dict]:
+            sources: dict | None = None, price_deadline_s: float = 2400,
+            deadline: float = float("inf")) -> list[dict]:
+    """deadline: späteste Uhrzeit (time.time()), zu der dieser Teil fertig sein muss. Alles, was danach noch
+    anstünde, wird auf den nächsten Lauf verschoben – so bleibt der ganze GitHub-Lauf sicher unter seinem Limit."""
+    left = lambda: deadline - time.time()  # noqa: E731
     if sources is None:
-        sources = {
-            "sp500": load_sp500(http_get, archive, today, log),
-            "dax": load_dax(lambda u: http_get(u, binary=True), http_json, archive, root, universe, today, log),
-            "acwi": load_acwi(http_get, http_json, http_post_json, archive, universe, today, log),
-        }
+        sources = {}
+        for key, fn in (("sp500", lambda: load_sp500(http_get, archive, today, log)),
+                        ("acwi", lambda: load_acwi(http_get, http_json, http_post_json, archive, universe, today, log,
+                                                   deadline=deadline)),
+                        ("dax", lambda: load_dax(lambda u: http_get(u, binary=True), http_json, archive, root, universe,
+                                                 today, log, deadline=deadline))):
+            if left() < 60 * 60:
+                log(f"[bt] {key}: Zeitlimit – Liste wird im nächsten Lauf geladen")
+                st = bu.load_store(bu.store_path(archive, key)) or {}
+                sources[key] = {"months": st.get("months", {}) if key == "sp500" else {},
+                                "error": "Zeit hat in diesem Lauf nicht gereicht – nächster Lauf"}
+                continue
+            sources[key] = fn()
+    price_deadline_s = max(0.0, min(price_deadline_s, left() - 40 * 60))
     # Kurse für alle (auch ehemalige) Mitglieder
     need = sorted({r[0] for s in sources.values() for rows in s.get("months", {}).values() for r in rows if r[0]} - set(frames))
     hints = {x: SUFFIX_CURRENCY.get("." + x.split(".", 1)[1] if "." in x else "", "USD") for x in need}
@@ -252,7 +269,8 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
         return float(row[cur] / row["USD"]) if cur in row and "USD" in row else None
 
     index = []
-    for name, spec in bu.BT_UNIVERSES.items():
+    order = ["acwi", "dax", "sp500", "spdax"]
+    for name, spec in sorted(bu.BT_UNIVERSES.items(), key=lambda kv: order.index(kv[0]) if kv[0] in order else 9):
         entry = {"key": name, "label": spec["label"], "available": False}
         try:
             parts = [sources[p] for p in spec["providers"]]
@@ -296,6 +314,12 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
             key = f"{key_base}|{name}|{start}|{len(syms)}"
             cpath = cache / f"simulator-{name}.json"
             cached = json.loads(cpath.read_text()) if cpath.exists() else None
+            if (not cached or cached.get("key") != key) and left() < 15 * 60:
+                if cached:
+                    log(f"[bt] {name}: Zeitlimit – Ergebnis vom letzten Lauf wird weiter gezeigt")
+                    key = cached.get("key")
+                else:
+                    raise TimeoutError("Zeit hat in diesem Lauf nicht gereicht – wird im nächsten Lauf berechnet")
             if not cached or cached.get("key") != key:
                 adj = pd.concat({x: frames[x]["adj"] for x in syms}, axis=1).sort_index()
                 adj = adj[adj.index >= "2000-01-01"]
@@ -331,6 +355,7 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
             entry.update(available=True, file=f"simulator-{name}.json", symbols=len(syms))
         except Exception as exc:  # noqa: BLE001
             traceback.print_exc()
-            entry["reason"] = f"Fehler: {str(exc)[:160]}"
+            entry["reason"] = (str(exc) if isinstance(exc, TimeoutError) else f"Fehler: {str(exc)[:160]}")
         index.append(entry)
-    return index
+    keys = list(bu.BT_UNIVERSES)
+    return sorted(index, key=lambda e: keys.index(e["key"]) if e["key"] in keys else 99)

@@ -121,9 +121,12 @@ def apply_filter(universe: pd.DataFrame, isins: set[str] | None, archive: Path, 
         info["kept"] = len(u)
         return u.reset_index(drop=True), info
     no_isin = u["isin"].astype(str).str.len() != 12
-    keep = u["isin"].isin(ok_set) | no_isin          # ohne ISIN: nicht prüfbar, bleibt drin
-    removed = u[~keep]
-    info.update(checked=True, source=src, kept=int(keep.sum()), removed=int(len(removed)), unchecked=int(no_isin.sum()),
-                removed_examples=[f"{n} ({c})" for n, c in zip(removed["name"].head(12), removed["country"].head(12))],
-                removed_symbols=sorted(removed["symbol"]))
-    return u[keep].reset_index(drop=True), info
+    found = u["isin"].isin(ok_set) | no_isin
+    missing = u[~found]
+    # Nur Hinweis, keine Streichung: Die Frankfurt-Liste führt viele Aktien nur als ADR/GDR (z. B. TSMC, Samsung)
+    # mit anderer ISIN; bei Trade Republic sind sie trotzdem kaufbar. Ausblenden geht per Knopf in der App.
+    info.update(checked=True, source=src, kept=len(u), removed=0, unchecked=int(no_isin.sum()),
+                not_found=int(len(missing)), not_found_symbols=sorted(missing["symbol"]),
+                note=(f"{len(missing)} Aktien mit Heimat-ISIN nicht in der Frankfurt-Liste (oft nur als ADR/GDR "
+                      "handelbar) – nur Hinweis, nicht entfernt."))
+    return u.reset_index(drop=True), info

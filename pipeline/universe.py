@@ -441,11 +441,21 @@ def isins_from_sec(frame: pd.DataFrame, store: Path) -> tuple[pd.DataFrame, floa
         return frame, 0.0
     imap = st.get("isin_map", {})
     by_sym: dict[str, tuple[str, str, str]] = {}
-    for f in sorted(st.get("filings", {}).values(), key=lambda f: f.get("date") or ""):
+    fl = sorted(st.get("filings", {}).values(), key=lambda f: f.get("date") or "")
+    home = {"DE": "DE", "MC": "ES", "PA": "FR", "AS": "NL", "MI": "IT", "L": "GB", "SW": "CH", "ST": "SE",
+            "CO": "DK", "HE": "FI", "OL": "NO", "BR": "BE", "LS": "PT", "VI": "AT", "IR": "IE", "T": "JP",
+            "HK": None, "AX": "AU", "TO": "CA", "NS": "IN", "BO": "IN", "KS": "KR", "KQ": "KR", "TW": "TW",
+            "TWO": "TW", "SA": "BR", "MX": "MX", "JO": "ZA", "SR": "SA", "TA": "IL", "SI": "SG", "NZ": "NZ"}
+    for f in fl[-1:]:                                # nur die neueste Meldung: keine veralteten ISINs
         for r in f.get("rows", []):
             sym = imap.get(r[0])
-            if sym:
-                by_sym[sym] = (r[0], r[1], f.get("date") or "")       # neueste Meldung gewinnt
+            if not sym or sym in by_sym:
+                continue
+            suf = sym.rsplit(".", 1)[1] if "." in sym else None
+            want = home.get(suf) if suf else None
+            if want and not r[0].startswith(want):
+                continue                             # z. B. ENR.DE mit indischer ISIN -> verwerfen
+            by_sym[sym] = (r[0], r[1], f.get("date") or "")
     from .bt_universes import norm_name
 
     def same(a: str, b: str) -> bool:

@@ -1,5 +1,10 @@
 # Änderungen
 
+## Pipeline 0.9.3/0.9.4 – 27.11.2026
+- Fehler aus 0.9.2 behoben: Einige ISINs aus den SEC-Meldungen waren falsch zugeordnet (z. B. Siemens Energy → Siemens Energy India, Banco Santander → Santander Chile, veraltete ISIN von Linde/Aon). Jetzt nur noch aus der neuesten Meldung und nur, wenn das ISIN-Länderkürzel zur Heimatbörse passt; sonst bleibt die ISIN leer.
+- Zeitlimit: Der Lauf vom 26.11. abends lief in GitHubs 150-Minuten-Grenze (viele neue Kurse, SEC-Meldungen neu, DAX-Namenssuche). Der Backtest-Teil hat jetzt eine feste Endzeit (118 Minuten nach Start der Pipeline): Was dann noch fehlt, holt der nächste Lauf nach; bereits Berechnetes bleibt sichtbar. Reihenfolge: ACWI, DAX, S&P 500, Kombination.
+- Frankfurt-Prüfung streicht keine Aktien mehr: Viele Werte (TSMC, Samsung, indische Aktien) stehen dort nur als ADR/GDR mit anderer ISIN, sind bei Trade Republic aber kaufbar. Ergebnis ist nur noch ein Hinweis unter Einstellungen → Datenquellen. Nicht kaufbare Aktien weiter mit „Gibt es bei Trade Republic nicht“ ausblenden.
+
 ## Pipeline 0.9.2 – 26.11.2026
 - S&P 500: Wikipedia hat die Tabelle der Aufnahmen/Streichungen 2026 von der Listenseite entfernt. Neue Quelle für die Zusammensetzung an jedem Änderungstag seit 1996: gepflegter Datensatz github.com/fja05680/sp500 (MIT-Lizenz, zuletzt aktualisiert Sept. 2026). Aufnahmen danach aus der aktuellen Wikipedia-Liste („Date added“). Umbenennungen (z. B. FB → META) werden nur bei eindeutigem Nachweis übernommen.
 - DAX-Familie: Index wird jetzt über die Beschriftung „DAX®“, „TecDAX®“, „MDAX®“, „SDAX®“ vor der Änderungstabelle erkannt (im echten PDF gibt es keine Überschrift als Text). ESG- und Strategie-Indizes werden übersprungen. Bei erneutem Fehlschlag wird ein Textausschnitt gespeichert.
