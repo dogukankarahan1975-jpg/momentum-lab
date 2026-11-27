@@ -2,7 +2,7 @@
  "asof": "2026-11-26",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.9.4",
+ "pipeline_version": "0.9.5",
  "status": "ok",
  "candidates": [
   "1303.TW",
@@ -45,7 +45,7 @@
    "short_history": 34,
    "penny": 79,
    "gaps": 8,
-   "liquidity": 13,
+   "liquidity": 14,
    "zero_volume": 22,
    "crosscheck": 7,
    "no_vol": 1,
