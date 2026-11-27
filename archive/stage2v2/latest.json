@@ -1,30 +1,30 @@
 {
- "asof": "2026-11-26",
+ "asof": "2026-11-27",
  "stage2_version": "2.0.0",
  "status": "ok",
  "buy": [
+  "LAURUSLABS.NS",
   "2885.TW",
-  "MPC",
   "3037.TW",
-  "VLO",
-  "MOH.AT"
+  "MOH.AT",
+  "1303.TW"
  ],
  "ranking": [
   {
-   "symbol": "2885.TW",
-   "name": "Yuanta Financial Holding",
-   "stage1_rank": 6,
+   "symbol": "LAURUSLABS.NS",
+   "name": "Laurus Labs Ltd",
+   "stage1_rank": 9,
    "stage2_rank": 1,
-   "score": 7.998,
+   "score": 8.7,
    "decision": "TOP5",
    "price_only": false
   },
   {
-   "symbol": "MPC",
-   "name": "Marathon Petroleum",
-   "stage1_rank": 5,
+   "symbol": "2885.TW",
+   "name": "Yuanta Financial Holding",
+   "stage1_rank": 7,
    "stage2_rank": 2,
-   "score": 7.409,
+   "score": 7.857,
    "decision": "TOP5",
    "price_only": false
   },
@@ -33,16 +33,7 @@
    "name": "Unimicron Technology",
    "stage1_rank": 3,
    "stage2_rank": 3,
-   "score": 7.208,
-   "decision": "TOP5",
-   "price_only": false
-  },
-  {
-   "symbol": "VLO",
-   "name": "Valero Energy Corp",
-   "stage1_rank": 9,
-   "stage2_rank": 4,
-   "score": 7.072,
+   "score": 7.126,
    "decision": "TOP5",
    "price_only": false
   },
@@ -50,8 +41,8 @@
    "symbol": "MOH.AT",
    "name": "Motor Oil (Hellas) Corinth Refiner",
    "stage1_rank": 2,
-   "stage2_rank": 5,
-   "score": 6.914,
+   "stage2_rank": 4,
+   "score": 7.02,
    "decision": "TOP5",
    "price_only": false
   },
@@ -59,44 +50,53 @@
    "symbol": "1303.TW",
    "name": "Nan Ya Plastics Corp",
    "stage1_rank": 1,
-   "stage2_rank": 6,
-   "score": 6.738,
-   "decision": "REST",
+   "stage2_rank": 5,
+   "score": 6.608,
+   "decision": "TOP5",
    "price_only": false
   },
   {
    "symbol": "6098.T",
    "name": "Recruit Holdings",
    "stage1_rank": 4,
-   "stage2_rank": 7,
-   "score": 5.977,
+   "stage2_rank": 6,
+   "score": 5.731,
    "decision": "REST",
    "price_only": false
   },
   {
    "symbol": "OKTA",
    "name": "Okta Class A",
-   "stage1_rank": 8,
+   "stage1_rank": 6,
+   "stage2_rank": 7,
+   "score": 5.322,
+   "decision": "REST",
+   "price_only": false
+  },
+  {
+   "symbol": "O39.SI",
+   "name": "Oversea-Chinese Banking",
+   "stage1_rank": 10,
    "stage2_rank": 8,
-   "score": 5.153,
+   "score": 4.716,
    "decision": "REST",
    "price_only": false
   },
   {
    "symbol": "2881.TW",
    "name": "Fubon Financial Holding",
-   "stage1_rank": 7,
+   "stage1_rank": 5,
    "stage2_rank": 9,
-   "score": 4.416,
+   "score": 4.434,
    "decision": "REST",
    "price_only": false
   },
   {
-   "symbol": "3008.TW",
-   "name": "Largan Precision Ltd",
-   "stage1_rank": 10,
+   "symbol": "ILMN",
+   "name": "Illumina Inc",
+   "stage1_rank": 8,
    "stage2_rank": 10,
-   "score": 1.714,
+   "score": 3.771,
    "decision": "REST",
    "price_only": false
   }
