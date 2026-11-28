@@ -465,7 +465,50 @@ test('Simulator: Enddatum begrenzt den Zeitraum', () => {
   const full = simRun(d, 's1top5', { ...simOpts });
   const yEnd = Number(d.points[2].slice(0, 4));
   const part = simRun(d, 's1top5', { ...simOpts, endYear: yEnd });
-  assert.ok(part.end <= `${yEnd}-12-31` && part.contrib <= full.contrib);
+  // Bewertet wird mit dem Kurs am Jahresende (erster Stichtag des Folgejahres), eingezahlt nur bis Dezember
+  assert.ok(part.end <= `${yEnd + 1}-01-10` && part.contrib <= full.contrib);
+  assert.equal(part.endCalc.year, yEnd);
+  assert.ok(part.months.every((m) => Number(d.points[m.k].slice(0, 4)) <= yEnd));
+  assert.ok(Object.keys(part.yearly).every((y) => Number(y) <= yEnd));
+});
+
+test('Simulator: Gewinner halten – nur Nr. 1 kaufen, nie verkaufen, kein Startkapital', () => {
+  const d = simData();
+  const r = simRun(d, 'hold1', { ...simOpts, initial: 5000, freq: 'quarterly' });
+  const buys = r.log.filter((l) => l.type === 'Kauf');
+  assert.ok(buys.length > 0);
+  assert.equal(r.log.filter((l) => l.type === 'Verkauf').length, 0);
+  // je Screening-Termin genau ein Kauf, immer die Nr. 1 der Stage-1-Liste
+  const perK = new Map();
+  for (const l of buys) perK.set(l.k, (perK.get(l.k) || 0) + 1);
+  assert.ok([...perK.values()].every((n) => n === 1));
+  for (const l of buys) assert.equal(l.sym, d.syms[(d.cand[l.k] || d.rank[l.k])[0]]);
+  // vierteljährlich: das gesammelte Budget (3 Monate) fließt in den Kauf; Startkapital nicht eingezahlt
+  const months = r.months.length;
+  near(r.contrib, months * simOpts.budget * 1, 1e-6);
+  assert.ok(buys.every((l, j) => j === 0 || l.k - buys[j - 1].k === 3));
+});
+
+test('Simulator: Schlussrechnung geht auf (Wert − Verkaufskosten − Steuer = nach Steuern)', () => {
+  const d = simData();
+  for (const key of ['s1top5', 'world']) {
+    const r = simRun(d, key, simOpts);
+    const c = r.endCalc;
+    near(c.cash + c.stockVal + c.etfVal, r.final, 1e-6);
+    near(r.final - c.liqStock - c.liqEtf - c.endTax, r.afterTax, 1e-6);
+    near(c.endTax, c.liabilityYear - c.paidYear, 1e-6);
+    near(c.liabilityYear, Math.max(0, c.taxable - c.allowance) * c.rate, 1e-6);
+    near(c.etfGain, (c.etfGainRaw - c.vpTotal) * (1 - c.etfExempt), 1e-6);
+  }
+});
+
+test('Simulator: Rendite im Jahr (zeitgewichtet) – ETF +1 % pro Monat ergibt 12,68 % im vollen Jahr', () => {
+  const d = simData();
+  const r = simRun(d, 'world', simOpts);
+  const full = Object.entries(r.yearly).filter(([, v]) => v.ret != null);
+  assert.ok(full.length >= 1);
+  const y = full.find(([yy]) => d.points.filter((p) => p.startsWith(yy)).length === 12 && d.points.some((p) => p.startsWith(String(Number(yy) + 1))));
+  assert.ok(y); near(y[1].ret, 1.01 ** 12 - 1, 1e-9);
 });
 
 test('Simulator: halbjährliches Screening kauft nur im Januar und Juli, Erlöse warten bis dahin', () => {

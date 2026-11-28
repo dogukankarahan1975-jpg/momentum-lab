@@ -305,3 +305,9 @@ details.box > .inner { padding: 0 16px 14px; }
 .steps li.grp { display: block; padding: 14px 0 4px; border-top: 0; color: var(--ink-3); font-size: 12.5px; font-weight: 700; }
 .seg a.seg-link { display: flex; align-items: center; justify-content: center; min-height: 38px; border-radius: 8px; color: var(--ink-2); font-weight: 650; font-size: 14px; text-align: center; padding: 0 6px; }
 .seg a.seg-link[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* Rechnung im Simulator: Zwischensummen hervorheben */
+table.calc { width: 100%; }
+table.calc td { padding: 6px 8px; vertical-align: top; }
+table.calc tr.sum td { border-top: 1px solid var(--line); font-weight: 600; }
+.simcard:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }

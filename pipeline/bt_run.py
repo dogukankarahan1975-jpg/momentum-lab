@@ -449,6 +449,7 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                     fix = lambda rows: [[None] + r[1:] if r[0] in bad else r for r in rows]  # noqa: E731
                     months = {m: (fix(rows) if m < cut else rows) for m, rows in months.items()}
                     refm = {m: (fix(rows) if m < cut else rows) for m, rows in refm.items()}
+            months_raw = months
             months, epi = bu.episode_filter(months, close_local)
             valid, vstats = bu.validate_rows(months, close_local, local_per_usd, ref_months=refm)
             vstats.update(early)
@@ -459,6 +460,12 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                 (archive / "bt-acwi-bad.json").write_text(json.dumps(sorted(members - valid)))
             start, cov = bu.coverage_start(months, valid)
             ccov = bu.count_coverage(months, valid)
+            try:      # Warum beginnt die Testreihe nicht früher? Monat davor aufschlüsseln (für App und Prüfbericht)
+                entry["coverage_gap"] = bu.coverage_gap(months_raw, months, valid, cov, start, close_local)
+                entry["coverage_by_year"] = {y: round(min(v for m, v in cov.items() if m[:4] == y), 3)
+                                             for y in sorted({m[:4] for m in cov})}
+            except Exception as exc:  # noqa: BLE001
+                log(f"[bt-{name}] Lückenanalyse: {exc}")
             weighted = any(len(r) > 6 for rows in months.values() for r in rows[:1])
             n_months = sum(1 for m in months if start and m >= start)
             if "sp500" in spec["providers"] and tinfo:
@@ -553,6 +560,10 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                     continue
                 res = audit.run_node_audit(root, f, audit_mem.get(n), cache, log=log)
                 rep["universes"][n] = {"simulator": res, "anomalies": audit.anomalies(json.loads(f.read_text()))}
+                ent = next((e for e in index if e["key"] == n), {})
+                for k in ("coverage_from", "coverage_gap", "coverage_by_year", "validation"):
+                    if ent.get(k) is not None:
+                        rep["universes"][n][k] = ent[k]
                 if res and "failed" in res:
                     log(f"[audit] {n}: {res['checks']} Prüfungen, {res['failed']} mit Befund")
                     for e in index:

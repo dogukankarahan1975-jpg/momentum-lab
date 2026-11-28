@@ -4,11 +4,11 @@ import { fmtDate, fmtEUR, fmtNum, fmtPct, parseDec } from '../fmt.js';
 import { getHidden } from '../hidden.js';
 import { FREQ_LABEL, FREQ_NAME, FREQ_STEP, freqText, monthsText, BUDGET_LABEL, DEFAULTS, HOLD_LABEL, REST_LABEL, STRATEGIES, monthList, simulate, startIndex } from '../simulator.js';
 import { getSetting, setSetting } from '../store.js';
-import { html, note } from '../ui.js';
+import { esc, html, note, openSheet } from '../ui.js';
 
 const shiftOpts = (freq, shift) => html`${Array.from({ length: FREQ_STEP[freq] || 1 }, (_, i) => html`<option value="${i}" ${shift === i ? 'selected' : ''}>${monthsText(freq, i)}${i === 0 ? ' (wie bisher)' : ''}</option>`)}`;
 
-const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2top5: 'var(--s5)', s1min4: 'var(--ink-2)' };
+const COLORS = { world: 'var(--s1)', sp500: 'var(--s4)', s1top5: 'var(--s2)', s1top10: 'var(--s3)', s2top5: 'var(--s5)', s1min4: 'var(--ink-2)', hold1: 'var(--teal)' };
 
 function toastFee() {
   import('../ui.js').then((u) => u.toast?.('Gebühr oder Spread unrealistisch hoch – auf Standard zurückgesetzt'));
@@ -31,6 +31,7 @@ export async function renderSimulator(el, data) {
   o.rest = 'top'; // feste Regel: Top 5/Top 10/Stage 2 Top 5 kaufen immer 5 bzw. 10 Aktien, unabhängig vom Momentum-Score
   o.strategies = [...new Set((o.strategies || []).map((x) => (x === 's2' ? 's2top5' : x)).filter((x) => STRATEGIES[x]))];
   if (saved && !saved.v6) { for (const x of ['s2top5', 's1min4']) if (!o.strategies.includes(x)) o.strategies.push(x); o.v6 = true; }
+  if (saved && !saved.v7) { if (!o.strategies.includes('hold1')) o.strategies.push('hold1'); o.v7 = true; }
   if (!(o.minScore >= 0 && o.minScore <= 10)) o.minScore = 4;
   // Schutz gegen versehentlich hohe Gebühren (z. B. Sparrate ins Gebührenfeld getippt)
   for (const f of ['feeBuy', 'feeSell', 'feeEtf']) if (!(o[f] >= 0) || o[f] > Math.min(Math.max(0, Math.max(o.budget, (o.initial || 0) / 12) * 0.1), 50)) o[f] = DEFAULTS[f];
@@ -111,10 +112,14 @@ export async function renderSimulator(el, data) {
     if (!keys.length) { out.innerHTML = String(note('info', 'Wähle oben mindestens eine Strategie.')); return; }
     if (opts.biasCorr && data.bias?.pa > 0) notes.push(`Mit Korrektur: Alle Aktienkurse wurden um ${fmtNum(data.bias.pa * 100, 1)} % p. a. gemindert (gemessener Überlebenden-Effekt).`);
     if (opts.endYear && opts.endYear < opts.startYear) { notes.push('Das Endjahr liegt vor dem Start – es wird bis heute gerechnet.'); opts.endYear = null; }
+    if (opts.strategies.includes('hold1')) {
+      notes.push(`Gewinner halten: An jedem Screening-Termin (${freqText(opts.freq, opts.shift)}) fließt das ganze Geld auf dem Konto – also alle Monatsbudgets seit dem letzten Termin plus Dividenden – in die Nr. 1 der Stage-1-Liste. Verkauft wird nie (Haltedauer und Verkaufssignal gelten hier nicht), nur wenn die Kursdaten einer Aktie enden (Übernahme/Delisting).${opts.initial ? ` Startkapital wird bei dieser Strategie nicht eingesetzt, „Eingezahlt“ ist deshalb ${fmtEUR(opts.initial, 0)} kleiner.` : ''}`);
+    }
     const hidden = [...(await getHidden())];
     if (hidden.length) notes.push(`${hidden.length} von dir ausgeblendete Aktie(n) (gibt es bei Trade Republic nicht) werden auch rückwirkend nicht gekauft.`);
     const res = keys.map((k) => simulate(data, k, { ...opts, exclude: hidden }));
-    const best = res.reduce((a, r) => (r.afterTax > (a?.afterTax ?? -Infinity) ? r : a), null);
+    // „Am meisten nach Steuern“: Gewinn nach Steuern (fair, auch wenn eine Strategie ohne Startkapital rechnet)
+    const best = res.reduce((a, r) => (r.afterTax - r.contrib > (a ? a.afterTax - a.contrib : -Infinity) ? r : a), null);
     const k0 = startIndex(data, opts.startYear);
     const parts = [];
     for (const n of notes) parts.push(note('info', n));
@@ -125,7 +130,8 @@ export async function renderSimulator(el, data) {
       const isEtf = r.kind === 'etf';
       const gainNow = r.final - r.contrib;
       const gainAfter = r.afterTax - r.contrib;
-      parts.push(html`<div class="panel" style="border-left:4px solid ${COLORS[r.key]}">
+      const yrs = Object.entries(r.yearly).filter(([, v]) => v.ret != null);
+      parts.push(html`<div class="panel simcard" data-calc="${r.key}" role="button" tabindex="0" style="border-left:4px solid ${COLORS[r.key]};cursor:pointer">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><h3 style="margin:0">${r.label}</h3>${r === best && res.length > 1 ? html`<span class="badge b-buy">Am meisten nach Steuern</span>` : ''}</div>
         <div class="grid2" style="margin-top:8px">
           <div class="stat"><div class="l">Vermögen heute${isEtf ? ' (nie verkauft)' : ''}</div><div class="v">${fmtEUR(r.final, 0)}</div></div>
@@ -138,6 +144,8 @@ export async function renderSimulator(el, data) {
           ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
           : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}${r.divTotal > 1 ? ` (inkl. Steuer auf ${fmtEUR(r.divTotal, 0)} Dividenden, jährlich versteuert)` : ''}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
           Größter Rückgang ${fmtPct(r.maxDD, 0)}. ${fmtNum(r.trades, 0)} Orders, Gebühren ${fmtEUR(r.fees, 0)}, Spread ${fmtEUR(r.spreadCost, 0)}.</p>
+        ${yrs.length ? html`<p class="small" style="margin:8px 0 0">Rendite je Kalenderjahr: ${yrs.map(([y, v], j) => html`<span style="white-space:nowrap"><b class="${v.ret >= 0 ? 'pos' : 'neg'}">${y}${partYear(r, y, j, yrs.length) ? '*' : ''} ${fmtPct(v.ret)}</b></span>`).reduce((a, x, j) => (j ? html`${a}, ${x}` : x), '')}${yrs.some(([y], j) => partYear(r, y, j, yrs.length)) ? html`<span class="xs muted"> (* Teiljahr)</span>` : ''}</p>` : ''}
+        <p class="small" style="margin:8px 0 0;color:var(--ice)">Antippen für die komplette Rechnung ›</p>
       </div>`);
     }
     // Jahresübersicht
@@ -168,10 +176,10 @@ export async function renderSimulator(el, data) {
         const v = r.yearly[y];
         cum += v.contrib;
         const hold = v.holdings?.length ? v.holdings.join(', ') : (STRATEGIES[r.key].kind === 'etf' ? 'ETF' : '–');
-        return html`<tr><td class="sticky">${y}</td><td class="n">${fmtEUR(cum, 0)}</td><td class="n">${fmtEUR(v.value, 0)}</td><td class="n">${fmtEUR(v.tax, 0)}</td><td class="n">${v.trades}</td><td class="n">${fmtEUR(v.cash, 0)}</td><td style="min-width:220px;white-space:normal" class="xs">${hold}${v.etf && STRATEGIES[r.key].kind !== 'etf' ? ' + MSCI World ETF' : ''}</td></tr>`;
+        return html`<tr><td class="sticky">${y}</td><td class="n ${v.ret == null ? '' : v.ret >= 0 ? 'pos' : 'neg'}">${v.ret == null ? '–' : fmtPct(v.ret)}</td><td class="n">${fmtEUR(cum, 0)}</td><td class="n">${fmtEUR(v.valueEnd ?? v.value, 0)}</td><td class="n">${fmtEUR(v.tax, 0)}</td><td class="n">${v.trades}</td><td class="n">${fmtEUR(v.cash, 0)}</td><td style="min-width:220px;white-space:normal" class="xs">${hold}${v.etf && STRATEGIES[r.key].kind !== 'etf' ? ' + MSCI World ETF' : ''}</td></tr>`;
       });
-      out.querySelector('#simyt').innerHTML = String(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Jahr</th><th class="n">Eingezahlt</th><th class="n">Wert Jahresende</th><th class="n">Steuer</th><th class="n">Orders</th><th class="n">Konto</th><th>Bestand am Jahresende</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="xs muted">Steuer = in diesem Jahr einbehaltene Abgeltungsteuer inkl. Soli (bei jedem Verkauf sofort abgezogen, Erstattungen bei Verlusten im selben Jahr verrechnet; Dividenden im Jahr der Zahlung; beim ETF die Vorabpauschale). Letzte Zeile: Wert am letzten Kurstag.</p>`);
+      out.querySelector('#simyt').innerHTML = String(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Jahr</th><th class="n">Rendite im Jahr</th><th class="n">Eingezahlt</th><th class="n">Wert Jahresende</th><th class="n">Steuer</th><th class="n">Orders</th><th class="n">Konto</th><th>Bestand am Jahresende</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <p class="xs muted">Steuer = in diesem Jahr einbehaltene Abgeltungsteuer inkl. Soli (bei jedem Verkauf sofort abgezogen, Erstattungen bei Verlusten im selben Jahr verrechnet; Dividenden im Jahr der Zahlung; beim ETF die Vorabpauschale). Letzte Zeile: Wert am letzten Kurstag. Rendite im Jahr = zeitgewichtet (wie bei Fonds üblich): nur die Wertentwicklung, Einzahlungen zählen nicht als Gewinn. Erstes und letztes Jahr sind oft Teiljahre.</p>`);
     };
     const drawMonth = () => {
       const k = Number(out.querySelector('#simmonth').value);
@@ -223,6 +231,11 @@ export async function renderSimulator(el, data) {
         <p class="xs muted">Kurse in Euro (Schlusskurs am Ausführungstag). Betrag rechts = Kaufbetrag inklusive Gebühr und halbem Spread bzw. Verkaufserlös nach Gebühr und halbem Spread. Gewinn = Erlös minus Einstand (inklusive Kaufkosten). Steuern werden jeweils im ersten Monat des Folgejahres abgerechnet.</p>`);
     };
     out.querySelector('#simyear').onchange = drawYears;
+    out.querySelectorAll('[data-calc]').forEach((el) => {
+      const open = () => { const r = res.find((x) => x.key === el.dataset.calc); if (r) showCalc(r, data); };
+      el.onclick = open;
+      el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+    });
     out.querySelector('#logstrat').onchange = () => { fillLogYears(); drawLog(); };
     out.querySelector('#logyear').onchange = drawLog;
     fillLogYears();
@@ -268,4 +281,97 @@ export async function renderSimulator(el, data) {
     run();
   });
   run();
+}
+
+
+/** Erstes/letztes Jahr nur teilweise im Zeitraum? */
+function partYear(r, y, j, n) {
+  if (j === 0 && r.start.slice(5, 7) > '01') return true;
+  if (j === n - 1 && !(r.end.slice(0, 4) > y)) return r.end.slice(5, 10) < '12-20';
+  return false;
+}
+
+/** Komplette Rechnung einer Kachel: vom Depotwert über Verkaufskosten und Steuer bis zum Gewinn nach allem. */
+function showCalc(r, data) {
+  const c = r.endCalc;
+  const e = (v) => fmtEUR(v, 2);
+  const row = (l, v, cls = '', sub = '') => `<tr class="${cls}"><td style="white-space:normal">${l}${sub ? `<div class="xs muted">${sub}</div>` : ''}</td><td class="n" style="white-space:nowrap">${v}</td></tr>`;
+  const tbl = (rows) => `<div class="table-wrap"><table class="calc">${rows.join('')}</table></div>`;
+  const isEtf = r.kind === 'etf';
+  const pct = (x) => `${fmtNum(x * 100, x * 100 % 1 ? 3 : 0)} %`;
+  const parts = [];
+  parts.push(`<p class="small muted">${esc(r.label)}. Zeitraum ${fmtDate(r.start)} bis ${fmtDate(r.end)} (Kurs vom ${fmtDate(r.end)}${c.year < Number(r.end.slice(0, 4)) ? ` = Stand 31.12.${c.year}` : ''}). Steuerjahr des Verkaufs: ${c.year}. Steuersatz 25 % Abgeltungsteuer + 5,5 % Soli = 26,375 %, ohne Kirchensteuer.</p>`);
+  parts.push('<h3>1. Was im Depot liegt</h3>' + tbl([
+    row('Konto (nicht angelegtes Geld)', e(c.cash)),
+    ...(r.open.length ? [row(`Aktien (${r.open.length} Positionen)`, e(c.stockVal))] : []),
+    ...(c.etfVal > 0 ? [row(isEtf ? 'ETF-Anteile' : 'MSCI World ETF', e(c.etfVal))] : []),
+    row('<b>Vermögen</b> (Wert auf der Kachel)', `<b>${e(c.final)}</b>`, 'sum'),
+  ]));
+  parts.push('<h3>2. Kosten, wenn du alles verkaufst</h3>' + tbl([
+    ...(r.open.length ? [row('Aktien: Ordergebühren + halber Spread', `− ${e(c.liqStock)}`, '', `${r.open.length} Verkäufe`)] : []),
+    ...(c.etfVal > 0 ? [row('ETF: Ordergebühr + halber Spread', `− ${e(c.liqEtf)}`)] : []),
+    row('<b>Verkaufserlös vor Steuer</b>', `<b>${e(c.final - c.liqStock - c.liqEtf)}</b>`, 'sum'),
+  ]));
+  const g = [];
+  if (r.open.length || c.realizedYear || c.carry) {
+    g.push(row('<b>Aktien-Topf</b> (Verluste nur mit Aktiengewinnen verrechenbar)', ''));
+    if (r.open.length) {
+      g.push(row('Verkaufserlös Aktien nach Kosten', e(c.stockVal - c.liqStock)));
+      g.push(row('− Einstand (Kaufpreis inkl. Kaufkosten und wiederangelegter Dividenden)', `− ${e(c.stockBasis)}`));
+      g.push(row('= Kursgewinn beim Schlussverkauf', e(c.stockGainNet)));
+    }
+    if (c.realizedYear) g.push(row(`+ in ${c.year} schon realisierte Aktiengewinne/-verluste`, e(c.realizedYear)));
+    if (c.carry) g.push(row('+ Verlustvortrag aus früheren Jahren', e(c.carry)));
+    g.push(row('= Aktien-Topf', e(c.potStock), 'sum', c.potStock < 0 ? 'Negativ: wird nicht mit anderen Erträgen verrechnet, sondern vorgetragen.' : ''));
+  }
+  if (c.etfVal > 0 || c.vpYear || c.divYear) {
+    g.push(row('<b>Allgemeiner Topf</b>', ''));
+    if (c.etfVal > 0) {
+      g.push(row('ETF-Verkaufserlös nach Kosten', e(c.etfVal - c.liqEtf)));
+      g.push(row('− Einstand ETF (alle Raten inkl. Kaufkosten)', `− ${e(c.etfBasis)}`));
+      g.push(row('= Kursgewinn ETF', e(c.etfGainRaw)));
+      if (c.vpTotal) g.push(row('− bereits versteuerte Vorabpauschalen', `− ${e(c.vpTotal)}`, '', 'wurden in den Vorjahren schon versteuert und mindern den Gewinn beim Verkauf'));
+      g.push(row(`× ${pct(1 - c.etfExempt)} (30 % Teilfreistellung für Aktien-ETFs)`, e(c.etfGain), 'sum'));
+    }
+    if (c.divYear) g.push(row(`+ Dividenden ${c.year}`, e(c.divYear)));
+    if (c.vpYear) g.push(row(`+ Vorabpauschale (Vorjahr, steuerpflichtig in ${c.year})`, e(c.vpYear)));
+    g.push(row('= Allgemeiner Topf', e(c.general), 'sum'));
+  }
+  parts.push('<h3>3. Steuerpflichtiger Gewinn</h3>' + tbl(g));
+  const base = Math.max(0, c.taxable - c.allowance);
+  parts.push(`<h3>4. Steuer im Jahr ${c.year}</h3>` + tbl([
+    row(`Steuerpflichtig gesamt${c.potStock < 0 ? ' (Aktienverlust zählt hier nicht)' : ''}`, e(c.taxable)),
+    row(`− Sparer-Pauschbetrag ${c.year}`, `− ${e(Math.min(c.allowance, Math.max(0, c.taxable)))}`, '', `${fmtEUR(c.allowance, 0)} pro Jahr (ledig); hier gilt er für alles, was ${c.year} versteuert wird`),
+    row('= Bemessungsgrundlage', e(base)),
+    row('× 26,375 %', e(c.liabilityYear), 'sum', `= Steuer für das ganze Jahr ${c.year}`),
+    ...(c.paidYear ? [row(`− in ${c.year} schon einbehalten`, `− ${e(c.paidYear)}`, '', 'bei früheren Verkäufen, Dividenden oder der Vorabpauschale in diesem Jahr')] : []),
+    row(c.endTax >= 0 ? '<b>= Steuer beim Schlussverkauf</b>' : '<b>= Erstattung beim Schlussverkauf</b>', `<b>${e(Math.abs(c.endTax))}</b>`, 'sum'),
+  ]));
+  parts.push('<h3>5. Was am Ende bei dir ankommt</h3>' + tbl([
+    row('Vermögen', e(c.final)),
+    row('− Verkaufskosten', `− ${e(c.liqStock + c.liqEtf)}`),
+    row(c.endTax >= 0 ? '− Steuer beim Schlussverkauf' : '+ Steuererstattung', `${c.endTax >= 0 ? '−' : '+'} ${e(Math.abs(c.endTax))}`),
+    row('<b>= Auszahlung</b>', `<b>${e(c.afterTax)}</b>`, 'sum'),
+    row('− selbst eingezahlt', `− ${e(c.contrib)}`),
+    row('<b>= Gewinn nach allen Kosten und Steuern</b>', `<b class="${c.afterTax - c.contrib >= 0 ? 'pos' : 'neg'}">${e(c.afterTax - c.contrib)}</b>`, 'sum'),
+    row('Rendite pro Jahr auf deine Raten, nach allem', fmtPct(r.irrAfter)),
+  ]));
+  const ys = Object.keys(r.yearly).sort();
+  const paid = ys.filter((y) => Math.abs(r.yearly[y].tax) > 0.005);
+  parts.push('<h3>6. Schon unterwegs gezahlte Steuern</h3>' + (paid.length
+    ? tbl([...paid.map((y) => row(String(y), e(r.yearly[y].tax))), row('<b>Summe</b> (ist im Vermögen schon abgezogen)', `<b>${e(r.taxesPaid)}</b>`, 'sum')])
+    : '<p class="small muted">Keine – bis zum Schlussverkauf wurde keine Steuer fällig.</p>')
+    + `<p class="xs muted">${isEtf ? 'Beim ETF: Steuer auf die Vorabpauschale (Anfang des Folgejahres).' : 'Bei jedem Verkauf, auf Dividenden und auf die Vorabpauschale sofort einbehalten, Verluste im selben Jahr erstattet.'} Jede einzelne Buchung steht unten unter „Jede Order nachvollziehen“.</p>`);
+  parts.push('<h3>7. Wertentwicklung je Jahr</h3>' + tbl([
+    '<tr><th>Jahr</th><th class="n">Rendite</th><th class="n">Eingezahlt</th><th class="n">Wert 31.12.</th></tr>',
+    ...ys.map((y) => { const v = r.yearly[y]; return `<tr><td>${y}</td><td class="n ${v.ret == null ? '' : v.ret >= 0 ? 'pos' : 'neg'}">${v.ret == null ? '–' : fmtPct(v.ret)}</td><td class="n">${fmtEUR(v.contrib, 0)}</td><td class="n">${fmtEUR(v.valueEnd ?? v.value, 0)}</td></tr>`; }),
+  ]) + '<p class="xs muted">Rendite im Jahr = zeitgewichtet: nur Kursentwicklung (nach Steuern, Gebühren), Einzahlungen zählen nicht als Gewinn. So rechnen auch Fondsanbieter. „Rendite pro Jahr (deine Raten)“ auf der Kachel ist dagegen der Zinssatz auf deine Einzahlungen über den ganzen Zeitraum.</p>');
+  if (r.open.length) {
+    parts.push('<h3>8. Offene Positionen beim Schlussverkauf</h3>' + tbl([
+      '<tr><th>Aktie</th><th class="n">Einstand</th><th class="n">Wert</th><th class="n">Gewinn</th></tr>',
+      ...r.open.slice().sort((a, b) => b.value - a.value).map((p) => `<tr><td style="white-space:normal">${esc(p.name)}<div class="xs muted">seit ${fmtDate(data.points[p.firstK])}</div></td><td class="n">${fmtEUR(p.basis, 0)}</td><td class="n">${fmtEUR(p.value, 0)}</td><td class="n ${p.value - p.basis >= 0 ? 'pos' : 'neg'}">${fmtEUR(p.value - p.basis, 0)}</td></tr>`),
+    ]));
+  }
+  parts.push('<p class="xs muted">Rein rechnerisch, keine Steuerberatung. Annahmen: ledig, keine Kirchensteuer, kein anderer Kapitalertrag im selben Jahr, Pauschbetrag nicht anderweitig genutzt.</p>');
+  openSheet({ title: 'So entsteht das Ergebnis', body: parts.join(''), wide: true });
 }

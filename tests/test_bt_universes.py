@@ -276,3 +276,20 @@ def test_match_name_ambiguous_prefers_first_filing_and_short_names():
     assert bu.match_name(idx, "BP PLC", "GB") == "GB0007980591"
     idx2 = bu.build_name_index(rows, [])        # ohne Zeitinformation bleibt Mehrdeutiges unzugeordnet
     assert bu.match_name(idx2, "Exxon Mobil Corp.", "US") is None
+
+
+def test_coverage_gap_reports_reasons():
+    import pandas as pd
+    from pipeline import bt_universes as bu
+    raw = {"2020-01": [["A", "Alpha", "US", "", 1, "USD", 50.0], [None, "Unbekannt", "US", "", 1, "USD", 20.0],
+                       ["C", "Gamma", "US", "", 1, "USD", 30.0]],
+           "2020-02": [["A", "Alpha", "US", "", 1, "USD", 90.0], ["C", "Gamma", "US", "", 1, "USD", 10.0]]}
+    fil = {"2020-01": [raw["2020-01"][0], raw["2020-01"][1], [None] + raw["2020-01"][2][1:]], "2020-02": raw["2020-02"]}
+    close = {"C": pd.Series([1.0], index=[pd.Timestamp("2020-02-03")])}
+    valid = {"A", "C"}
+    start, cov = bu.coverage_start(fil, valid)
+    assert start == "2020-02"
+    g = bu.coverage_gap(raw, fil, valid, cov, start, close)
+    assert g["month"] == "2020-01" and g["share"] == 0.5
+    assert g["by_reason_pct"] == {"keine Kurse in diesem Zeitraum": 30.0, "keinem Kurskürzel zugeordnet": 20.0}
+    assert g["missing"][0]["symbol"] == "C" and "ab 02/2020" in g["missing"][0]["why"]

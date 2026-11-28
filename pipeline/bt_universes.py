@@ -712,6 +712,41 @@ def coverage_start(months: dict, valid: set) -> tuple[str | None, dict]:
     return start, cov
 
 
+def coverage_gap(months_raw: dict, months: dict, valid: set, cov: dict, start: str | None, close: dict,
+                 top: int = 20) -> dict | None:
+    """Der Monat direkt vor dem Beginn der Testreihe (bzw. der schwächste Monat): Welches Indexgewicht fehlt und warum?"""
+    if not cov:
+        return None
+    before = [m for m in sorted(cov) if start and m < start]
+    g = before[-1] if before else min(cov, key=cov.get)
+    raw, fil = months_raw.get(g, []), months.get(g, [])
+    if len(raw) != len(fil):
+        raw = fil
+    weighted = all(len(r) > 6 and r[6] for r in fil) if fil else False
+    tot = sum((r[6] if weighted else 1) for r in fil) or 1
+    reasons: dict[str, float] = {}
+    missing = []
+    for r0, r in zip(raw, fil):
+        w = (r[6] if weighted else 1) / tot
+        if r[0] and r[0] in valid:
+            continue
+        if not r0[0]:
+            why = "keinem Kurskürzel zugeordnet"
+        elif not r[0]:
+            ser = close.get(r0[0])
+            why = ("keine Kurse in diesem Zeitraum" + (f" (Kurse erst ab {ser.dropna().index[0]:%m/%Y})"
+                                                       if ser is not None and not ser.dropna().empty else ""))
+        else:
+            why = "Kursabgleich mit der SEC-Meldung unstimmig"
+        key = why.split(" (")[0]
+        reasons[key] = reasons.get(key, 0.0) + w
+        missing.append({"name": str(r[1])[:40], "symbol": r0[0], "weight_pct": round(w * 100, 3), "why": why})
+    missing.sort(key=lambda x: -x["weight_pct"])
+    return {"month": g, "share": round(cov.get(g, 0.0), 3), "needed": MIN_COVERAGE,
+            "by_reason_pct": {k: round(v * 100, 1) for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])},
+            "missing": missing[:top]}
+
+
 def count_coverage(months: dict, valid: set) -> dict:
     return {m: (sum(1 for r in rows if r[0] and r[0] in valid) / len(rows) if rows else 0.0) for m, rows in months.items()}
 

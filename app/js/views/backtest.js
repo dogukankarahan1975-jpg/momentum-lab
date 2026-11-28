@@ -117,7 +117,7 @@ export async function render(root) {
   const info = (key) => {
     const u = avail.find((x) => x.key === key);
     pick.querySelector('#simuniinfo').textContent = u
-      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.${u.tiingo ? (u.tiingo.key ? ` Kurse ehemaliger Mitglieder von Tiingo: ${u.tiingo.stored}${u.tiingo.open ? `, noch ${u.tiingo.open} offen (werden in den nächsten Läufen geladen)` : ''}.` : ' Tiingo-Schlüssel nicht hinterlegt – frühere Jahre nur mit Yahoo-Kursen.') : ''}${u.audit?.checks ? ` Automatische Prüfung: ${u.audit.checks - u.audit.failed} von ${u.audit.checks} Testrechnungen ohne Befund${u.audit.failed ? ' – Details im Prüfbericht' : ''}.` : ''}`
+      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.${u.tiingo ? (u.tiingo.key ? ` Kurse ehemaliger Mitglieder von Tiingo: ${u.tiingo.stored}${u.tiingo.open ? `, noch ${u.tiingo.open} offen (werden in den nächsten Läufen geladen)` : ''}.` : ' Tiingo-Schlüssel nicht hinterlegt – frühere Jahre nur mit Yahoo-Kursen.') : ''}${u.audit?.checks ? ` Automatische Prüfung: ${u.audit.checks - u.audit.failed} von ${u.audit.checks} Testrechnungen ohne Befund${u.audit.failed ? ' – Details im Prüfbericht' : ''}.` : ''}${gapText(u)}`
       : 'Heutige ACWI-Mitglieder rückwirkend angewandt: Firmen, die damals noch nicht im Index waren, werden mitgekauft. Ergebnisse zu günstig.';
   };
   const show = async (key) => {
@@ -194,3 +194,14 @@ function conclusions(V) {
 }
 
 
+
+
+/** Warum beginnt die Testreihe nicht früher? (Monat davor mit zu wenig geprüften Kursen) */
+function gapText(u) {
+  const g = u.coverage_gap;
+  if (!g || !g.month || !u.coverage_from || g.month >= u.coverage_from) return '';
+  const pct = (x) => `${Math.round(x * 100)} %`;
+  const why = Object.entries(g.by_reason_pct || {}).map(([k, v]) => `${String(v).replace('.', ',')} % ${k}`).join(', ');
+  const top = (g.missing || []).slice(0, 4).map((m) => m.name).join(', ');
+  return ` Warum nicht früher: Im ${g.month.slice(5)}/${g.month.slice(0, 4)} haben nur ${pct(g.share)} des damaligen Indexgewichts geprüfte Kurse (nötig ${pct(g.needed || 0.85)}). Es fehlen ${why}${top ? ` – die größten: ${top}` : ''}.`;
+}

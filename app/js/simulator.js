@@ -8,11 +8,14 @@ export const STRATEGIES = {
   s1top10: { label: 'Stage 1: Top-10-Liste', short: 'Stage 1 Top 10', kind: 'list', n: 10, list: 'cand' },
   s2top5: { label: 'Stage 2: Top 5 der Fortsetzungs-Rangfolge (Kursteil)', short: 'Stage 2 Top 5', kind: 'list', n: 5, list: 's2' },
   s1min4: { label: 'Stage 1: nur Kandidaten mit Momentum-Score ab 4', short: 'Minimum Score 4', kind: 'list', n: null, list: 'min' },
+  // „Gewinner halten“: an jedem Screening-Termin das ganze verfügbare Geld in die Nr. 1 der Stage-1-Liste, nie verkaufen.
+  // Nur Monatsbudget (kein Startkapital). Verkauft wird nur, wenn die Kursdaten enden (Übernahme/Delisting).
+  hold1: { label: 'Gewinner halten: Nr. 1 kaufen, nie verkaufen', short: 'Gewinner halten', kind: 'list', n: 1, list: 'cand', never: true },
 };
 
 export const DEFAULTS = {
   startYear: 2011, budget: 500, dyn: 2, feeBuy: 1, feeSell: 1, feeEtf: 0, spread: 0.2, spreadEtf: 0.1,
-  initial: 0, budgetMonths: null, hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', shift: 0, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4'],
+  initial: 0, budgetMonths: null, hold: 'signal', rest: 'top', biasCorr: false, endYear: null, freq: 'monthly', shift: 0, budgetMode: 'reinvest', minScore: 4, strategies: ['world', 'sp500', 's1top5', 's1top10', 's2top5', 's1min4', 'hold1'],
 };
 
 export const HOLD_LABEL = {
@@ -73,11 +76,12 @@ export function isScreenMonth(date, freq, shift = 0) {
 
 /** Letzter Bewertungspunkt bis Ende des Endjahres (null = bis heute). */
 export function endIndex(data, year) {
+  // „Ende 2019“ = Schlusskurs am letzten Handelstag 2019. Die Stichtage liegen am Monatsanfang, daher ist das der
+  // erste Stichtag 2020 (Kurs vom 2.1. ≈ 31.12.); eingezahlt und gehandelt wird nur bis Dezember 2019.
   const last = data.points.length - 1;
   if (!year || yearOf(data.points[last]) <= year) return last;
-  let k = last;
-  while (k > 0 && yearOf(data.points[k]) > year) k -= 1;
-  return k;
+  const k = data.points.findIndex((d) => yearOf(d) > year);
+  return k < 0 ? last : k;
 }
 
 export function startIndex(data, year) {
@@ -282,7 +286,8 @@ export function simulate(data, key, opts) {
   for (let k = k0; k < K; k++) {
     const date = data.points[k];
     const year = yearOf(date);
-    if (!b.yearly[year]) b.yearly[year] = { contrib: 0, tax: 0, trades0: b.trades, value: 0, holdings: [], buys: [], sells: [] };
+    const newYearRow = !b.yearly[year];
+    if (newYearRow) b.yearly[year] = { contrib: 0, tax: 0, trades0: b.trades, value: 0, holdings: [], buys: [], sells: [] };
     const pxE = st.kind === 'etf' ? data.bench?.[st.bench]?.px?.[k] : etfPx(data, k);
     b.monthTax = 0;
     if (k > k0 && st.kind !== 'etf') payDividends(b, data, k, yearOf(data.points[k - 1]), idx);  // Zahlung im Vormonat
@@ -292,7 +297,7 @@ export function simulate(data, key, opts) {
     // Monatsbudget nur in den ersten o.budgetMonths Monaten (Starthilfe), danach trägt sich die Strategie selbst
     const paying = !(o.budgetMonths > 0) || k - k0 < o.budgetMonths;
     const budget = (paying ? o.budget * Math.pow(1 + o.dyn / 100, Math.floor((k - k0) / 12)) : 0)
-      + (k === k0 ? (o.initial || 0) : 0);
+      + (k === k0 && !st.never ? (o.initial || 0) : 0);
     if (!paying && k - k0 === o.budgetMonths && o.budget > 0) {
       b.log.push({ k, type: 'Info', name: 'Starthilfe beendet', amount: 0, why: `Nach ${o.budgetMonths} Monaten kein Monatsbudget mehr – ab jetzt werden nur noch die Verkaufserlöse angelegt.`, cash: b.cash });
     }
@@ -321,6 +326,15 @@ export function simulate(data, key, opts) {
       for (const sym of [...b.lots.keys()]) {
         const i = idx.get(sym);
         const px = data.px[i][k];
+        if (st.never) {
+          // nie verkaufen – außer die Kursdaten enden (Übernahme, Delisting): dann zum letzten bekannten Kurs
+          const endK = data.ended?.[i];
+          if (endK != null && k > endK && sellLots(b, data, i, px > 0 ? px : data.px[i][endK], o, k, year,
+            `Kursdaten enden am ${dmy(data.points[endK])} (Übernahme/Delisting) – Verkauf zum letzten bekannten Kurs angenommen, tatsächlicher Ausgang unbekannt`)) {
+            b.yearly[year].sells.push(sym); m.sold.push(data.names[i]);
+          }
+          continue;
+        }
         if (o.hold === 'signal') {
           const c = data.hold[k][i];
           const cond = c === '1' || c === '3';
@@ -364,7 +378,7 @@ export function simulate(data, key, opts) {
       //    Zwischen zwei Screening-Terminen wird nichts gekauft: Budget und Erlöse sammeln sich auf dem Konto.
       b.pendingBudget = (b.pendingBudget || 0) + budget;
       const avail = Math.max(0, b.cash);
-      const invest = !screenNow ? 0 : o.budgetMode === 'fixed' && paying ? Math.min(b.pendingBudget, avail) : avail;
+      const invest = !screenNow ? 0 : o.budgetMode === 'fixed' && paying && !st.never ? Math.min(b.pendingBudget, avail) : avail;
       if (screenNow) b.pendingBudget = 0;
       m.screen = screenNow;
       const slots = st.n || target.length;
@@ -374,7 +388,7 @@ export function simulate(data, key, opts) {
         m.each = each;
         let used = 0;
         for (const i of target) {
-          if (buyStock(b, data, i, each, data.px[i][k], o, k, `auf der Liste vom ${dmy(data.signal_dates[k])}`)) {
+          if (buyStock(b, data, i, each, data.px[i][k], o, k, st.never ? `Nr. 1 der Liste vom ${dmy(data.signal_dates[k])} – wird nie verkauft` : `auf der Liste vom ${dmy(data.signal_dates[k])}`)) {
             used += 1; b.yearly[year].buys.push(data.syms[i]); m.bought.push(data.names[i]);
           }
         }
@@ -397,6 +411,13 @@ export function simulate(data, key, opts) {
     }
     prevVal = v;
     series.push([date, v, b.contrib]);
+    // Jahreswerte zum Jahresende: Der erste Stichtag eines Jahres (2.1.) zeigt den Stand vom 31.12. des Vorjahres
+    // (vor der Januar-Einzahlung). Rendite im Jahr = zeitgewichtet, also ohne den Effekt der Einzahlungen.
+    if (newYearRow) {
+      const py = Object.keys(b.yearly).map(Number).filter((x) => x < year).pop();
+      if (py !== undefined) { b.yearly[py].valueEnd = v - budget; b.yearly[py].twr1 = twr[twr.length - 1]; }
+      b.yearly[year].twr0 = twr[twr.length - 1];
+    }
     b.yearly[year].value = v;
     b.yearly[year].cash = b.cash;
     b.yearly[year].holdings = [...b.lots.keys()].map((sym) => data.names[idx.get(sym)]);
@@ -418,7 +439,7 @@ export function simulate(data, key, opts) {
   const final = b.cash + stockVal + etfVal;
   series.push([data.points[kEnd], final, b.contrib]);
   // Steuer, falls am Ende alles verkauft würde (rein rechnerisch)
-  const endYear = yearOf(data.points[kEnd]);
+  const endYear = o.endYear && yearOf(data.points[kEnd]) > o.endYear ? o.endYear : yearOf(data.points[kEnd]);
   // Kosten des Schlussverkaufs (Ordergebühr + halber Spread je Position) mindern Erlös und Gewinn
   const liqStock = open.reduce((a, p) => a + (p.value > 0 ? o.feeSell + p.value * (o.spread / 200) : 0), 0);
   const liqEtf = etfVal > 0 ? o.feeEtf + etfVal * (o.spreadEtf / 200) : 0;
@@ -432,11 +453,32 @@ export function simulate(data, key, opts) {
   // Zeitgewichtete Rendite p. a. (unabhängig vom Einzahlungszeitpunkt) und – beim ETF – die Kursentwicklung des
   // Fonds selbst in Euro (so rechnen die meisten Online-Fondsrechner)
   if (prevVal > 0 && final !== prevVal) { const t = twr[twr.length - 1] * (final / prevVal); if (t > 0) twr.push(t); }
+  const lastY = Object.keys(b.yearly).map(Number).pop();
+  if (lastY !== undefined) { b.yearly[lastY].valueEnd = final; b.yearly[lastY].twr1 = twr[twr.length - 1]; }
+  for (const y of Object.keys(b.yearly)) {
+    const r = b.yearly[y];
+    r.ret = r.twr0 > 0 && r.twr1 > 0 ? r.twr1 / r.twr0 - 1 : null;
+  }
+  // Schlussrechnung „falls heute alles verkauft“: jede Zahl einzeln, damit sie in der App nachvollziehbar ist
+  const stockGainNet = unrealStock - liqStock;
+  const etfGainRaw = etfVal - liqEtf - b.etfBasis;
+  const potStock = (b.gains[endYear] || 0) + b.carry + stockGainNet;
+  const general = (b.vpT[endYear] || 0) + (b.div[endYear] || 0) + etfGain;
+  const taxableEnd = Math.max(0, potStock) + general;
+  const endCalc = {
+    year: endYear, cash: b.cash, stockVal, etfVal, final, liqStock, liqEtf,
+    stockBasis: open.reduce((a, p) => a + p.basis, 0), stockGainNet, realizedYear: b.gains[endYear] || 0, carry: b.carry,
+    etfBasis: b.etfBasis, etfGainRaw, vpTotal: b.vpTotal || 0, etfExempt: ETF_EXEMPT, etfGain,
+    vpYear: b.vpT[endYear] || 0, divYear: b.div[endYear] || 0, potStock, general, taxable: taxableEnd,
+    allowance: allowance(endYear), rate: TAX, liabilityYear: liability(b, endYear, stockGainNet, etfGain),
+    paidYear: b.paidYear[endYear] || 0, endTax, taxesBefore: b.taxes, afterTax: final - liqStock - liqEtf - endTax,
+    contrib: b.contrib,
+  };
   const twrPa = years >= 1 && twr[twr.length - 1] > 0 ? Math.pow(twr[twr.length - 1], 1 / years) - 1 : null;
   const bpx = st.kind === 'etf' ? data.bench?.[st.bench]?.px : null;
   const fundPa = bpx && bpx[k0] > 0 && bpx[kEnd] > 0 && years >= 1 ? Math.pow(bpx[kEnd] / bpx[k0], 1 / years) - 1 : null;
   return {
-    twrPa, fundPa,
+    twrPa, fundPa, endCalc,
     key, label: key === 's1min4' ? `Stage 1: nur Kandidaten mit Momentum-Score ab ${String(o.minScore).replace('.', ',')}` : st.label, short: key === 's1min4' ? `Minimum Score ${String(o.minScore).replace('.', ',')}` : st.short, kind: st.kind, series, contrib: b.contrib, final, afterTax, endTax,
     taxesPaid: b.taxes, vpTotal: b.vpTotal || 0, divTotal: b.divTotal || 0, fees: b.fees, spreadCost: b.spreadCost, trades: b.trades, maxDD, years,
     irr: irr(b.flows, k0, kEnd, final, data), irrAfter: irr(b.flows, k0, kEnd, afterTax, data),

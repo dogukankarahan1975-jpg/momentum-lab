@@ -1,5 +1,16 @@
 # Änderungen
 
+## Pipeline 0.9.11 – 28.11.2026
+- Neue Backtest-Strategie „Gewinner halten“: An jedem Screening-Termin (monatlich, vierteljährlich … wie eingestellt) fließt das ganze Geld auf dem Konto – alle Monatsbudgets seit dem letzten Termin plus Dividenden – in die Nr. 1 der Stage-1-Liste. Nie verkaufen; nur wenn die Kursdaten einer Aktie enden (Übernahme/Delisting), wird zum letzten Kurs verkauft und das Geld beim nächsten Termin wieder angelegt. Kein Startkapital. Haltedauer und Verkaufssignal gelten hier nicht.
+- „Am meisten nach Steuern“ vergleicht jetzt den Gewinn nach Steuern (fair, auch wenn eine Strategie ohne Startkapital rechnet).
+- Automatische Prüfung (audit_sim) prüft auch „Gewinner halten“: keine Verkäufe außer bei Datenende, genau ein Kauf je Termin.
+
+## Pipeline 0.9.10 – 28.11.2026
+- Fehler behoben: Mit „Ende“-Jahr endete die Rechnung am ersten Handelstag im Dezember statt am Jahresende – der Dezember fehlte (z. B. „bis 2019“ = bis 02.12.2019). Jetzt: Einzahlungen bis Dezember, Bewertung mit dem Schlusskurs des Jahres, Steuerjahr = gewähltes Endjahr.
+- Neu: Rendite je Kalenderjahr (zeitgewichtet, wie bei Fonds) auf jeder Kachel und in „Jahr für Jahr“ – negative Jahre wie 2018 oder 2022 sind jetzt sichtbar. „Wert Jahresende“ ist jetzt wirklich der Stand am 31.12.
+- Neu: Jede Kachel antippen → „So entsteht das Ergebnis“: Depotinhalt, Verkaufskosten, Aktien-Topf und allgemeiner Topf mit Teilfreistellung und bereits versteuerten Vorabpauschalen, Pauschbetrag, Steuer im Jahr, schon einbehaltene Steuer, Auszahlung, Gewinn nach allem, unterwegs gezahlte Steuern je Jahr, offene Positionen.
+- Backtest-Auswahl: „Warum nicht früher?“ – zeigt für den Monat vor dem Start, wie viel Indexgewicht fehlt und warum (nicht zugeordnet / keine Kurse / unstimmig) und die größten fehlenden Firmen. Steht auch im Prüfbericht (archive/audit/latest.json).
+
 ## Pipeline 0.9.9 – 28.11.2026
 - Fehler behoben: Im Screening-Ablauf stand „undefined Aktien, Quelle: undefined“ und „NaN ohne Kursdaten“ (App-Fehler aus 0.9.8, die Daten selbst waren richtig).
 - ACWI-Backtest: Hauptursache für „unstimmig“ gefunden. Durch eine zu grobe Namenszuordnung (erste 10 Buchstaben) gehörten 108 Kürzel zu zwei verschiedenen Wertpapieren, z. B. chinesische A-Aktie und H-Aktie derselben Bank, „National Bank of Greece“ → National Bank of Canada, Alphabet A/C. Dann sprang das Kursverhältnis und der Titel wurde verworfen (68 der 81 „unstimmigen“). Jetzt: ein Kürzel gehört genau einer ISIN (Heimatbörse und voller Name entscheiden), die übrigen 262 ISIN werden neu über OpenFIGI zugeordnet.

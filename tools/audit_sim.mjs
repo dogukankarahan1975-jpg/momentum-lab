@@ -23,7 +23,7 @@ const settings = [
   { name: 'monatlich, fest 1 Monat', o: { hold: '1', freq: 'monthly' } },
   { name: 'Startkapital + 24 Monate Budget', o: { hold: 'signal', freq: 'quarterly', initial: 10000, budgetMonths: 24 } },
 ];
-const strategies = ['s1top5', 's1top10', 's1min4', 's2top5', 'world', 'sp500'];
+const strategies = ['s1top5', 's1top10', 's1min4', 's2top5', 'hold1', 'world', 'sp500'];
 const firstYear = yearOf(data.signal_dates[0]);
 const results = [];
 let fails = 0;
@@ -70,7 +70,15 @@ for (const st of strategies) {
     let expect = 0;
     for (let k = r.k0; k < r.k0 + r.months.length; k++) {
       const paying = !(o.budgetMonths > 0) || k - r.k0 < o.budgetMonths;
-      expect += (paying ? o.budget : 0) + (k === r.k0 ? (o.initial || 0) : 0);
+      expect += (paying ? o.budget : 0) + (k === r.k0 && st !== 'hold1' ? (o.initial || 0) : 0);
+    }
+    if (st === 'hold1') {   // „Gewinner halten“: nie verkaufen (außer Datenende), je Termin genau eine Aktie
+      const badSell = r.log.filter((l) => l.type === 'Verkauf' && !/Kursdaten enden/.test(l.why || '')).length;
+      if (badSell) issues.push(`${badSell} Verkäufe bei „Gewinner halten“ ohne Datenende`);
+      const perK = new Map();
+      for (const l of r.log) if (l.type === 'Kauf') perK.set(l.k, (perK.get(l.k) || 0) + 1);
+      const multi = [...perK.values()].filter((n) => n > 1).length;
+      if (multi) issues.push(`${multi} Termine mit mehr als einem Kauf`);
     }
     if (rel(r.contrib, expect) > 1e-9) issues.push(`Eingezahlt ${r.contrib.toFixed(2)} statt ${expect.toFixed(2)}`);
     // 4: Endwert
