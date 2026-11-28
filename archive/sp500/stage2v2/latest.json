@@ -51,7 +51,7 @@
    "name": "Fortinet",
    "stage1_rank": 7,
    "stage2_rank": 5,
-   "score": 6.017,
+   "score": 6.05,
    "decision": "TOP5",
    "price_only": false
   },
@@ -87,7 +87,7 @@
    "name": "Netapp Inc",
    "stage1_rank": 6,
    "stage2_rank": 9,
-   "score": 4.667,
+   "score": 4.633,
    "decision": "REST",
    "price_only": false
   },

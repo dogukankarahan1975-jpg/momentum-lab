@@ -2,7 +2,7 @@
  "asof": "2026-11-27",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.9.9",
+ "pipeline_version": "0.9.11",
  "status": "ok",
  "candidates": [
   "OKTA",
