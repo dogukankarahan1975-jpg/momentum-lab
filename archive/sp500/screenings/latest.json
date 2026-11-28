@@ -41,6 +41,7 @@
   "eligible": 494,
   "excluded_by_reason": {
    "duplicate": 3,
+   "stale": 1,
    "short_history": 5,
    "jump": 1,
    "no_data": 2
@@ -313,7 +314,7 @@
   [
    "MPC",
    "Marathon Petroleum",
-   3.3841,
+   3.3842,
    3,
    1.2589,
    0.93144

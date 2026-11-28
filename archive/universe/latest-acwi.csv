@@ -3,21 +3,21 @@ AAPL,Apple,AAPL,NASDAQ,USA,IT,USD,US0378331005,iShares MSCI ACWI,False,USA|APPLE
 MSFT,Microsoft,MSFT,NASDAQ,USA,IT,USD,US5949181045,iShares MSCI ACWI,False,USA|MICROSOFT
 NVDA,Nvidia,NVDA,NASDAQ,USA,IT,USD,US67066G1040,iShares MSCI ACWI,False,USA|NVIDIA
 AMZN,Amazon.Com Inc,AMZN,NASDAQ,USA,Zyklischer Konsum,USD,US0231351067,iShares MSCI ACWI,False,USA|AMAZON COM
-GOOGL,Alphabet Class A,GOOGL,NASDAQ,USA,Kommunikation,USD,US02079K1079,iShares MSCI ACWI,False,USA|ALPHABET
+GOOGL,Alphabet Class A,GOOGL,NASDAQ,USA,Kommunikation,USD,US02079K3059,iShares MSCI ACWI,False,USA|ALPHABET
 2330.TW,Taiwan Semiconductor Manufacturing,2330,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002330008,iShares MSCI ACWI,True,Taiwan|TAIWAN SEMICONDUCTOR MANUFACTURING
 AVGO,Broadcom Inc,AVGO,NASDAQ,USA,IT,USD,US11135F1012,iShares MSCI ACWI,False,USA|BROADCOM
 META,Meta Platforms Class A,META,NASDAQ,USA,Kommunikation,USD,US30303M1027,iShares MSCI ACWI,False,USA|META PLATFORMS
-GOOG,Alphabet Class C,GOOG,NASDAQ,USA,Kommunikation,USD,,iShares MSCI ACWI,False,USA|ALPHABET
+GOOG,Alphabet Class C,GOOG,NASDAQ,USA,Kommunikation,USD,US02079K1079,iShares MSCI ACWI,False,USA|ALPHABET
 LLY,Eli Lilly,LLY,NYSE,USA,Gesundheit,USD,US5324571083,iShares MSCI ACWI,False,USA|ELI LILLY
 TSLA,Tesla Inc,TSLA,NASDAQ,USA,Zyklischer Konsum,USD,US88160R1014,iShares MSCI ACWI,False,USA|TESLA
 JPM,Jpmorgan Chase & Co,JPM,NYSE,USA,Finanzen,USD,US46625H1005,iShares MSCI ACWI,False,USA|JPMORGAN CHASE
 BRK-B,Berkshire Hathaway Inc Class B,BRK B,NYSE,USA,Finanzen,USD,US0846707026,iShares MSCI ACWI,False,USA|BERKSHIRE HATHAWAY
 V,Visa Class A,V,NYSE,USA,Finanzen,USD,US92826C8394,iShares MSCI ACWI,False,USA|VISA
 MU,Micron Technology,MU,NASDAQ,USA,IT,USD,US5951121038,iShares MSCI ACWI,False,USA|MICRON TECHNOLOGY
-AMD,Advanced Micro Devices,AMD,NASDAQ,USA,IT,USD,CNE100003MM9,iShares MSCI ACWI,False,USA|ADVANCED MICRO DEVICES
+AMD,Advanced Micro Devices,AMD,NASDAQ,USA,IT,USD,US0079031078,iShares MSCI ACWI,False,USA|ADVANCED MICRO DEVICES
 JNJ,Johnson & Johnson,JNJ,NYSE,USA,Gesundheit,USD,US4781601046,iShares MSCI ACWI,False,USA|JOHNSON & JOHNSON
 XOM,Exxonmobil Holdings Corp,XOM,NYSE,USA,Energie,USD,US30233Q1085,iShares MSCI ACWI,False,USA|EXXONMOBIL HOLDINGS
-005930.KS,Samsung Electronics Ltd,005930,Korea Exchange (Stock Market),Südkorea,IT,KRW,KR7009150004,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRONICS
+005930.KS,Samsung Electronics Ltd,005930,Korea Exchange (Stock Market),Südkorea,IT,KRW,KR7005930003,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRONICS
 WMT,Walmart,WMT,NASDAQ,USA,Basiskonsum,USD,US9311421039,iShares MSCI ACWI,False,USA|WALMART
 MA,Mastercard Class A,MA,NYSE,USA,Finanzen,USD,US57636Q1040,iShares MSCI ACWI,False,USA|MASTERCARD
 ABBV,Abbvie,ABBV,NYSE,USA,Gesundheit,USD,US00287Y1091,iShares MSCI ACWI,False,USA|ABBVIE
@@ -56,11 +56,11 @@ LIN,Linde Plc,LIN,NASDAQ,USA,Rohstoffe,USD,,iShares MSCI ACWI,False,USA|LINDE
 INTC,Intel Corporation,INTC,NASDAQ,USA,IT,USD,US4581401001,iShares MSCI ACWI,False,USA|INTEL
 GS,Goldman Sachs Group,GS,NYSE,USA,Finanzen,USD,US38141G1040,iShares MSCI ACWI,False,USA|GOLDMAN SACHS GROUP
 LRCX,Lam Research,LRCX,NASDAQ,USA,IT,USD,US5128073062,iShares MSCI ACWI,False,USA|LAM RESEARCH
-IBM,International Business Machines Co,IBM,NYSE,USA,IT,USD,US4601461035,iShares MSCI ACWI,False,USA|INTERNATIONAL BUSINESS MACHINES
+IBM,International Business Machines Co,IBM,NYSE,USA,IT,USD,US4592001014,iShares MSCI ACWI,False,USA|INTERNATIONAL BUSINESS MACHINES
 GILD,Gilead Sciences,GILD,NASDAQ,USA,Gesundheit,USD,US3755581036,iShares MSCI ACWI,False,USA|GILEAD SCIENCES
 DIS,Walt Disney,DIS,NYSE,USA,Kommunikation,USD,US2546871060,iShares MSCI ACWI,False,USA|WALT DISNEY
 SAP.DE,Sap,SAP,Xetra,Deutschland,IT,EUR,DE0007164600,iShares MSCI ACWI,False,Deutschland|SAP
-8306.T,Mitsubishi Ufj Financial Group,8306,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3900000005,iShares MSCI ACWI,False,Japan|MITSUBISHI UFJ FINANCIAL GROUP
+8306.T,Mitsubishi Ufj Financial Group,8306,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3902900004,iShares MSCI ACWI,False,Japan|MITSUBISHI UFJ FINANCIAL GROUP
 CRWD,Crowdstrike Holdings Class A,CRWD,NASDAQ,USA,IT,USD,US22788C1053,iShares MSCI ACWI,False,USA|CROWDSTRIKE HOLDINGS
 7203.T,Toyota Motor,7203,Tokyo Stock Exchange,Japan,Zyklischer Konsum,JPY,JP3633400001,iShares MSCI ACWI,False,Japan|TOYOTA MOTOR
 MCD,Mcdonalds Corp,MCD,NYSE,USA,Zyklischer Konsum,USD,US5801351017,iShares MSCI ACWI,False,USA|MCDONALDS
@@ -110,7 +110,7 @@ ULVR.L,Unilever Plc,ULVR,London Stock Exchange,Großbritannien,Basiskonsum,GBp,G
 PGR,Progressive,PGR,NYSE,USA,Finanzen,USD,US7433151039,iShares MSCI ACWI,False,USA|PROGRESSIVE
 UBSG.SW,Ubs Group Ag,UBSG,SIX Swiss Exchange,Schweiz,Finanzen,CHF,CH0244767585,iShares MSCI ACWI,False,Schweiz|UBS GROUP
 6501.T,Hitachi,6501,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3788600009,iShares MSCI ACWI,False,Japan|HITACHI
-8316.T,Sumitomo Mitsui Financial Group,8316,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3892100003,iShares MSCI ACWI,False,Japan|SUMITOMO MITSUI FINANCIAL GROUP
+8316.T,Sumitomo Mitsui Financial Group,8316,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3890350006,iShares MSCI ACWI,False,Japan|SUMITOMO MITSUI FINANCIAL GROUP
 CB,Chubb,CB,NYSE,USA,Finanzen,USD,CH0044328745,iShares MSCI ACWI,False,USA|CHUBB
 RR.L,Rolls-Royce Holdings Plc,RR.,London Stock Exchange,Großbritannien,Industrie,GBp,GB00B63H8491,iShares MSCI ACWI,False,Großbritannien|ROLLS ROYCE HOLDINGS
 BBVA.MC,Banco Bilbao Vizcaya Argentaria,BBVA,Bolsa De Madrid,Spanien,Finanzen,EUR,ES0113211835,iShares MSCI ACWI,False,Spanien|BANCO BILBAO VIZCAYA ARGENTARIA
@@ -150,7 +150,7 @@ NEM,Newmont,NEM,NYSE,USA,Rohstoffe,USD,US6516391066,iShares MSCI ACWI,False,USA|
 6857.T,Advantest,6857,Tokyo Stock Exchange,Japan,IT,JPY,JP3122400009,iShares MSCI ACWI,False,Japan|ADVANTEST
 CFR.SW,Compagnie Financiere Richemont Sa,CFR,SIX Swiss Exchange,Schweiz,Zyklischer Konsum,CHF,CH0210483332,iShares MSCI ACWI,False,Schweiz|COMPAGNIE FINANCIERE RICHEMONT
 8411.T,Mizuho Financial Group,8411,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3885780001,iShares MSCI ACWI,False,Japan|MIZUHO FINANCIAL GROUP
-SO,Southern,SO,NYSE,USA,Versorger,USD,,iShares MSCI ACWI,False,USA|SOUTHERN
+SO,Southern,SO,NYSE,USA,Versorger,USD,US8425871071,iShares MSCI ACWI,False,USA|SOUTHERN
 COF,Capital One Financial Corp,COF,NYSE,USA,Finanzen,USD,US14040H1059,iShares MSCI ACWI,False,USA|CAPITAL ONE FINANCIAL
 MRSH,Marsh,MRSH,NYSE,USA,Finanzen,USD,US5717481023,iShares MSCI ACWI,False,USA|MARSH
 D05.SI,Dbs Group Holdings Ltd,D05,Singapore Exchange,Singapur,Finanzen,SGD,SG1L01001701,iShares MSCI ACWI,False,Singapur|DBS GROUP HOLDINGS
@@ -164,14 +164,14 @@ BNS.TO,Bank Of Nova Scotia,BNS,Toronto Stock Exchange,Kanada,Finanzen,CAD,CA0641
 REGN,Regeneron Pharmaceuticals,REGN,NASDAQ,USA,Gesundheit,USD,US75886F1075,iShares MSCI ACWI,False,USA|REGENERON PHARMACEUTICALS
 MPC,Marathon Petroleum,MPC,NYSE,USA,Energie,USD,US56585A1025,iShares MSCI ACWI,False,USA|MARATHON PETROLEUM
 8766.T,Tokio Marine Holdings,8766,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3910660004,iShares MSCI ACWI,False,Japan|TOKIO MARINE HOLDINGS
-ICE,Intercontinental Exchange Inc,ICE,NYSE,USA,Finanzen,USD,GB00BHJYC057,iShares MSCI ACWI,False,USA|INTERCONTINENTAL EXCHANGE
+ICE,Intercontinental Exchange Inc,ICE,NYSE,USA,Finanzen,USD,US45866F1049,iShares MSCI ACWI,False,USA|INTERCONTINENTAL EXCHANGE
 DTE.DE,Deutsche Telekom N Ag,DTE,Xetra,Deutschland,Kommunikation,EUR,DE0005557508,iShares MSCI ACWI,False,Deutschland|DEUTSCHE TELEKOM
 9983.T,Fast Retailing,9983,Tokyo Stock Exchange,Japan,Zyklischer Konsum,JPY,JP3802300008,iShares MSCI ACWI,False,Japan|FAST RETAILING
 MMM,3M,MMM,NYSE,USA,Industrie,USD,US88579Y1010,iShares MSCI ACWI,False,USA|3M
 1299.HK,Aia Group,1299,Hong Kong Exchanges And Clearing Ltd,Hongkong,Finanzen,HKD,HK0000069689,iShares MSCI ACWI,False,Hongkong|AIA GROUP
 BNY,Bank Of New York Mellon Corp,BNY,NYSE,USA,Finanzen,USD,US0640581007,iShares MSCI ACWI,False,USA|BANK OF NEW YORK MELLON
 WM,Waste Management Inc,WM,NYSE,USA,Industrie,USD,US94106L1098,iShares MSCI ACWI,False,USA|WASTE MANAGEMENT
-8058.T,Mitsubishi,8058,Tokyo Stock Exchange,Japan,Industrie,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI
+8058.T,Mitsubishi,8058,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3898400001,iShares MSCI ACWI,False,Japan|MITSUBISHI
 GSK.L,Glaxosmithkline,GSK,London Stock Exchange,Großbritannien,Gesundheit,GBp,,iShares MSCI ACWI,False,Großbritannien|GLAXOSMITHKLINE
 ENR.DE,Siemens Energy N Ag,ENR,Xetra,Deutschland,Industrie,EUR,DE000ENER6Y0,iShares MSCI ACWI,False,Deutschland|SIEMENS ENERGY
 VLO,Valero Energy Corp,VLO,NYSE,USA,Energie,USD,US91913Y1001,iShares MSCI ACWI,False,USA|VALERO ENERGY
@@ -182,7 +182,7 @@ NOW,Servicenow,NOW,NYSE,USA,IT,USD,US81762P1021,iShares MSCI ACWI,False,USA|SERV
 WDC,Western Digital Corp,WDC,NASDAQ,USA,IT,USD,US9581021055,iShares MSCI ACWI,False,USA|WESTERN DIGITAL
 CSX,Csx,CSX,NASDAQ,USA,Industrie,USD,US1264081035,iShares MSCI ACWI,False,USA|CSX
 PSX,Phillips 66,PSX,NYSE,USA,Energie,USD,US7185461040,iShares MSCI ACWI,False,USA|PHILLIPS 66
-CNQ.TO,Canadian Natural Resources Ltd,CNQ,Toronto Stock Exchange,Kanada,Energie,CAD,CA1363751027,iShares MSCI ACWI,False,Kanada|CANADIAN NATURAL RESOURCES
+CNQ.TO,Canadian Natural Resources Ltd,CNQ,Toronto Stock Exchange,Kanada,Energie,CAD,CA1363851017,iShares MSCI ACWI,False,Kanada|CANADIAN NATURAL RESOURCES
 ADBE,Adobe Inc,ADBE,NASDAQ,USA,IT,USD,US00724F1012,iShares MSCI ACWI,False,USA|ADOBE
 ICICIBANK.NS,Icici Bank,ICICIBANK,National Stock Exchange Of India,Indien,Finanzen,INR,INE090A01021,iShares MSCI ACWI,True,Indien|ICICI BANK
 USB,Us Bancorp,USB,NYSE,USA,Finanzen,USD,US9029733048,iShares MSCI ACWI,False,USA|US BANCORP
@@ -205,7 +205,7 @@ APP,Applovin Class A,APP,NASDAQ,USA,Kommunikation,USD,US03831W1080,iShares MSCI 
 AMT,American Tower Reit,AMT,NYSE,USA,Immobilien,USD,US03027X1000,iShares MSCI ACWI,False,USA|AMERICAN TOWER
 TRV,Travelers Companies,TRV,NYSE,USA,Finanzen,USD,US89417E1091,iShares MSCI ACWI,False,USA|TRAVELERS COMPANIES
 ELV,Elevance Health Inc,ELV,NYSE,USA,Gesundheit,USD,US0367521038,iShares MSCI ACWI,False,USA|ELEVANCE HEALTH
-005935.KS,Samsung Electronics Non Voting Pre,005935,Korea Exchange (Stock Market),Südkorea,IT,KRW,,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRONICS NON VOTING PRE
+005935.KS,Samsung Electronics Non Voting Pre,005935,Korea Exchange (Stock Market),Südkorea,IT,KRW,KR7005931001,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRONICS NON VOTING PRE
 PWR,Quanta Services Inc,PWR,NYSE,USA,Industrie,USD,US74762E1029,iShares MSCI ACWI,False,USA|QUANTA SERVICES
 HWM,Howmet Aerospace,HWM,NYSE,USA,Industrie,USD,US4432011082,iShares MSCI ACWI,False,USA|HOWMET AEROSPACE
 FTNT,Fortinet,FTNT,NASDAQ,USA,IT,USD,US34959E1091,iShares MSCI ACWI,False,USA|FORTINET
@@ -238,7 +238,7 @@ TGT,Target Corp,TGT,NYSE,USA,Basiskonsum,USD,US87612E1064,iShares MSCI ACWI,Fals
 NG.L,National Grid Plc,NG.,London Stock Exchange,Großbritannien,Versorger,GBp,GB00BDR05C01,iShares MSCI ACWI,False,Großbritannien|NATIONAL GRID
 ANZ.AX,Anz Group Holdings,ANZ,Asx - All Markets,Australien,Finanzen,AUD,AU000000ANZ3,iShares MSCI ACWI,False,Australien|ANZ GROUP HOLDINGS
 SPCX,Space Exploration Technologies Cor,SPCX,NASDAQ,USA,Kommunikation,USD,US84615Q1031,iShares MSCI ACWI,False,USA|SPACE EXPLORATION TECHNOLOGIES COR
-CL,Colgate-Palmolive,CL,NYSE,USA,Basiskonsum,USD,INE259A01022,iShares MSCI ACWI,False,USA|COLGATE PALMOLIVE
+CL,Colgate-Palmolive,CL,NYSE,USA,Basiskonsum,USD,US1941621039,iShares MSCI ACWI,False,USA|COLGATE PALMOLIVE
 CTAS,Cintas,CTAS,NASDAQ,USA,Industrie,USD,US1729081059,iShares MSCI ACWI,False,USA|CINTAS
 2317.TW,Hon Hai Precision Industry Ltd,2317,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002317005,iShares MSCI ACWI,True,Taiwan|HON HAI PRECISION INDUSTRY
 HCA,Hca Healthcare,HCA,NYSE,USA,Gesundheit,USD,US40412C1018,iShares MSCI ACWI,False,USA|HCA HEALTHCARE
@@ -251,14 +251,14 @@ NAB.AX,National Australia Bank,NAB,Asx - All Markets,Australien,Finanzen,AUD,AU0
 NOC,Northrop Grumman Corp,NOC,NYSE,USA,Industrie,USD,US6668071029,iShares MSCI ACWI,False,USA|NORTHROP GRUMMAN
 SNPS,Synopsys,SNPS,NASDAQ,USA,IT,USD,US8716071076,iShares MSCI ACWI,False,USA|SYNOPSYS
 NSC,Norfolk Southern Corp,NSC,NYSE,USA,Industrie,USD,US6558441084,iShares MSCI ACWI,False,USA|NORFOLK SOUTHERN
-CEG,Constellation Energy Corp,CEG,NASDAQ,USA,Versorger,USD,US21036P1084,iShares MSCI ACWI,False,USA|CONSTELLATION ENERGY
+CEG,Constellation Energy Corp,CEG,NASDAQ,USA,Versorger,USD,US21037T1097,iShares MSCI ACWI,False,USA|CONSTELLATION ENERGY
 SLB,Slb,SLB,NYSE,USA,Energie,USD,AN8068571086,iShares MSCI ACWI,False,USA|SLB
 MCO,Moodys Corp,MCO,NYSE,USA,Finanzen,USD,US6153691059,iShares MSCI ACWI,False,USA|MOODYS
 BA.L,Bae Systems Plc,BA.,London Stock Exchange,Großbritannien,Industrie,GBp,GB0002634946,iShares MSCI ACWI,False,Großbritannien|BAE SYSTEMS
 BARC.L,Barclays Plc,BARC,London Stock Exchange,Großbritannien,Finanzen,GBp,GB0031348658,iShares MSCI ACWI,False,Großbritannien|BARCLAYS
 4502.T,Takeda Pharmaceutical,4502,Tokyo Stock Exchange,Japan,Gesundheit,JPY,JP3463000004,iShares MSCI ACWI,False,Japan|TAKEDA PHARMACEUTICAL
 REL.L,Relx Plc,REL,London Stock Exchange,Großbritannien,Industrie,GBp,GB00B2B0DG97,iShares MSCI ACWI,False,Großbritannien|RELX
-HON,Honeywell International Inc,HON,NASDAQ,USA,Industrie,USD,US4385162056,iShares MSCI ACWI,False,USA|HONEYWELL INTERNATIONAL
+HON,Honeywell International Inc,HON,NASDAQ,USA,Industrie,USD,,iShares MSCI ACWI,False,USA|HONEYWELL INTERNATIONAL
 CI,Cigna,CI,NYSE,USA,Gesundheit,USD,US1255231003,iShares MSCI ACWI,False,USA|CIGNA
 ABNB,Airbnb Class A,ABNB,NASDAQ,USA,Zyklischer Konsum,USD,US0090661010,iShares MSCI ACWI,False,USA|AIRBNB
 AON,Aon Plc Class A,AON,NYSE,USA,Finanzen,USD,,iShares MSCI ACWI,False,USA|AON
@@ -271,7 +271,7 @@ FCX,Freeport Mcmoran Inc,FCX,NYSE,USA,Rohstoffe,USD,US35671D8570,iShares MSCI AC
 8031.T,Mitsui Ltd,8031,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3893600001,iShares MSCI ACWI,False,Japan|MITSUI
 APD,Air Products And Chemicals,APD,NYSE,USA,Rohstoffe,USD,US0091581068,iShares MSCI ACWI,False,USA|AIR PRODUCTS AND CHEMICALS
 FDX,Fedex Corp,FDX,NYSE,USA,Industrie,USD,US31428X1063,iShares MSCI ACWI,False,USA|FEDEX
-KMB,Kimberly Clark,KMB,NASDAQ,USA,Basiskonsum,USD,MXP606941179,iShares MSCI ACWI,False,USA|KIMBERLY CLARK
+KMB,Kimberly Clark,KMB,NASDAQ,USA,Basiskonsum,USD,US4943681035,iShares MSCI ACWI,False,USA|KIMBERLY CLARK
 MELI,Mercadolibre,MELI,NASDAQ,USA,Zyklischer Konsum,USD,US58733R1023,iShares MSCI ACWI,False,USA|MERCADOLIBRE
 ALL,Allstate Corp,ALL,NYSE,USA,Finanzen,USD,US0200021014,iShares MSCI ACWI,False,USA|ALLSTATE
 BSX,Boston Scientific,BSX,NYSE,USA,Gesundheit,USD,US1011371077,iShares MSCI ACWI,False,USA|BOSTON SCIENTIFIC
@@ -280,7 +280,7 @@ O39.SI,Oversea-Chinese Banking,O39,Singapore Exchange,Singapur,Finanzen,SGD,SG1S
 LLOY.L,Lloyds Banking Group Plc,LLOY,London Stock Exchange,Großbritannien,Finanzen,GBp,GB0008706128,iShares MSCI ACWI,False,Großbritannien|LLOYDS BANKING GROUP
 CSL.AX,Csl,CSL,Asx - All Markets,Australien,Gesundheit,AUD,AU000000CSL8,iShares MSCI ACWI,False,Australien|CSL
 ITX.MC,Industria De Diseno Textil Sa,ITX,Bolsa De Madrid,Spanien,Zyklischer Konsum,EUR,ES0148396007,iShares MSCI ACWI,False,Spanien|INDUSTRIA DE DISENO TEXTIL
-CNR.TO,Canadian National Railway,CNR,Toronto Stock Exchange,Kanada,Industrie,CAD,,iShares MSCI ACWI,False,Kanada|CANADIAN NATIONAL RAILWAY
+CNR.TO,Canadian National Railway,CNR,Toronto Stock Exchange,Kanada,Industrie,CAD,CA1363751027,iShares MSCI ACWI,False,Kanada|CANADIAN NATIONAL RAILWAY
 COR,Cencora,COR,NYSE,USA,Gesundheit,USD,US03073E1055,iShares MSCI ACWI,False,USA|CENCORA
 1398.HK,Industrial And Commercial Bank Of,1398,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000003G1,iShares MSCI ACWI,True,China|INDUSTRIAL AND COMMERCIAL BANK OF
 TDG,Transdigm Group,TDG,NYSE,USA,Industrie,USD,US8936411003,iShares MSCI ACWI,False,USA|TRANSDIGM GROUP
@@ -290,7 +290,7 @@ CRH,Crh Public Limited Plc,CRH,NYSE,USA,Rohstoffe,USD,,iShares MSCI ACWI,False,U
 GWW,Ww Grainger Inc,GWW,NYSE,USA,Industrie,USD,US3848021040,iShares MSCI ACWI,False,USA|WW GRAINGER
 VRT,Vertiv Holdings Class A,VRT,NYSE,USA,Industrie,USD,US92537N1081,iShares MSCI ACWI,False,USA|VERTIV HOLDINGS
 DB1.DE,Deutsche Boerse Ag,DB1,Xetra,Deutschland,Finanzen,EUR,DE0005810055,iShares MSCI ACWI,False,Deutschland|DEUTSCHE BOERSE
-9984.T,Softbank Group Corp,9984,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3732000009,iShares MSCI ACWI,False,Japan|SOFTBANK GROUP
+9984.T,Softbank Group Corp,9984,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3436100006,iShares MSCI ACWI,False,Japan|SOFTBANK GROUP
 LNG,Cheniere Energy,LNG,NYSE,USA,Energie,USD,US16411R2085,iShares MSCI ACWI,False,USA|CHENIERE ENERGY
 DASH,Doordash Class A,DASH,NASDAQ,USA,Zyklischer Konsum,USD,US25809K1051,iShares MSCI ACWI,False,USA|DOORDASH
 EW,Edwards Lifesciences,EW,NYSE,USA,Gesundheit,USD,US28176E1082,iShares MSCI ACWI,False,USA|EDWARDS LIFESCIENCES
@@ -341,10 +341,10 @@ BAYN.DE,Bayer Ag,BAYN,Xetra,Deutschland,Gesundheit,EUR,DE000BAY0017,iShares MSCI
 SREN.SW,Swiss Re Ag,SREN,SIX Swiss Exchange,Schweiz,Finanzen,CHF,CH0126881561,iShares MSCI ACWI,False,Schweiz|SWISS RE
 GLEN.L,Glencore Plc,GLEN,London Stock Exchange,Großbritannien,Rohstoffe,GBp,,iShares MSCI ACWI,False,Großbritannien|GLENCORE
 MQG.AX,Macquarie Group Ltd Def,MQG,Asx - All Markets,Australien,Finanzen,AUD,AU000000MQG1,iShares MSCI ACWI,False,Australien|MACQUARIE GROUP LTD DEF
-6503.T,Mitsubishi Electric,6503,Tokyo Stock Exchange,Japan,Industrie,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI ELECTRIC
+6503.T,Mitsubishi Electric,6503,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3902400005,iShares MSCI ACWI,False,Japan|MITSUBISHI ELECTRIC
 DGE.L,Diageo Plc,DGE,London Stock Exchange,Großbritannien,Basiskonsum,GBp,GB0002374006,iShares MSCI ACWI,False,Großbritannien|DIAGEO
 NDA-FI.HE,Nordea Bank,NDA FI,Nasdaq Omx Helsinki Ltd.,Finnland,Finanzen,EUR,FI4000297767,iShares MSCI ACWI,False,Finnland|NORDEA BANK
-7011.T,Mitsubishi Heavy Industries,7011,Tokyo Stock Exchange,Japan,Industrie,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI HEAVY INDUSTRIES
+7011.T,Mitsubishi Heavy Industries,7011,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3900000005,iShares MSCI ACWI,False,Japan|MITSUBISHI HEAVY INDUSTRIES
 AME,Ametek Inc,AME,NYSE,USA,Industrie,USD,US0311001004,iShares MSCI ACWI,False,USA|AMETEK
 SRE,Sempra,SRE,NYSE,USA,Versorger,USD,US8168511090,iShares MSCI ACWI,False,USA|SEMPRA
 ADSK,Autodesk,ADSK,NASDAQ,USA,IT,USD,US0527691069,iShares MSCI ACWI,False,USA|AUTODESK
@@ -376,7 +376,7 @@ KDP,Keurig Dr Pepper Inc,KDP,NASDAQ,USA,Basiskonsum,USD,US49271V1008,iShares MSC
 BAS.DE,Basf N,BAS,Xetra,Deutschland,Rohstoffe,EUR,DE000BASF111,iShares MSCI ACWI,False,Deutschland|BASF
 DVN,Devon Energy,DVN,NYSE,USA,Energie,USD,US25179M1036,iShares MSCI ACWI,False,USA|DEVON ENERGY
 EXC,Exelon Corp,EXC,NASDAQ,USA,Versorger,USD,US30161N1019,iShares MSCI ACWI,False,USA|EXELON
-RKT.L,Reckitt Benckiser Group Plc,RKT,London Stock Exchange,Großbritannien,Basiskonsum,GBp,GB00BSZBP530,iShares MSCI ACWI,False,Großbritannien|RECKITT BENCKISER GROUP
+RKT.L,Reckitt Benckiser Group Plc,RKT,London Stock Exchange,Großbritannien,Basiskonsum,GBp,,iShares MSCI ACWI,False,Großbritannien|RECKITT BENCKISER GROUP
 ENI.MI,Eni,ENI,Borsa Italiana,Italien,Energie,EUR,IT0003132476,iShares MSCI ACWI,False,Italien|ENI
 TEVA,Teva Pharmaceutical Industries,TEVA,NYSE,Israel,Gesundheit,USD,US8816242098,iShares MSCI ACWI,False,Israel|TEVA PHARMACEUTICAL INDUSTRIES
 FNV.TO,Franco Nevada,FNV,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA3518581051,iShares MSCI ACWI,False,Kanada|FRANCO NEVADA
@@ -414,16 +414,16 @@ EBAY,Ebay,EBAY,NASDAQ,USA,Zyklischer Konsum,USD,US2786421030,iShares MSCI ACWI,F
 402340.KS,Sk Square,402340,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7402340004,iShares MSCI ACWI,True,Südkorea|SK SQUARE
 ROK,Rockwell Automation Inc,ROK,NYSE,USA,Industrie,USD,US7739031091,iShares MSCI ACWI,False,USA|ROCKWELL AUTOMATION
 AIG,American International Group,AIG,NYSE,USA,Finanzen,USD,US0268747849,iShares MSCI ACWI,False,USA|AMERICAN INTERNATIONAL GROUP
-9434.T,Softbank,9434,Tokyo Stock Exchange,Japan,Kommunikation,JPY,,iShares MSCI ACWI,False,Japan|SOFTBANK
+9434.T,Softbank,9434,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3732000009,iShares MSCI ACWI,False,Japan|SOFTBANK
 VTR,Ventas Reit,VTR,NYSE,USA,Immobilien,USD,US92276F1003,iShares MSCI ACWI,False,USA|VENTAS
-CSU.TO,Constellation Software,CSU,Toronto Stock Exchange,Kanada,IT,CAD,,iShares MSCI ACWI,False,Kanada|CONSTELLATION SOFTWARE
+CSU.TO,Constellation Software,CSU,Toronto Stock Exchange,Kanada,IT,CAD,CA21037X1006,iShares MSCI ACWI,False,Kanada|CONSTELLATION SOFTWARE
 AAL.L,Anglo American Plc,AAL,London Stock Exchange,Großbritannien,Rohstoffe,GBp,GB00BTK05J60,iShares MSCI ACWI,False,Großbritannien|ANGLO AMERICAN
 IQV,Iqvia Holdings Inc,IQV,NYSE,USA,Gesundheit,USD,US46266C1053,iShares MSCI ACWI,False,USA|IQVIA HOLDINGS
 8725.T,Ms&Ad Insurance Group Holdings,8725,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3890310000,iShares MSCI ACWI,False,Japan|MS&AD INSURANCE GROUP HOLDINGS
 PRU,Prudential Financial Inc,PRU,NYSE,USA,Finanzen,USD,US7443201022,iShares MSCI ACWI,False,USA|PRUDENTIAL FINANCIAL
 CBRE,Cbre Group Class A,CBRE,NYSE,USA,Immobilien,USD,US12504L1098,iShares MSCI ACWI,False,USA|CBRE GROUP
 BE,Bloom Energy Class A,BE,NYSE,USA,Industrie,USD,US0937121079,iShares MSCI ACWI,False,USA|BLOOM ENERGY
-2318.HK,Ping An Insurance (Group) Co Of Ch,2318,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE000001R84,iShares MSCI ACWI,True,China|PING AN INSURANCE GROUP CO OF CH
+2318.HK,Ping An Insurance (Group) Co Of Ch,2318,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000003X6,iShares MSCI ACWI,True,China|PING AN INSURANCE GROUP CO OF CH
 VST,Vistra,VST,NYSE,USA,Versorger,USD,US92840M1027,iShares MSCI ACWI,False,USA|VISTRA
 NTRA,Natera,NTRA,NASDAQ,USA,Gesundheit,USD,US6323071042,iShares MSCI ACWI,False,USA|NATERA
 CARR,Carrier Global,CARR,NYSE,USA,Industrie,USD,US14448C1045,iShares MSCI ACWI,False,USA|CARRIER GLOBAL
@@ -508,10 +508,10 @@ AD.AS,Koninklijke Ahold Delhaize,AD,Euronext Amsterdam,Niederlande,Basiskonsum,E
 7182.T,Japan Post Bank Ltd,7182,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3946750001,iShares MSCI ACWI,False,Japan|JAPAN POST BANK
 RBLX,Roblox Class A,RBLX,NYSE,USA,Kommunikation,USD,US7710491033,iShares MSCI ACWI,False,USA|ROBLOX
 SIKA.SW,Sika Ag,SIKA,SIX Swiss Exchange,Schweiz,Rohstoffe,CHF,CH0418792922,iShares MSCI ACWI,False,Schweiz|SIKA
-PETR4.SA,Petroleo Brasileiro Pref Sa,PETR4,XBSP,Brasilien,Energie,BRL,BRPETRACNOR9,iShares MSCI ACWI,True,Brasilien|PETROLEO BRASILEIRO
+PETR4.SA,Petroleo Brasileiro Pref Sa,PETR4,XBSP,Brasilien,Energie,BRL,BRPETRACNPR6,iShares MSCI ACWI,True,Brasilien|PETROLEO BRASILEIRO
 OKTA,Okta Class A,OKTA,NASDAQ,USA,IT,USD,US6792951054,iShares MSCI ACWI,False,USA|OKTA
 WTW,Willis Towers Watson,WTW,NASDAQ,USA,Finanzen,USD,IE00BDB6Q211,iShares MSCI ACWI,False,USA|WILLIS TOWERS WATSON
-4578.T,Otsuka Holdings,4578,Tokyo Stock Exchange,Japan,Gesundheit,JPY,JP3188200004,iShares MSCI ACWI,False,Japan|OTSUKA HOLDINGS
+4578.T,Otsuka Holdings,4578,Tokyo Stock Exchange,Japan,Gesundheit,JPY,JP3188220002,iShares MSCI ACWI,False,Japan|OTSUKA HOLDINGS
 ODFL,Old Dominion Freight Line,ODFL,NASDAQ,USA,Industrie,USD,US6795801009,iShares MSCI ACWI,False,USA|OLD DOMINION FREIGHT LINE
 REP.MC,Repsol,REP,Bolsa De Madrid,Spanien,Energie,EUR,ES0173516115,iShares MSCI ACWI,False,Spanien|REPSOL
 TER,Teradyne,TER,NASDAQ,USA,IT,USD,US8807701029,iShares MSCI ACWI,False,USA|TERADYNE
@@ -535,7 +535,7 @@ NTR.TO,Nutrien Ltd,NTR,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA67077M1086,
 9432.T,Ntt,9432,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3735400008,iShares MSCI ACWI,False,Japan|NTT
 SWED-A.ST,Swedbank,SWED A,Nasdaq Omx Nordic,Schweden,Finanzen,SEK,,iShares MSCI ACWI,False,Schweden|SWEDBANK
 ADM,Archer Daniels Midland,ADM,NYSE,USA,Basiskonsum,USD,US0394831020,iShares MSCI ACWI,False,USA|ARCHER DANIELS MIDLAND
-PRU.L,Prudential Plc,PRU,London Stock Exchange,Großbritannien,Finanzen,GBp,,iShares MSCI ACWI,False,Großbritannien|PRUDENTIAL
+PRU.L,Prudential Plc,PRU,London Stock Exchange,Großbritannien,Finanzen,GBp,GB0007099541,iShares MSCI ACWI,False,Großbritannien|PRUDENTIAL
 GMEXICOB.MX,Grupo Mexico B,GMEXICOB,Bolsa Mexicana De Valores,Mexiko,Rohstoffe,MXN,MXP370841019,iShares MSCI ACWI,True,Mexiko|GRUPO MEXICO
 CNC,Centene Corp,CNC,NYSE,USA,Gesundheit,USD,US15135B1017,iShares MSCI ACWI,False,USA|CENTENE
 ADS.DE,Adidas N Ag,ADS,Xetra,Deutschland,Zyklischer Konsum,EUR,DE000A1EWWW0,iShares MSCI ACWI,False,Deutschland|ADIDAS
@@ -545,7 +545,7 @@ IMB.L,Imperial Brands Plc,IMB,London Stock Exchange,Großbritannien,Basiskonsum,
 PCG,Pg&E Corp,PCG,NYSE,USA,Versorger,USD,US69331C1080,iShares MSCI ACWI,False,USA|PG&E
 MCHP,Microchip Technology Inc,MCHP,NASDAQ,USA,IT,USD,US5950171042,iShares MSCI ACWI,False,USA|MICROCHIP TECHNOLOGY
 IRM,Iron Mountain Inc,IRM,NYSE,USA,Immobilien,USD,US46284V1017,iShares MSCI ACWI,False,USA|IRON MOUNTAIN
-009150.KS,Samsung Electro Mechanics,009150,Korea Exchange (Stock Market),Südkorea,IT,KRW,,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRO MECHANICS
+009150.KS,Samsung Electro Mechanics,009150,Korea Exchange (Stock Market),Südkorea,IT,KRW,KR7009150004,iShares MSCI ACWI,True,Südkorea|SAMSUNG ELECTRO MECHANICS
 DG,Dollar General Corp,DG,NYSE,USA,Basiskonsum,USD,US2566771059,iShares MSCI ACWI,False,USA|DOLLAR GENERAL
 DANSKE.CO,Danske Bank,DANSKE,Omx Nordic Exchange Copenhagen A/S,Dänemark,Finanzen,DKK,DK0010274414,iShares MSCI ACWI,False,Dänemark|DANSKE BANK
 MTB,M&T Bank,MTB,NYSE,USA,Finanzen,USD,US55261F1049,iShares MSCI ACWI,False,USA|M&T BANK
@@ -566,7 +566,7 @@ ASM.AS,Asm International Nv,ASM,Euronext Amsterdam,Niederlande,IT,EUR,NL00003341
 AWK,American Water Works,AWK,NYSE,USA,Versorger,USD,US0304201033,iShares MSCI ACWI,False,USA|AMERICAN WATER WORKS
 AXISBANK.NS,Axis Bank,AXISBANK,National Stock Exchange Of India,Indien,Finanzen,INR,INE238A01034,iShares MSCI ACWI,True,Indien|AXIS BANK
 DTE,Dte Energy,DTE,NYSE,USA,Versorger,USD,US2333311072,iShares MSCI ACWI,False,USA|DTE ENERGY
-RIO.AX,Rio Tinto,RIO,Asx - All Markets,Australien,Rohstoffe,AUD,,iShares MSCI ACWI,False,Australien|RIO TINTO
+RIO.AX,Rio Tinto,RIO,Asx - All Markets,Australien,Rohstoffe,AUD,AU000000RIO1,iShares MSCI ACWI,False,Australien|RIO TINTO
 ILMN,Illumina Inc,ILMN,NASDAQ,USA,Gesundheit,USD,US4523271090,iShares MSCI ACWI,False,USA|ILLUMINA
 VLTO,Veralto,VLTO,NYSE,USA,Industrie,USD,US92338C1036,iShares MSCI ACWI,False,USA|VERALTO
 2303.TW,United Micro Electronics Corp,2303,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002303005,iShares MSCI ACWI,True,Taiwan|UNITED MICRO ELECTRONICS
@@ -582,7 +582,7 @@ NTRS,Northern Trust,NTRS,NASDAQ,USA,Finanzen,USD,US6658591044,iShares MSCI ACWI,
 ATO,Atmos Energy,ATO,NYSE,USA,Versorger,USD,US0495601058,iShares MSCI ACWI,False,USA|ATMOS ENERGY
 DLTR,Dollar Tree Inc,DLTR,NASDAQ,USA,Basiskonsum,USD,US2567461080,iShares MSCI ACWI,False,USA|DOLLAR TREE
 FER.MC,Ferrovial Nv,FER,Bolsa De Madrid,Spanien,Industrie,EUR,,iShares MSCI ACWI,False,Spanien|FERROVIAL
-KOTAKBANK.NS,Kotak Mahindra Bank Ltd,KOTAKBANK,National Stock Exchange Of India,Indien,Finanzen,INR,INE237A01036,iShares MSCI ACWI,True,Indien|KOTAK MAHINDRA BANK
+KOTAKBANK.NS,Kotak Mahindra Bank Ltd,KOTAKBANK,National Stock Exchange Of India,Indien,Finanzen,INR,,iShares MSCI ACWI,True,Indien|KOTAK MAHINDRA BANK
 OTIS,Otis Worldwide,OTIS,NYSE,USA,Industrie,USD,US68902V1070,iShares MSCI ACWI,False,USA|OTIS WORLDWIDE
 PPG,Ppg Industries,PPG,NYSE,USA,Rohstoffe,USD,US6935061076,iShares MSCI ACWI,False,USA|PPG INDUSTRIES
 EXPE,Expedia Group,EXPE,NASDAQ,USA,Zyklischer Konsum,USD,US30212P3038,iShares MSCI ACWI,False,USA|EXPEDIA GROUP
@@ -607,7 +607,7 @@ KBC.BR,Kbc Groep,KBC,Nyse Euronext - Euronext Brussels,Belgien,Finanzen,EUR,BE00
 HPQ,Hp Inc,HPQ,NYSE,USA,IT,USD,US40434L1052,iShares MSCI ACWI,False,USA|HP
 DNB.OL,Dnb Bank,DNB,Oslo Bors Asa,Norwegen,Finanzen,NOK,NO0010161896,iShares MSCI ACWI,False,Norwegen|DNB BANK
 DOV,Dover,DOV,NYSE,USA,Industrie,USD,US2600031080,iShares MSCI ACWI,False,USA|DOVER
-8802.T,Mitsubishi Estate Co Ltd,8802,Tokyo Stock Exchange,Japan,Immobilien,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI ESTATE
+8802.T,Mitsubishi Estate Co Ltd,8802,Tokyo Stock Exchange,Japan,Immobilien,JPY,JP3899600005,iShares MSCI ACWI,False,Japan|MITSUBISHI ESTATE
 CHD,Church And Dwight Inc,CHD,NYSE,USA,Basiskonsum,USD,US1713401024,iShares MSCI ACWI,False,USA|CHURCH AND DWIGHT
 AER,Aercap Holdings,AER,NYSE,Niederlande,Industrie,USD,,iShares MSCI ACWI,False,Niederlande|AERCAP HOLDINGS
 068270.KS,Celltrion,068270,Korea Exchange (Stock Market),Südkorea,Gesundheit,KRW,KR7068270008,iShares MSCI ACWI,True,Südkorea|CELLTRION
@@ -621,13 +621,13 @@ CFG,Citizens Financial Group Inc,CFG,NYSE,USA,Finanzen,USD,US1746101054,iShares 
 2882.TW,Cathay Financial Holding,2882,Taiwan Stock Exchange,Taiwan,Finanzen,TWD,TW0002882008,iShares MSCI ACWI,True,Taiwan|CATHAY FINANCIAL HOLDING
 VICI,Vici Pptys Inc,VICI,NYSE,USA,Immobilien,USD,US9256521090,iShares MSCI ACWI,False,USA|VICI PPTYS
 GFNORTEO.MX,Gpo Finance Banorte,GFNORTEO,Bolsa Mexicana De Valores,Mexiko,Finanzen,MXN,,iShares MSCI ACWI,True,Mexiko|GPO FINANCE BANORTE
-PETR3.SA,Petroleo Brasileiro Sa Petrobras,PETR3,XBSP,Brasilien,Energie,BRL,,iShares MSCI ACWI,True,Brasilien|PETROLEO BRASILEIRO SA PETROBRAS
+PETR3.SA,Petroleo Brasileiro Sa Petrobras,PETR3,XBSP,Brasilien,Energie,BRL,BRPETRACNOR9,iShares MSCI ACWI,True,Brasilien|PETROLEO BRASILEIRO SA PETROBRAS
 DRI,Darden Restaurants Inc,DRI,NYSE,USA,Zyklischer Konsum,USD,US2371941053,iShares MSCI ACWI,False,USA|DARDEN RESTAURANTS
 WST,West Pharmaceutical Services,WST,NYSE,USA,Gesundheit,USD,US9553061055,iShares MSCI ACWI,False,USA|WEST PHARMACEUTICAL SERVICES
-NPN.JO,Naspers Limited Class N,NPN,Johannesburg Stock Exchange,Südafrika,Zyklischer Konsum,ZAc,ZAE000351946,iShares MSCI ACWI,True,Südafrika|NASPERS
+NPN.JO,Naspers Limited Class N,NPN,Johannesburg Stock Exchange,Südafrika,Zyklischer Konsum,ZAc,,iShares MSCI ACWI,True,Südafrika|NASPERS
 HSY,Hershey Foods,HSY,NYSE,USA,Basiskonsum,USD,US4278661081,iShares MSCI ACWI,False,USA|HERSHEY FOODS
 OMC,Omnicom Group Inc,OMC,NYSE,USA,Kommunikation,USD,US6819191064,iShares MSCI ACWI,False,USA|OMNICOM GROUP
-8309.T,Sumitomo Mitsui Trust Group,8309,Tokyo Stock Exchange,Japan,Finanzen,JPY,,iShares MSCI ACWI,False,Japan|SUMITOMO MITSUI TRUST GROUP
+8309.T,Sumitomo Mitsui Trust Group,8309,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3892100003,iShares MSCI ACWI,False,Japan|SUMITOMO MITSUI TRUST GROUP
 OTP.BD,Otp Bank,OTP,Budapest Stock Exchange,Ungarn,Finanzen,HUF,HU0000061726,iShares MSCI ACWI,True,Ungarn|OTP BANK
 TPR,Tapestry,TPR,NYSE,USA,Zyklischer Konsum,USD,US8760301072,iShares MSCI ACWI,False,USA|TAPESTRY
 TWLO,Twilio Class A,TWLO,NYSE,USA,IT,USD,US90138F1021,iShares MSCI ACWI,False,USA|TWILIO
@@ -667,7 +667,7 @@ ON,On Semiconductor Corp,ON,NASDAQ,USA,IT,USD,US6821891057,iShares MSCI ACWI,Fal
 CCEP,Coca Cola Europacific Partners Plc,CCEP,NASDAQ,Niederlande,Basiskonsum,USD,GB00BDCPN049,iShares MSCI ACWI,False,Niederlande|COCA COLA EUROPACIFIC PARTNERS
 BIP.TO,Brookfield Infrastructure Partners,BIP,Toronto Stock Exchange,Kanada,Versorger,CAD,,iShares MSCI ACWI,False,Kanada|BROOKFIELD INFRASTRUCTURE PARTNERS
 055550.KS,Shinhan Financial Group,055550,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7055550008,iShares MSCI ACWI,True,Südkorea|SHINHAN FINANCIAL GROUP
-3968.HK,China Merchants Bank H,3968,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE000001B33,iShares MSCI ACWI,True,China|CHINA MERCHANTS BANK
+3968.HK,China Merchants Bank H,3968,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000002M1,iShares MSCI ACWI,True,China|CHINA MERCHANTS BANK
 VIE.PA,Veolia Environ. Sa,VIE,Nyse Euronext - Euronext Paris,Frankreich,Versorger,EUR,FR0000124141,iShares MSCI ACWI,False,Frankreich|VEOLIA ENVIRON
 STE,Steris,STE,NYSE,USA,Gesundheit,USD,,iShares MSCI ACWI,False,USA|STERIS
 SE,Sea Ads Representing Ltd Class A,SE,NYSE,Singapur,Zyklischer Konsum,USD,US81141R1005,iShares MSCI ACWI,False,Singapur|SEA ADS REPRESENTING
@@ -700,7 +700,7 @@ KHC,Kraft Heinz,KHC,NYSE,USA,Basiskonsum,USD,US5007541064,iShares MSCI ACWI,Fals
 8015.T,Toyota Tsusho,8015,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3635000007,iShares MSCI ACWI,False,Japan|TOYOTA TSUSHO
 0857.HK,Petrochina H,857,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE1000003W8,iShares MSCI ACWI,True,China|PETROCHINA
 POLI.TA,Bank Hapoalim Bm,POLI,Tel Aviv Stock Exchange,Israel,Finanzen,ILA,IL0006625771,iShares MSCI ACWI,False,Israel|BANK HAPOALIM BM
-1288.HK,Agricultural Bank Of China H,1288,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100000RJ0,iShares MSCI ACWI,True,China|AGRICULTURAL BANK OF CHINA
+1288.HK,Agricultural Bank Of China H,1288,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100000Q43,iShares MSCI ACWI,True,China|AGRICULTURAL BANK OF CHINA
 TECK-B.TO,Teck Resources Subordinate Voting,TECK.B,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA8787422044,iShares MSCI ACWI,False,Kanada|TECK RESOURCES SUBORDINATE VOTING
 XYL,Xylem Inc,XYL,NYSE,USA,Industrie,USD,US98419M1009,iShares MSCI ACWI,False,USA|XYLEM
 3017.TW,Asia Vital Components,3017,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0003017000,iShares MSCI ACWI,True,Taiwan|ASIA VITAL COMPONENTS
@@ -715,7 +715,7 @@ UTHR,United Therapeutics,UTHR,NASDAQ,USA,Gesundheit,USD,US91307C1027,iShares MSC
 MT.AS,Arcelormittal Sa,MT,Euronext Amsterdam,Frankreich,Rohstoffe,EUR,,iShares MSCI ACWI,False,Frankreich|ARCELORMITTAL
 HUBB,Hubbell Inc,HUBB,NYSE,USA,Industrie,USD,US4435106079,iShares MSCI ACWI,False,USA|HUBBELL
 HO.PA,Thales Sa,HO,Nyse Euronext - Euronext Paris,Frankreich,Industrie,EUR,FR0000121329,iShares MSCI ACWI,False,Frankreich|THALES
-IHG.L,Intercontinental Hotels Group Plc,IHG,London Stock Exchange,Großbritannien,Zyklischer Konsum,GBp,,iShares MSCI ACWI,False,Großbritannien|INTERCONTINENTAL HOTELS GROUP
+IHG.L,Intercontinental Hotels Group Plc,IHG,London Stock Exchange,Großbritannien,Zyklischer Konsum,GBp,GB00BHJYC057,iShares MSCI ACWI,False,Großbritannien|INTERCONTINENTAL HOTELS GROUP
 FRE.DE,Fresenius N,FRE,Xetra,Deutschland,Gesundheit,EUR,,iShares MSCI ACWI,False,Deutschland|FRESENIUS
 CLS.TO,Celestica,CLS,Toronto Stock Exchange,Kanada,IT,CAD,CA15101Q2071,iShares MSCI ACWI,False,Kanada|CELESTICA
 EFX,Equifax,EFX,NYSE,USA,Industrie,USD,US2944291051,iShares MSCI ACWI,False,USA|EQUIFAX
@@ -743,9 +743,9 @@ NN.AS,Nn Group,NN,Euronext Amsterdam,Niederlande,Finanzen,EUR,NL0010773842,iShar
 ZBH,Zimmer Biomet Holdings,ZBH,NYSE,USA,Gesundheit,USD,US98956P1021,iShares MSCI ACWI,False,USA|ZIMMER BIOMET HOLDINGS
 COIN,Coinbase Global Class A,COIN,NASDAQ,USA,Finanzen,USD,US19260Q1076,iShares MSCI ACWI,False,USA|COINBASE GLOBAL
 WKL.AS,Wolters Kluwer,WKL,Euronext Amsterdam,Niederlande,Industrie,EUR,NL0000395903,iShares MSCI ACWI,False,Niederlande|WOLTERS KLUWER
-IFF,International Flavors & Fragrances,IFF,NYSE,USA,Rohstoffe,USD,,iShares MSCI ACWI,False,USA|INTERNATIONAL FLAVORS & FRAGRANCES
+IFF,International Flavors & Fragrances,IFF,NYSE,USA,Rohstoffe,USD,US4595061015,iShares MSCI ACWI,False,USA|INTERNATIONAL FLAVORS & FRAGRANCES
 PTC,Ptc,PTC,NASDAQ,USA,IT,USD,US69370C1009,iShares MSCI ACWI,False,USA|PTC
-PHIA.AS,Koninklijke Philips,PHIA,Euronext Amsterdam,Niederlande,Gesundheit,EUR,,iShares MSCI ACWI,False,Niederlande|KONINKLIJKE PHILIPS
+PHIA.AS,Koninklijke Philips,PHIA,Euronext Amsterdam,Niederlande,Gesundheit,EUR,NL0000009538,iShares MSCI ACWI,False,Niederlande|KONINKLIJKE PHILIPS
 CBK.DE,Commerzbank Ag,CBK,Xetra,Deutschland,Finanzen,EUR,DE000CBK1001,iShares MSCI ACWI,False,Deutschland|COMMERZBANK
 4452.T,Kao,4452,Tokyo Stock Exchange,Japan,Basiskonsum,JPY,JP3205800000,iShares MSCI ACWI,False,Japan|KAO
 TSCO,Tractor Supply,TSCO,NASDAQ,USA,Zyklischer Konsum,USD,US8923561067,iShares MSCI ACWI,False,USA|TRACTOR SUPPLY
@@ -754,7 +754,7 @@ SW,Smurfit Westrock Plc,SW,NYSE,USA,Rohstoffe,USD,IE00028FXN24,iShares MSCI ACWI
 ROIV,Roivant Sciences Ltd,ROIV,NASDAQ,USA,Gesundheit,USD,,iShares MSCI ACWI,False,USA|ROIVANT SCIENCES
 RS,Reliance Steel & Aluminum,RS,NYSE,USA,Rohstoffe,USD,US7595091023,iShares MSCI ACWI,False,USA|RELIANCE STEEL & ALUMINUM
 ETISALAT.AD,Emirates Telecommunications Group,ETISALAT,Abu Dhabi Securities Exchange,VAE,Kommunikation,AED,AEE000401019,iShares MSCI ACWI,True,VAE|EMIRATES TELECOMMUNICATIONS GROUP
-DD,Dupont De Nemours,DD,NYSE,USA,Industrie,USD,US26614N2018,iShares MSCI ACWI,False,USA|DUPONT DE NEMOURS
+DD,Dupont De Nemours,DD,NYSE,USA,Industrie,USD,,iShares MSCI ACWI,False,USA|DUPONT DE NEMOURS
 LGEN.L,Legal And General Group Plc,LGEN,London Stock Exchange,Großbritannien,Finanzen,GBp,GB0005603997,iShares MSCI ACWI,False,Großbritannien|LEGAL AND GENERAL GROUP
 ATCO-B.ST,Atlas Copco Class B,ATCO B,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares MSCI ACWI,False,Schweden|ATLAS COPCO
 QNBK.QA,Qatar National Bank,QNBK,Qatar Exchange,Katar,Finanzen,QAR,QA0006929895,iShares MSCI ACWI,True,Katar|QATAR NATIONAL BANK
@@ -780,7 +780,7 @@ SHB-A.ST,Svenska Handelsbanken-A Shs,SHB A,Nasdaq Omx Nordic,Schweden,Finanzen,S
 AMCR,Amcor Plc,AMCR,NYSE,USA,Rohstoffe,USD,JE00BV7DQ550,iShares MSCI ACWI,False,USA|AMCOR
 ML.PA,Michelin,ML,Nyse Euronext - Euronext Paris,Frankreich,Zyklischer Konsum,EUR,,iShares MSCI ACWI,False,Frankreich|MICHELIN
 SCMN.SW,Swisscom Ag,SCMN,SIX Swiss Exchange,Schweiz,Kommunikation,CHF,CH0008742519,iShares MSCI ACWI,False,Schweiz|SWISSCOM
-NBK.KW,National Bank Of Kuwait,NBK,Kuwait Stock Exchange,Kuwait,Finanzen,KWF,,iShares MSCI ACWI,True,Kuwait|NATIONAL BANK OF KUWAIT
+NBK.KW,National Bank Of Kuwait,NBK,Kuwait Stock Exchange,Kuwait,Finanzen,KWF,KW0EQ0100010,iShares MSCI ACWI,True,Kuwait|NATIONAL BANK OF KUWAIT
 DOW,Dow,DOW,NYSE,USA,Rohstoffe,USD,US2605571031,iShares MSCI ACWI,False,USA|DOW
 EVRG,Evergy,EVRG,NASDAQ,USA,Versorger,USD,US30034W1062,iShares MSCI ACWI,False,USA|EVERGY
 XPO,Xpo,XPO,NYSE,USA,Industrie,USD,US9837931008,iShares MSCI ACWI,False,USA|XPO
@@ -803,12 +803,12 @@ NST.AX,Northern Star Resources Ltd,NST,Asx - All Markets,Australien,Rohstoffe,AU
 MARUTI.NS,Maruti Suzuki India Ltd,MARUTI,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE585B01010,iShares MSCI ACWI,True,Indien|MARUTI SUZUKI INDIA
 MTX.DE,Mtu Aero Engines Holding Ag,MTX,Xetra,Deutschland,Industrie,EUR,DE000A0D9PT0,iShares MSCI ACWI,False,Deutschland|MTU AERO ENGINES HOLDING
 9735.T,Secom,9735,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3421800008,iShares MSCI ACWI,False,Japan|SECOM
-2628.HK,China Life Insurance Ltd H,2628,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE000001Q93,iShares MSCI ACWI,True,China|CHINA LIFE INSURANCE
+2628.HK,China Life Insurance Ltd H,2628,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000002L3,iShares MSCI ACWI,True,China|CHINA LIFE INSURANCE
 2412.TW,Chunghwa Telecom Ltd,2412,Taiwan Stock Exchange,Taiwan,Kommunikation,TWD,TW0002412004,iShares MSCI ACWI,True,Taiwan|CHUNGHWA TELECOM
 5803.T,Fujikura,5803,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3811000003,iShares MSCI ACWI,False,Japan|FUJIKURA
 ENTG,Entegris Inc,ENTG,NASDAQ,USA,IT,USD,US29362U1043,iShares MSCI ACWI,False,USA|ENTEGRIS
-STZ,Constellation Brands Class A,STZ,NYSE,USA,Basiskonsum,USD,,iShares MSCI ACWI,False,USA|CONSTELLATION BRANDS
-AMXB.MX,America Movil B,AMXB,Bolsa Mexicana De Valores,Mexiko,Kommunikation,MXN,MX01AM050019,iShares MSCI ACWI,True,Mexiko|AMERICA MOVIL
+STZ,Constellation Brands Class A,STZ,NYSE,USA,Basiskonsum,USD,US21036P1084,iShares MSCI ACWI,False,USA|CONSTELLATION BRANDS
+AMXB.MX,America Movil B,AMXB,Bolsa Mexicana De Valores,Mexiko,Kommunikation,MXN,,iShares MSCI ACWI,True,Mexiko|AMERICA MOVIL
 2885.TW,Yuanta Financial Holding,2885,Taiwan Stock Exchange,Taiwan,Finanzen,TWD,TW0002885001,iShares MSCI ACWI,True,Taiwan|YUANTA FINANCIAL HOLDING
 7010.SR,Saudi Telecom,7010,Saudi Stock Exchange,Saudi-Arabien,Kommunikation,SAR,SA0007879543,iShares MSCI ACWI,True,Saudi-Arabien|SAUDI TELECOM
 ETERNAL.NS,Eternal,ETERNAL,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE758T01015,iShares MSCI ACWI,True,Indien|ETERNAL
@@ -827,7 +827,7 @@ HNR1.DE,Hannover Rueck,HNR1,Xetra,Deutschland,Finanzen,EUR,DE0008402215,iShares 
 SN,Sharkninja,SN,NYSE,USA,Zyklischer Konsum,USD,KYG8068L1086,iShares MSCI ACWI,False,USA|SHARKNINJA
 L,Loews,L,NYSE,USA,Finanzen,USD,US5404241086,iShares MSCI ACWI,False,USA|LOEWS
 SUNPHARMA.NS,Sun Pharmaceutical Industries,SUNPHARMA,National Stock Exchange Of India,Indien,Gesundheit,INR,INE044A01036,iShares MSCI ACWI,True,Indien|SUN PHARMACEUTICAL INDUSTRIES
-BAM.TO,Brookfield Asset Management Voting,BAM,Toronto Stock Exchange,Kanada,Finanzen,CAD,,iShares MSCI ACWI,False,Kanada|BROOKFIELD ASSET MANAGEMENT VOTING
+BAM.TO,Brookfield Asset Management Voting,BAM,Toronto Stock Exchange,Kanada,Finanzen,CAD,CA1130041058,iShares MSCI ACWI,False,Kanada|BROOKFIELD ASSET MANAGEMENT VOTING
 SAB.MC,Banco De Sabadell,SAB,Bolsa De Madrid,Spanien,Finanzen,EUR,ES0113860A34,iShares MSCI ACWI,False,Spanien|BANCO DE SABADELL
 RBA.TO,Rb Global,RBA,Toronto Stock Exchange,Kanada,Industrie,CAD,CA74935Q1072,iShares MSCI ACWI,False,Kanada|RB GLOBAL
 0016.HK,Sun Hung Kai Properties Ltd,16,Hong Kong Exchanges And Clearing Ltd,Hongkong,Immobilien,HKD,HK0016000132,iShares MSCI ACWI,False,Hongkong|SUN HUNG KAI PROPERTIES
@@ -870,11 +870,11 @@ AFRM,Affirm Holdings Class A,AFRM,NASDAQ,USA,Finanzen,USD,US00827B1061,iShares M
 KIM,Kimco Realty Reit Corp,KIM,NYSE,USA,Immobilien,USD,US49446R1095,iShares MSCI ACWI,False,USA|KIMCO REALTY
 TSN,Tyson Foods Inc Class A,TSN,NYSE,USA,Basiskonsum,USD,US9024941034,iShares MSCI ACWI,False,USA|TYSON FOODS
 ESS,Essex Property Trust Reit,ESS,NYSE,USA,Immobilien,USD,US2971781057,iShares MSCI ACWI,False,USA|ESSEX PROPERTY TRUST
-KPN.AS,Koninklijke Kpn Nv,KPN,Euronext Amsterdam,Niederlande,Kommunikation,EUR,,iShares MSCI ACWI,False,Niederlande|KONINKLIJKE KPN
+KPN.AS,Koninklijke Kpn Nv,KPN,Euronext Amsterdam,Niederlande,Kommunikation,EUR,NL0000009082,iShares MSCI ACWI,False,Niederlande|KONINKLIJKE KPN
 1605.T,Inpex,1605,Tokyo Stock Exchange,Japan,Energie,JPY,JP3294460005,iShares MSCI ACWI,False,Japan|INPEX
 WSP.TO,Wsp Global,WSP,Toronto Stock Exchange,Kanada,Industrie,CAD,CA92938W2022,iShares MSCI ACWI,False,Kanada|WSP GLOBAL
 BT-A.L,Bt Group Plc,BT.A,London Stock Exchange,Großbritannien,Kommunikation,GBp,GB0030913577,iShares MSCI ACWI,False,Großbritannien|BT GROUP
-1088.HK,China Shenhua Energy Ltd H,1088,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE100000767,iShares MSCI ACWI,True,China|CHINA SHENHUA ENERGY
+1088.HK,China Shenhua Energy Ltd H,1088,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE1000002R0,iShares MSCI ACWI,True,China|CHINA SHENHUA ENERGY
 JBHT,Jb Hunt Transport Services,JBHT,NASDAQ,USA,Industrie,USD,US4456581077,iShares MSCI ACWI,False,USA|JB HUNT TRANSPORT SERVICES
 ACA.PA,Credit Agricole Sa,ACA,Nyse Euronext - Euronext Paris,Frankreich,Finanzen,EUR,FR0000045072,iShares MSCI ACWI,False,Frankreich|CREDIT AGRICOLE
 MG.TO,Magna International,MG,Toronto Stock Exchange,Kanada,Zyklischer Konsum,CAD,CA5592224011,iShares MSCI ACWI,False,Kanada|MAGNA INTERNATIONAL
@@ -921,7 +921,7 @@ BURL,Burlington Stores,BURL,NYSE,USA,Zyklischer Konsum,USD,US1220171060,iShares 
 NBIX,Neurocrine Biosciences,NBIX,NASDAQ,USA,Gesundheit,USD,US64125C1099,iShares MSCI ACWI,False,USA|NEUROCRINE BIOSCIENCES
 TRU,Transunion,TRU,NYSE,USA,Industrie,USD,US89400J1079,iShares MSCI ACWI,False,USA|TRANSUNION
 NVT,Nvent Electric Plc,NVT,NYSE,USA,Industrie,USD,,iShares MSCI ACWI,False,USA|NVENT ELECTRIC
-IP,International Paper,IP,NYSE,USA,Rohstoffe,USD,,iShares MSCI ACWI,False,USA|INTERNATIONAL PAPER
+IP,International Paper,IP,NYSE,USA,Rohstoffe,USD,US4601461035,iShares MSCI ACWI,False,USA|INTERNATIONAL PAPER
 DSY.PA,Dassault Systemes,DSY,Nyse Euronext - Euronext Paris,Frankreich,IT,EUR,FR0014003TT8,iShares MSCI ACWI,False,Frankreich|DASSAULT SYSTEMES
 4507.T,Shionogi,4507,Tokyo Stock Exchange,Japan,Gesundheit,JPY,JP3347200002,iShares MSCI ACWI,False,Japan|SHIONOGI
 028260.KS,Samsung C&T Corp,028260,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7028260008,iShares MSCI ACWI,True,Südkorea|SAMSUNG C&T
@@ -932,7 +932,7 @@ RI.PA,Pernod Ricard Sa,RI,Nyse Euronext - Euronext Paris,Frankreich,Basiskonsum,
 0992.HK,Lenovo Group,992,Hong Kong Exchanges And Clearing Ltd,China,IT,HKD,HK0992009065,iShares MSCI ACWI,True,China|LENOVO GROUP
 GEN,Gen Digital,GEN,NASDAQ,USA,IT,USD,US6687711084,iShares MSCI ACWI,False,USA|GEN DIGITAL
 BEL.NS,Bharat Electronics Ltd,BEL,National Stock Exchange Of India,Indien,Industrie,INR,INE263A01024,iShares MSCI ACWI,True,Indien|BHARAT ELECTRONICS
-DELTA-R.BK,Delta Electronics (Thailand) Non-V,DELTA.R,Stock Exchange Of Thailand,Thailand,IT,THB,,iShares MSCI ACWI,True,Thailand|DELTA ELECTRONICS THAILAND NON
+DELTA-R.BK,Delta Electronics (Thailand) Non-V,DELTA.R,Stock Exchange Of Thailand,Thailand,IT,THB,TH0528010R18,iShares MSCI ACWI,True,Thailand|DELTA ELECTRONICS THAILAND NON
 ALFA.ST,Alfa Laval,ALFA,Nasdaq Omx Nordic,Schweden,Industrie,SEK,SE0000695876,iShares MSCI ACWI,False,Schweden|ALFA LAVAL
 TPL,Texas Pacific Land,TPL,NYSE,USA,Energie,USD,US88262P1021,iShares MSCI ACWI,False,USA|TEXAS PACIFIC LAND
 VACN.SW,Vat Group Ag,VACN,SIX Swiss Exchange,Schweiz,Industrie,CHF,CH0311864901,iShares MSCI ACWI,False,Schweiz|VAT GROUP
@@ -967,17 +967,17 @@ IOT,Samsara Class A,IOT,NYSE,USA,IT,USD,US79589L1061,iShares MSCI ACWI,False,USA
 CEMEXCPO.MX,Cemex Cpo,CEMEXCPO,Bolsa Mexicana De Valores,Mexiko,Rohstoffe,MXN,MXP225611567,iShares MSCI ACWI,True,Mexiko|CEMEX CPO
 NTPC.NS,Ntpc Ltd,NTPC,National Stock Exchange Of India,Indien,Versorger,INR,INE733E01010,iShares MSCI ACWI,True,Indien|NTPC
 SRG.MI,Snam,SRG,Borsa Italiana,Italien,Versorger,EUR,IT0003153415,iShares MSCI ACWI,False,Italien|SNAM
-TRI.TO,Thomson Reuters Corp,TRI,Toronto Stock Exchange,Kanada,Industrie,CAD,CA8849038812,iShares MSCI ACWI,False,Kanada|THOMSON REUTERS
+TRI.TO,Thomson Reuters Corp,TRI,Toronto Stock Exchange,Kanada,Industrie,CAD,,iShares MSCI ACWI,False,Kanada|THOMSON REUTERS
 GIB-A.TO,Cgi Inc Class A,GIB.A,Toronto Stock Exchange,Kanada,IT,CAD,CA12532H1047,iShares MSCI ACWI,False,Kanada|CGI
 8601.T,Daiwa Securities Group,8601,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3502200003,iShares MSCI ACWI,False,Japan|DAIWA SECURITIES GROUP
 SUN.AX,Suncorp Group,SUN,Asx - All Markets,Australien,Finanzen,AUD,AU000000SUN6,iShares MSCI ACWI,False,Australien|SUNCORP GROUP
 3231.TW,Wistron,3231,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0003231007,iShares MSCI ACWI,True,Taiwan|WISTRON
 2327.TW,Yageo,2327,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002327004,iShares MSCI ACWI,True,Taiwan|YAGEO
-HEI,Heico,HEI,NYSE,USA,Industrie,USD,,iShares MSCI ACWI,False,USA|HEICO
+HEI,Heico,HEI,NYSE,USA,Industrie,USD,US4228061093,iShares MSCI ACWI,False,USA|HEICO
 CLNX.MC,Cellnex Telecom,CLNX,Bolsa De Madrid,Spanien,Kommunikation,EUR,ES0105066007,iShares MSCI ACWI,False,Spanien|CELLNEX TELECOM
 FIS,Fidelity National Information Serv,FIS,NYSE,USA,Finanzen,USD,US31620M1062,iShares MSCI ACWI,False,USA|FIDELITY NATIONAL INFORMATION SERV
 ELE.MC,Endesa Sa,ELE,Bolsa De Madrid,Spanien,Versorger,EUR,ES0130670112,iShares MSCI ACWI,False,Spanien|ENDESA
-SCCO,Southern Copper Corp,SCCO,NYSE,Peru,Rohstoffe,USD,US8425871071,iShares MSCI ACWI,True,Peru|SOUTHERN COPPER
+SCCO,Southern Copper Corp,SCCO,NYSE,Peru,Rohstoffe,USD,US84265V1052,iShares MSCI ACWI,True,Peru|SOUTHERN COPPER
 VNA.DE,Vonovia Se,VNA,Xetra,Deutschland,Immobilien,EUR,DE000A1ML7J1,iShares MSCI ACWI,False,Deutschland|VONOVIA
 0006.HK,Power Assets Holdings,6,Hong Kong Exchanges And Clearing Ltd,Hongkong,Versorger,HKD,HK0006000050,iShares MSCI ACWI,False,Hongkong|POWER ASSETS HOLDINGS
 1801.HK,Innovent Biologics,1801,Hong Kong Exchanges And Clearing Ltd,China,Gesundheit,HKD,KYG4818G1010,iShares MSCI ACWI,True,China|INNOVENT BIOLOGICS
@@ -1001,7 +1001,7 @@ WEGE3.SA,Weg,WEGE3,XBSP,Brasilien,Industrie,BRL,BRWEGEACNOR0,iShares MSCI ACWI,T
 ORG.AX,Origin Energy,ORG,Asx - All Markets,Australien,Versorger,AUD,AU000000ORG5,iShares MSCI ACWI,False,Australien|ORIGIN ENERGY
 RKT,Rocket Companies Inc Class A,RKT,NYSE,USA,Finanzen,USD,US77311W1018,iShares MSCI ACWI,False,USA|ROCKET COMPANIES
 CHKP,Check Point Software Technologies,CHKP,NASDAQ,Israel,IT,USD,IL0010824113,iShares MSCI ACWI,False,Israel|CHECK POINT SOFTWARE TECHNOLOGIES
-BBDC4.SA,Banco Bradesco Pref,BBDC4,XBSP,Brasilien,Finanzen,BRL,BRBBDCACNOR1,iShares MSCI ACWI,True,Brasilien|BANCO BRADESCO
+BBDC4.SA,Banco Bradesco Pref,BBDC4,XBSP,Brasilien,Finanzen,BRL,BRBBDCACNPR8,iShares MSCI ACWI,True,Brasilien|BANCO BRADESCO
 2883.TW,Kgi Financial Holding,2883,Taiwan Stock Exchange,Taiwan,Finanzen,TWD,TW0002883006,iShares MSCI ACWI,True,Taiwan|KGI FINANCIAL HOLDING
 STMN.SW,Straumann Holding Ag,STMN,SIX Swiss Exchange,Schweiz,Gesundheit,CHF,CH1175448666,iShares MSCI ACWI,False,Schweiz|STRAUMANN HOLDING
 WALMEX.MX,Walmart De Mexico V,WALMEX*,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,MX01WA000038,iShares MSCI ACWI,True,Mexiko|WALMART DE MEXICO
@@ -1019,7 +1019,7 @@ UU.L,United Utilities Group Plc,UU.,London Stock Exchange,Großbritannien,Versor
 EPI-A.ST,Epiroc Class A,EPI A,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares MSCI ACWI,False,Schweden|EPIROC
 CARL-B.CO,Carlsberg As Cl B,CARL B,Omx Nordic Exchange Copenhagen A/S,Dänemark,Basiskonsum,DKK,DK0010181759,iShares MSCI ACWI,False,Dänemark|CARLSBERG AS
 PBBANK.KL,Public Bank,PBBANK,Bursa Malaysia,Malaysia,Finanzen,MYR,MYL1295OO004,iShares MSCI ACWI,True,Malaysia|PUBLIC BANK
-SMCI,Super Micro Computer Inc,SMCI,NASDAQ,USA,IT,USD,US86800U3023,iShares MSCI ACWI,False,USA|SUPER MICRO COMPUTER
+SMCI,Super Micro Computer Inc,SMCI,NASDAQ,USA,IT,USD,,iShares MSCI ACWI,False,USA|SUPER MICRO COMPUTER
 6326.T,Kubota,6326,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3266400005,iShares MSCI ACWI,False,Japan|KUBOTA
 ULTRACEMCO.NS,Ultratech Cement Ltd,ULTRACEMCO,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE481G01011,iShares MSCI ACWI,True,Indien|ULTRATECH CEMENT
 034020.KS,Doosan Enerbility Ltd,034020,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7034020008,iShares MSCI ACWI,True,Südkorea|DOOSAN ENERBILITY
@@ -1039,7 +1039,7 @@ BG.VI,Bawag Group Ag,BG,Wiener Boerse Ag,Österreich,Finanzen,EUR,AT0000BAWAG2,i
 CRWV,Coreweave Class A,CRWV,NASDAQ,USA,IT,USD,US21873S1087,iShares MSCI ACWI,False,USA|COREWEAVE
 9532.T,Osaka Gas,9532,Tokyo Stock Exchange,Japan,Versorger,JPY,JP3180400008,iShares MSCI ACWI,False,Japan|OSAKA GAS
 ABEV3.SA,Ambev Sa,ABEV3,XBSP,Brasilien,Basiskonsum,BRL,BRABEVACNOR1,iShares MSCI ACWI,True,Brasilien|AMBEV
-ETE.AT,National Bank Of Greece,ETE,Athens Exchange S.A. Cash Market,Griechenland,Finanzen,EUR,,iShares MSCI ACWI,True,Griechenland|NATIONAL BANK OF GREECE
+ETE.AT,National Bank Of Greece,ETE,Athens Exchange S.A. Cash Market,Griechenland,Finanzen,EUR,GRS003003035,iShares MSCI ACWI,True,Griechenland|NATIONAL BANK OF GREECE
 CCH.L,Coca Cola Hbc Ag,CCH,London Stock Exchange,Großbritannien,Basiskonsum,GBp,,iShares MSCI ACWI,False,Großbritannien|COCA COLA HBC
 EICHERMOT.NS,Eicher Motors Ltd,EICHERMOT,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE066A01021,iShares MSCI ACWI,True,Indien|EICHER MOTORS
 S32.AX,South32,S32,Asx - All Markets,Australien,Rohstoffe,AUD,AU000000S320,iShares MSCI ACWI,False,Australien|SOUTH32
@@ -1051,7 +1051,7 @@ TSEM.TA,Tower Semiconductor,TSEM,Tel Aviv Stock Exchange,Israel,IT,ILA,IL0010823
 ANTO.L,Antofagasta Plc,ANTO,London Stock Exchange,Großbritannien,Rohstoffe,GBp,GB0000456144,iShares MSCI ACWI,False,Großbritannien|ANTOFAGASTA
 032830.KS,Samsung Life Ltd,032830,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7032830002,iShares MSCI ACWI,True,Südkorea|SAMSUNG LIFE
 POWERGRID.NS,Power Grid Corporation Of India,POWERGRID,National Stock Exchange Of India,Indien,Versorger,INR,INE752E01010,iShares MSCI ACWI,True,Indien|POWER GRID CORPORATION OF INDIA
-AXIA3.SA,Axia Energia Sa,AXIA3,XBSP,Brasilien,Versorger,BRL,BRAXIAACNPC9,iShares MSCI ACWI,True,Brasilien|AXIA ENERGIA
+AXIA3.SA,Axia Energia Sa,AXIA3,XBSP,Brasilien,Versorger,BRL,BRAXIAACNOR0,iShares MSCI ACWI,True,Brasilien|AXIA ENERGIA
 PEO.WA,Bank Pekao Sa,PEO,Warsaw Stock Exchange/Equities/Main Market,Polen,Finanzen,PLN,PLPEKAO00016,iShares MSCI ACWI,True,Polen|BANK PEKAO
 DAL,Delta Air Lines,DAL,NYSE,USA,Industrie,USD,US2473617023,iShares MSCI ACWI,False,USA|DELTA AIR LINES
 BVI.PA,Bureau Veritas Sa,BVI,Nyse Euronext - Euronext Paris,Frankreich,Industrie,EUR,FR0006174348,iShares MSCI ACWI,False,Frankreich|BUREAU VERITAS
@@ -1108,10 +1108,10 @@ ENX.PA,Euronext Nv,ENX,Nyse Euronext - Euronext Paris,Frankreich,Finanzen,EUR,,i
 AKZA.AS,Akzo Nobel Nv,AKZA,Euronext Amsterdam,Niederlande,Rohstoffe,EUR,NL0013267909,iShares MSCI ACWI,False,Niederlande|AKZO NOBEL
 ANT,Anthropic Class A,ANT,NASDAQ,USA,IT,USD,,iShares MSCI ACWI,False,USA|ANTHROPIC
 INF.L,Informa Plc,INF,London Stock Exchange,Großbritannien,Kommunikation,GBp,GB00BMJ6DW54,iShares MSCI ACWI,False,Großbritannien|INFORMA
-INDU-C.ST,Industrivarden Series,INDU C,Nasdaq Omx Nordic,Schweden,Finanzen,SEK,SE0000190126,iShares MSCI ACWI,False,Schweden|INDUSTRIVARDEN SERIES
+INDU-C.ST,Industrivarden Series,INDU C,Nasdaq Omx Nordic,Schweden,Finanzen,SEK,SE0000107203,iShares MSCI ACWI,False,Schweden|INDUSTRIVARDEN SERIES
 9531.T,Tokyo Gas Ltd,9531,Tokyo Stock Exchange,Japan,Versorger,JPY,JP3573000001,iShares MSCI ACWI,False,Japan|TOKYO GAS
 BBRI.JK,Bank Rakyat Indonesia (Persero),BBRI,Indonesia Stock Exchange,Indonesien,Finanzen,IDR,,iShares MSCI ACWI,True,Indonesien|BANK RAKYAT INDONESIA PERSERO
-0386.HK,China Petroleum And Chemical H,386,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE0000018G1,iShares MSCI ACWI,True,China|CHINA PETROLEUM AND CHEMICAL
+0386.HK,China Petroleum And Chemical H,386,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE1000002Q2,iShares MSCI ACWI,True,China|CHINA PETROLEUM AND CHEMICAL
 CCL-B.TO,Ccl Industries Class B,CCL.B,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA1249003098,iShares MSCI ACWI,False,Kanada|CCL INDUSTRIES
 3402.T,Toray Industries,3402,Tokyo Stock Exchange,Japan,Rohstoffe,JPY,JP3621000003,iShares MSCI ACWI,False,Japan|TORAY INDUSTRIES
 000810.KS,Samsung Fire & Marine Insurance Lt,000810,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7000810002,iShares MSCI ACWI,True,Südkorea|SAMSUNG FIRE & MARINE INSURANCE LT
@@ -1184,7 +1184,7 @@ PZU.WA,Pzu Sa,PZU,Warsaw Stock Exchange/Equities/Main Market,Polen,Finanzen,PLN,
 DPLM.L,Diploma Plc,DPLM,London Stock Exchange,Großbritannien,Industrie,GBp,,iShares MSCI ACWI,False,Großbritannien|DIPLOMA
 ASIANPAINT.NS,Asian Paints,ASIANPAINT,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE021A01026,iShares MSCI ACWI,True,Indien|ASIAN PAINTS
 DKS,Dicks Sporting,DKS,NYSE,USA,Zyklischer Konsum,USD,US2533931026,iShares MSCI ACWI,False,USA|DICKS SPORTING
-1109.HK,China Resources Land,1109,Hong Kong Exchanges And Clearing Ltd,China,Immobilien,HKD,HK0836012952,iShares MSCI ACWI,True,China|CHINA RESOURCES LAND
+1109.HK,China Resources Land,1109,Hong Kong Exchanges And Clearing Ltd,China,Immobilien,HKD,KYG2108Y1052,iShares MSCI ACWI,True,China|CHINA RESOURCES LAND
 JSWSTEEL.NS,Jsw Steel,JSWSTEEL,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE019A01038,iShares MSCI ACWI,True,Indien|JSW STEEL
 7309.T,Shimano Inc,7309,Tokyo Stock Exchange,Japan,Zyklischer Konsum,JPY,JP3358000002,iShares MSCI ACWI,False,Japan|SHIMANO
 FGR.PA,Eiffage Sa,FGR,Nyse Euronext - Euronext Paris,Frankreich,Industrie,EUR,FR0000130452,iShares MSCI ACWI,False,Frankreich|EIFFAGE
@@ -1196,15 +1196,15 @@ SMIN.L,Smiths Group Plc,SMIN,London Stock Exchange,Großbritannien,Industrie,GBp
 7186.T,Yokohama Financial Group,7186,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3305990008,iShares MSCI ACWI,False,Japan|YOKOHAMA FINANCIAL GROUP
 C6L.SI,Singapore Airlines Ltd,C6L,Singapore Exchange,Singapur,Industrie,SGD,SG1V61937297,iShares MSCI ACWI,False,Singapur|SINGAPORE AIRLINES
 QIA.DE,Qiagen,QIA,Deutsche Boerse Xetra,Deutschland,Gesundheit,EUR,,iShares MSCI ACWI,False,Deutschland|QIAGEN
-ICT.PS,International Container Terminal S,ICT,Philippine Stock Exchange Inc.,Philippinen,Industrie,PHP,,iShares MSCI ACWI,True,Philippinen|INTERNATIONAL CONTAINER TERMINAL
+ICT.PS,International Container Terminal S,ICT,Philippine Stock Exchange Inc.,Philippinen,Industrie,PHP,PHY411571011,iShares MSCI ACWI,True,Philippinen|INTERNATIONAL CONTAINER TERMINAL
 MTZ,Mastec,MTZ,NYSE,USA,Industrie,USD,US5763231090,iShares MSCI ACWI,False,USA|MASTEC
 PSON.L,Pearson Plc,PSON,London Stock Exchange,Großbritannien,Zyklischer Konsum,GBp,GB0006776081,iShares MSCI ACWI,False,Großbritannien|PEARSON
-2359.HK,Wuxi Apptec H,2359,Hong Kong Exchanges And Clearing Ltd,China,Gesundheit,HKD,CNE1000031K4,iShares MSCI ACWI,True,China|WUXI APPTEC
+2359.HK,Wuxi Apptec H,2359,Hong Kong Exchanges And Clearing Ltd,China,Gesundheit,HKD,CNE100003F19,iShares MSCI ACWI,True,China|WUXI APPTEC
 TIH.TO,Toromont Industries Ltd,TIH,Toronto Stock Exchange,Kanada,Industrie,CAD,CA8911021050,iShares MSCI ACWI,False,Kanada|TOROMONT INDUSTRIES
 1150.SR,Alinma Bank,1150,Saudi Stock Exchange,Saudi-Arabien,Finanzen,SAR,SA122050HV19,iShares MSCI ACWI,True,Saudi-Arabien|ALINMA BANK
 EQX.TO,Equinox Gold,EQX,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA29446Y5020,iShares MSCI ACWI,False,Kanada|EQUINOX GOLD
 PHOE.TA,Phoenix Financial Ltd,PHOE,Tel Aviv Stock Exchange,Israel,Finanzen,ILA,IL0007670123,iShares MSCI ACWI,False,Israel|PHOENIX FINANCIAL
-FNF,Fidelity National Financial Inc,FNF,NYSE,USA,Finanzen,USD,,iShares MSCI ACWI,False,USA|FIDELITY NATIONAL FINANCIAL
+FNF,Fidelity National Financial Inc,FNF,NYSE,USA,Finanzen,USD,US31620R3030,iShares MSCI ACWI,False,USA|FIDELITY NATIONAL FINANCIAL
 ATRL.TO,Atkinsrealis Group Inc,ATRL,Toronto Stock Exchange,Kanada,Industrie,CAD,CA04764T1049,iShares MSCI ACWI,False,Kanada|ATKINSREALIS GROUP
 STN.TO,Stantec,STN,Toronto Stock Exchange,Kanada,Industrie,CAD,CA85472N1096,iShares MSCI ACWI,False,Kanada|STANTEC
 TEN.MI,Tenaris Sa,TEN,Borsa Italiana,Italien,Energie,EUR,,iShares MSCI ACWI,False,Italien|TENARIS
@@ -1218,7 +1218,7 @@ APA.AX,Apa Group Units,APA,Asx - All Markets,Australien,Versorger,AUD,AU000000AP
 SHP.JO,Shoprite Holdings Ltd,SHP,Johannesburg Stock Exchange,Südafrika,Basiskonsum,ZAc,ZAE000012084,iShares MSCI ACWI,True,Südafrika|SHOPRITE HOLDINGS
 COLO-B.CO,Coloplast B,COLO B,Omx Nordic Exchange Copenhagen A/S,Dänemark,Gesundheit,DKK,,iShares MSCI ACWI,False,Dänemark|COLOPLAST
 GRASIM.NS,Grasim Industries,GRASIM,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE047A01021,iShares MSCI ACWI,True,Indien|GRASIM INDUSTRIES
-SCHN.SW,Schindler Holding Ag,SCHN,SIX Swiss Exchange,Schweiz,Industrie,CHF,CH0024638212,iShares MSCI ACWI,False,Schweiz|SCHINDLER HOLDING
+SCHN.SW,Schindler Holding Ag,SCHN,SIX Swiss Exchange,Schweiz,Industrie,CHF,CH0024638196,iShares MSCI ACWI,False,Schweiz|SCHINDLER HOLDING
 KEY.TO,Keyera,KEY,Toronto Stock Exchange,Kanada,Energie,CAD,CA4932711001,iShares MSCI ACWI,False,Kanada|KEYERA
 CRBG,Corebridge Financial Inc,CRBG,NYSE,USA,Finanzen,USD,US21871X1090,iShares MSCI ACWI,False,USA|COREBRIDGE FINANCIAL
 MOWI.OL,Mowi,MOWI,Oslo Bors Asa,Norwegen,Basiskonsum,NOK,NO0003054108,iShares MSCI ACWI,False,Norwegen|MOWI
@@ -1232,7 +1232,7 @@ ABG.JO,Absa Group,ABG,Johannesburg Stock Exchange,Südafrika,Finanzen,ZAc,ZAE000
 WY,Weyerhaeuser Reit,WY,NYSE,USA,Immobilien,USD,US9621661043,iShares MSCI ACWI,False,USA|WEYERHAEUSER
 NESTLEIND.NS,Nestle India Ltd,NESTLEIND,National Stock Exchange Of India,Indien,Basiskonsum,INR,INE239A01024,iShares MSCI ACWI,True,Indien|NESTLE INDIA
 2319.HK,China Mengniu Dairy Ltd,2319,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,KYG210961051,iShares MSCI ACWI,True,China|CHINA MENGNIU DAIRY
-TMCV.NS,Tata Motors Ltd,TMCV,National Stock Exchange Of India,Indien,Industrie,INR,INE1TAE01010,iShares MSCI ACWI,True,Indien|TATA MOTORS
+TMCV.NS,Tata Motors Ltd,TMCV,National Stock Exchange Of India,Indien,Industrie,INR,INE155A01022,iShares MSCI ACWI,True,Indien|TATA MOTORS
 J36.SI,Jardine Matheson Holdings,J36,Singapore Exchange,Hongkong,Industrie,SGD,,iShares MSCI ACWI,False,Hongkong|JARDINE MATHESON HOLDINGS
 GALP.LS,Galp Energia Sgps Sa Class B,GALP,Nyse Euronext - Euronext Lisbon,Portugal,Energie,EUR,PTGAL0AM0009,iShares MSCI ACWI,False,Portugal|GALP ENERGIA SGPS
 SKA-B.ST,Skanska B,SKA B,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares MSCI ACWI,False,Schweden|SKANSKA
@@ -1274,7 +1274,7 @@ CAE.TO,Cae,CAE,Toronto Stock Exchange,Kanada,Industrie,CAD,CA1247651088,iShares 
 8473.T,Sbi Holdings Inc,8473,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3436120004,iShares MSCI ACWI,False,Japan|SBI HOLDINGS
 BCP.LS,Banco Comercial Portugues Sa,BCP,Nyse Euronext - Euronext Lisbon,Portugal,Finanzen,EUR,PTBCP0AM0015,iShares MSCI ACWI,False,Portugal|BANCO COMERCIAL PORTUGUES
 2603.TW,Evergreen Marine Corp (Taiwan) Ltd,2603,Taiwan Stock Exchange,Taiwan,Industrie,TWD,TW0002603008,iShares MSCI ACWI,True,Taiwan|EVERGREEN MARINE CORP TAIWAN
-GAPB.MX,Grupo Aeroportuario Del Pacifico,GAPB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,MXP001661018,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL PACIFICO
+GAPB.MX,Grupo Aeroportuario Del Pacifico,GAPB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,MX01GA000004,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL PACIFICO
 2344.TW,Winbond Electronics,2344,Taiwan Stock Exchange,Taiwan,IT,TWD,,iShares MSCI ACWI,True,Taiwan|WINBOND ELECTRONICS
 ALPHA.AT,Alpha Bank Sa,ALPHA,Athens Exchange S.A. Cash Market,Griechenland,Finanzen,EUR,GRS830003000,iShares MSCI ACWI,True,Griechenland|ALPHA BANK
 SAP.TO,Saputo,SAP,Toronto Stock Exchange,Kanada,Basiskonsum,CAD,CA8029121057,iShares MSCI ACWI,False,Kanada|SAPUTO
@@ -1293,7 +1293,7 @@ MNG.L,M&G Plc,MNG,London Stock Exchange,Großbritannien,Finanzen,GBp,GB00BKFB1C6
 CTC-A.TO,Canadian Tire Ltd Class A,CTC.A,Toronto Stock Exchange,Kanada,Zyklischer Konsum,CAD,CA1366812024,iShares MSCI ACWI,False,Kanada|CANADIAN TIRE
 2368.TW,Gold Circuit Electronics,2368,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002368008,iShares MSCI ACWI,True,Taiwan|GOLD CIRCUIT ELECTRONICS
 300750.SZ,Contemporary Amperex Technology A,300750,Shenzhen Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|CONTEMPORARY AMPEREX TECHNOLOGY
-FOX,Fox Class B,FOX,NASDAQ,USA,Kommunikation,USD,,iShares MSCI ACWI,False,USA|FOX
+FOX,Fox Class B,FOX,NASDAQ,USA,Kommunikation,USD,US35137L2043,iShares MSCI ACWI,False,USA|FOX
 600900.SS,China Yangtze Power Ltd A,600900,Shanghai Stock Exchange,China,Versorger,CNY,,iShares MSCI ACWI,True,China|CHINA YANGTZE POWER
 TLC.AX,The Lottery Corporation Ltd,TLC,Asx - All Markets,Australien,Zyklischer Konsum,AUD,AU0000219529,iShares MSCI ACWI,False,Australien|THE LOTTERY
 SRT3.DE,Sartorius Pref Ag,SRT3,Xetra,Deutschland,Gesundheit,EUR,DE0007165631,iShares MSCI ACWI,False,Deutschland|SARTORIUS
@@ -1310,7 +1310,7 @@ NVMI.TA,Nova,NVMI,Tel Aviv Stock Exchange,Israel,IT,ILA,IL0010845571,iShares MSC
 EQTL3.SA,Equatorial Sa,EQTL3,XBSP,Brasilien,Versorger,BRL,BREQTLACNOR0,iShares MSCI ACWI,True,Brasilien|EQUATORIAL
 TATACONSUM.NS,Tata Consumer Products Ltd,TATACONSUM,National Stock Exchange Of India,Indien,Basiskonsum,INR,INE192A01025,iShares MSCI ACWI,True,Indien|TATA CONSUMER PRODUCTS
 TLX.DE,Talanx Ag,TLX,Xetra,Deutschland,Finanzen,EUR,DE000TLX1005,iShares MSCI ACWI,False,Deutschland|TALANX
-2601.HK,China Pacific Insurance (Group) H,2601,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000008M8,iShares MSCI ACWI,True,China|CHINA PACIFIC INSURANCE GROUP
+2601.HK,China Pacific Insurance (Group) H,2601,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000009Q7,iShares MSCI ACWI,True,China|CHINA PACIFIC INSURANCE GROUP
 H78.SI,Hongkong Land Holdings Ltd,H78,Singapore Exchange,Hongkong,Immobilien,SGD,,iShares MSCI ACWI,False,Hongkong|HONGKONG LAND HOLDINGS
 CRCL,Circle Internet Group Inc Class A,CRCL,NYSE,USA,Finanzen,USD,US1725731079,iShares MSCI ACWI,False,USA|CIRCLE INTERNET GROUP
 BNR.DE,Brenntag,BNR,Xetra,Deutschland,Industrie,EUR,DE000A1DAHH0,iShares MSCI ACWI,False,Deutschland|BRENNTAG
@@ -1328,7 +1328,7 @@ LTM.SN,Latam Airlines Group,LTM,Santiago Stock Exchange,Chile,Industrie,CLP,CL00
 8299.TWO,Phison Electronics Corp,8299,Gretai Securities Market,Taiwan,IT,TWD,,iShares MSCI ACWI,True,Taiwan|PHISON ELECTRONICS
 010140.KS,Samsung Heavy Industries Ltd,010140,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7010140002,iShares MSCI ACWI,True,Südkorea|SAMSUNG HEAVY INDUSTRIES
 6594.T,Nidec,6594,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3734800000,iShares MSCI ACWI,False,Japan|NIDEC
-SDLF.L,Standard Life Plc,SDLF,London Stock Exchange,Großbritannien,Finanzen,GBp,GB00BGXQNP29,iShares MSCI ACWI,False,Großbritannien|STANDARD LIFE
+SDLF.L,Standard Life Plc,SDLF,London Stock Exchange,Großbritannien,Finanzen,GBp,,iShares MSCI ACWI,False,Großbritannien|STANDARD LIFE
 GULF-R.BK,Gulf Development Non-Voting Dr Pcl,GULF.R,Stock Exchange Of Thailand,Thailand,Versorger,THB,THC903010R14,iShares MSCI ACWI,True,Thailand|GULF DEVELOPMENT NON VOTING DR PCL
 CON.DE,Continental Ag,CON,Xetra,Deutschland,Zyklischer Konsum,EUR,DE0005439004,iShares MSCI ACWI,False,Deutschland|CONTINENTAL
 2020.SR,Sabic Agri-Nutrients,2020,Saudi Stock Exchange,Saudi-Arabien,Rohstoffe,SAR,SA0007879139,iShares MSCI ACWI,True,Saudi-Arabien|SABIC AGRI NUTRIENTS
@@ -1348,7 +1348,7 @@ MOTHERSON.NS,Samvardhana Motherson Internationa,MOTHERSON,National Stock Exchang
 RBI.VI,Raiffeisen Bank International Ag,RBI,Wiener Boerse Ag,Österreich,Finanzen,EUR,AT0000606306,iShares MSCI ACWI,False,Österreich|RAIFFEISEN BANK INTERNATIONAL
 CNA.L,Centrica Plc,CNA,London Stock Exchange,Großbritannien,Versorger,GBp,GB00B033F229,iShares MSCI ACWI,False,Großbritannien|CENTRICA
 LIFCO-B.ST,Lifco Class B,LIFCO B,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares MSCI ACWI,False,Schweden|LIFCO
-MRO.L,Melrose Industries Plc,MRO,London Stock Exchange,Großbritannien,Industrie,GBp,GB00BNGDN821,iShares MSCI ACWI,False,Großbritannien|MELROSE INDUSTRIES
+MRO.L,Melrose Industries Plc,MRO,London Stock Exchange,Großbritannien,Industrie,GBp,,iShares MSCI ACWI,False,Großbritannien|MELROSE INDUSTRIES
 LAND.L,Land Securities Group Reit Plc,LAND,London Stock Exchange,Großbritannien,Immobilien,GBp,GB00BYW0PQ60,iShares MSCI ACWI,False,Großbritannien|LAND SECURITIES GROUP
 HAR.JO,Harmony Gold Mining Company Limite,HAR,Johannesburg Stock Exchange,Südafrika,Rohstoffe,ZAc,ZAE000015228,iShares MSCI ACWI,True,Südafrika|HARMONY GOLD MINING COMPANY LIMITE
 3659.T,Nexon,3659,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3758190007,iShares MSCI ACWI,False,Japan|NEXON
@@ -1374,11 +1374,11 @@ H,Hyatt Hotels Corp Class A,H,NYSE,USA,Zyklischer Konsum,USD,US4485791028,iShare
 CPN-R.BK,Central Pattana Non-Voting Dr Pcl,CPN.R,Stock Exchange Of Thailand,Thailand,Immobilien,THB,TH0481010R10,iShares MSCI ACWI,True,Thailand|CENTRAL PATTANA NON VOTING DR PCL
 COALINDIA.NS,Coal India,COALINDIA,National Stock Exchange Of India,Indien,Energie,INR,INE522F01014,iShares MSCI ACWI,True,Indien|COAL INDIA
 MAERSK-A.CO,A P Moller Maersk,MAERSK A,Omx Nordic Exchange Copenhagen A/S,Dänemark,Industrie,DKK,,iShares MSCI ACWI,False,Dänemark|A P MOLLER MAERSK
-4188.T,Mitsubishi Chemical Group,4188,Tokyo Stock Exchange,Japan,Rohstoffe,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI CHEMICAL GROUP
+4188.T,Mitsubishi Chemical Group,4188,Tokyo Stock Exchange,Japan,Rohstoffe,JPY,JP3897700005,iShares MSCI ACWI,False,Japan|MITSUBISHI CHEMICAL GROUP
 ASII.JK,Astra International,ASII,Indonesia Stock Exchange,Indonesien,Industrie,IDR,,iShares MSCI ACWI,True,Indonesien|ASTRA INTERNATIONAL
 8331.T,Chiba Bank,8331,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3511800009,iShares MSCI ACWI,False,Japan|CHIBA BANK
 EPI-B.ST,Epiroc Class B,EPI B,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares MSCI ACWI,False,Schweden|EPIROC
-IAG.MC,International Airlines Group,IAG,Bolsa De Madrid,Spanien,Industrie,EUR,,iShares MSCI ACWI,False,Spanien|INTERNATIONAL AIRLINES GROUP
+IAG.MC,International Airlines Group,IAG,Bolsa De Madrid,Spanien,Industrie,EUR,ES0177542018,iShares MSCI ACWI,False,Spanien|INTERNATIONAL AIRLINES GROUP
 KBX.DE,Knorr Bremse Ag,KBX,Xetra,Deutschland,Industrie,EUR,DE000KBX1006,iShares MSCI ACWI,False,Deutschland|KNORR BREMSE
 4958.TW,Zhen Ding Technology Holding Ltd,4958,Taiwan Stock Exchange,Taiwan,IT,TWD,,iShares MSCI ACWI,True,Taiwan|ZHEN DING TECHNOLOGY HOLDING
 1803.T,Shimizu,1803,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3358800005,iShares MSCI ACWI,False,Japan|SHIMIZU
@@ -1436,13 +1436,13 @@ NIBE-B.ST,Nibe Industrier Class B,NIBE B,Nasdaq Omx Nordic,Schweden,Industrie,SE
 7020.SR,Etihad Etisalat,7020,Saudi Stock Exchange,Saudi-Arabien,Kommunikation,SAR,SA000A0DM9P2,iShares MSCI ACWI,True,Saudi-Arabien|ETIHAD ETISALAT
 GRAB,Grab Holdings Class A,GRAB,NASDAQ,Singapur,Industrie,USD,KYG4124C1096,iShares MSCI ACWI,False,Singapur|GRAB HOLDINGS
 7735.T,Screen Holdings Ltd,7735,Tokyo Stock Exchange,Japan,IT,JPY,JP3494600004,iShares MSCI ACWI,False,Japan|SCREEN HOLDINGS
-8593.T,Mitsubishi Hc Capital Inc,8593,Tokyo Stock Exchange,Japan,Finanzen,JPY,,iShares MSCI ACWI,False,Japan|MITSUBISHI HC CAPITAL
+8593.T,Mitsubishi Hc Capital Inc,8593,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3499800005,iShares MSCI ACWI,False,Japan|MITSUBISHI HC CAPITAL
 TORNTPHARM.NS,Torrent Pharmaceuticals Ltd,TORNTPHARM,National Stock Exchange Of India,Indien,Gesundheit,INR,INE685A01028,iShares MSCI ACWI,True,Indien|TORRENT PHARMACEUTICALS
-1658.HK,Postal Savings Bank Of China Ltd H,1658,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100003PZ4,iShares MSCI ACWI,True,China|POSTAL SAVINGS BANK OF CHINA
+1658.HK,Postal Savings Bank Of China Ltd H,1658,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000029W3,iShares MSCI ACWI,True,China|POSTAL SAVINGS BANK OF CHINA
 9107.T,Kawasaki Kisen Ltd,9107,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3223800008,iShares MSCI ACWI,False,Japan|KAWASAKI KISEN
 YMM,Full Truck Alliance Adr Class A,YMM,NYSE,China,Industrie,USD,US35969L1089,iShares MSCI ACWI,True,China|FULL TRUCK ALLIANCE
 3481.TW,Innolux Corp,3481,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0003481008,iShares MSCI ACWI,True,Taiwan|INNOLUX
-3750.HK,Contemporary Amperex Technology Cl,3750,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE100003662,iShares MSCI ACWI,True,China|CONTEMPORARY AMPEREX TECHNOLOGY CL
+3750.HK,Contemporary Amperex Technology Cl,3750,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE100006WS8,iShares MSCI ACWI,True,China|CONTEMPORARY AMPEREX TECHNOLOGY CL
 VBBR3.SA,Vibra Energia Sa,VBBR3,XBSP,Brasilien,Zyklischer Konsum,BRL,BRVBBRACNOR1,iShares MSCI ACWI,True,Brasilien|VIBRA ENERGIA
 6479.T,Minebea Mitsumi Inc,6479,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3906000009,iShares MSCI ACWI,False,Japan|MINEBEA MITSUMI
 RNO.PA,Renault Sa,RNO,Nyse Euronext - Euronext Paris,Frankreich,Zyklischer Konsum,EUR,FR0000131906,iShares MSCI ACWI,False,Frankreich|RENAULT
@@ -1481,7 +1481,7 @@ SECU-B.ST,Securitas B,SECU B,Nasdaq Omx Nordic,Schweden,Industrie,SEK,,iShares M
 9042.T,Hankyu Hanshin Holdings,9042,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3774200004,iShares MSCI ACWI,False,Japan|HANKYU HANSHIN HOLDINGS
 PFC.NS,Power Finance Corporation Ltd,PFC,National Stock Exchange Of India,Indien,Finanzen,INR,INE134E01011,iShares MSCI ACWI,True,Indien|POWER FINANCE
 5876.TW,Shanghai Commercial,5876,Taiwan Stock Exchange,Taiwan,Finanzen,TWD,TW0005876007,iShares MSCI ACWI,True,Taiwan|SHANGHAI COMMERCIAL
-VIVT3.SA,Telefonica Brasil Sa,VIVT3,XBSP,Brasilien,Kommunikation,BRL,,iShares MSCI ACWI,True,Brasilien|TELEFONICA BRASIL
+VIVT3.SA,Telefonica Brasil Sa,VIVT3,XBSP,Brasilien,Kommunikation,BRL,BRVIVTACNOR0,iShares MSCI ACWI,True,Brasilien|TELEFONICA BRASIL
 2449.TW,King Yuan Electronics,2449,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002449006,iShares MSCI ACWI,True,Taiwan|KING YUAN ELECTRONICS
 009540.KS,Hd Korea Shipbuilding & Offshore E,009540,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7009540006,iShares MSCI ACWI,True,Südkorea|HD KOREA SHIPBUILDING & OFFSHORE
 ADNOCGAS.AD,Adnoc Gas Plc,ADNOCGAS,Abu Dhabi Securities Exchange,VAE,Energie,AED,AEE01195A234,iShares MSCI ACWI,True,VAE|ADNOC GAS
@@ -1499,7 +1499,7 @@ PIDILITIND.NS,Pidilite Industries Ltd,PIDILITIND,National Stock Exchange Of Indi
 REM.JO,Remgro,REM,Johannesburg Stock Exchange,Südafrika,Finanzen,ZAc,ZAE000026480,iShares MSCI ACWI,True,Südafrika|REMGRO
 0267.HK,Citic Ltd,267,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,HK0267001375,iShares MSCI ACWI,True,China|CITIC
 9901.HK,New Oriental Education & Technolog,9901,Hong Kong Exchanges And Clearing Ltd,China,Zyklischer Konsum,HKD,KYG6470A1168,iShares MSCI ACWI,True,China|NEW ORIENTAL EDUCATION & TECHNOLOG
-NAUKRI.NS,Info Edge India Ltd,NAUKRI,National Stock Exchange Of India,Indien,Kommunikation,INR,INE663F01032,iShares MSCI ACWI,True,Indien|INFO EDGE INDIA
+NAUKRI.NS,Info Edge India Ltd,NAUKRI,National Stock Exchange Of India,Indien,Kommunikation,INR,,iShares MSCI ACWI,True,Indien|INFO EDGE INDIA
 MKC,Mccormick & Co Non-Voting,MKC,NYSE,USA,Basiskonsum,USD,US5797802064,iShares MSCI ACWI,False,USA|MCCORMICK
 DHE1.DE,Delivery Hero V,DHE1,Xetra,Deutschland,Zyklischer Konsum,EUR,DE000A2E4K43,iShares MSCI ACWI,False,Deutschland|DELIVERY HERO
 TME,Tencent Music Entertainment Group,TME,NYSE,China,Kommunikation,USD,US88034P1093,iShares MSCI ACWI,True,China|TENCENT MUSIC ENTERTAINMENT GROUP
@@ -1518,7 +1518,7 @@ ONGC.NS,Oil And Natural Gas Ltd,ONGC,National Stock Exchange Of India,Indien,Ene
 EFN.TO,Element Fleet Management,EFN,Toronto Stock Exchange,Kanada,Industrie,CAD,CA2861812014,iShares MSCI ACWI,False,Kanada|ELEMENT FLEET MANAGEMENT
 BHEL.NS,Bharat Heavy Electricals Ltd,BHEL,National Stock Exchange Of India,Indien,Industrie,INR,INE257A01026,iShares MSCI ACWI,True,Indien|BHARAT HEAVY ELECTRICALS
 CTVA,Corteva,CTVA,NYSE,USA,Rohstoffe,USD,US22052L1044,iShares MSCI ACWI,False,USA|CORTEVA
-GFINBURO.MX,Grupo Financiero Inbursa Sries O,GFINBURO,Bolsa Mexicana De Valores,Mexiko,Finanzen,MXN,MXP370641013,iShares MSCI ACWI,True,Mexiko|GRUPO FINANCIERO INBURSA SRIES
+GFINBURO.MX,Grupo Financiero Inbursa Sries O,GFINBURO,Bolsa Mexicana De Valores,Mexiko,Finanzen,MXN,MXP370711014,iShares MSCI ACWI,True,Mexiko|GRUPO FINANCIERO INBURSA SRIES
 BZ,Kanzhun American Depository Shares,BZ,NASDAQ,China,Industrie,USD,US48553T1060,iShares MSCI ACWI,True,China|KANZHUN AMERICAN DEPOSITORY SHARES
 SCC-R.BK,Siam Cement Non-Voting Dr Pcl,SCC.R,Stock Exchange Of Thailand,Thailand,Rohstoffe,THB,TH0003010R12,iShares MSCI ACWI,True,Thailand|SIAM CEMENT NON VOTING DR PCL
 DEWA.AE,Dubai Electricity And Water Author,DEWA,Dubai Financial Market,VAE,Versorger,AED,AED001801011,iShares MSCI ACWI,True,VAE|DUBAI ELECTRICITY AND WATER AUTHOR
@@ -1526,7 +1526,7 @@ P911.DE,Dr Ing Hc F Porsche Prf Ag,P911,Xetra,Deutschland,Zyklischer Konsum,EUR,
 2382.HK,Sunny Optical Technology Ltd,2382,Hong Kong Exchanges And Clearing Ltd,China,IT,HKD,KYG8586D1097,iShares MSCI ACWI,True,China|SUNNY OPTICAL TECHNOLOGY
 RXL.PA,Rexel Sa,RXL,Nyse Euronext - Euronext Paris,Frankreich,Industrie,EUR,FR0010451203,iShares MSCI ACWI,False,Frankreich|REXEL
 XP,Xp Class A Inc,XP,NASDAQ,Brasilien,Finanzen,USD,KYG982391099,iShares MSCI ACWI,True,Brasilien|XP
-ASURB.MX,Grupo Aeroportuario Del Sureste B,ASURB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL SURESTE
+ASURB.MX,Grupo Aeroportuario Del Sureste B,ASURB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,MXP001661018,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL SURESTE
 AUBANK.NS,Au Small Finance Bank,AUBANK,National Stock Exchange Of India,Indien,Finanzen,INR,INE949L01017,iShares MSCI ACWI,True,Indien|AU SMALL FINANCE BANK
 AC.MX,Arca Continental,AC*,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,MX01AC100006,iShares MSCI ACWI,True,Mexiko|ARCA CONTINENTAL
 047810.KS,Korea Aerospace Industries,047810,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7047810007,iShares MSCI ACWI,True,Südkorea|KOREA AEROSPACE INDUSTRIES
@@ -1543,7 +1543,7 @@ HARL.TA,Harel Insurance Investments & Fina,HARL,Tel Aviv Stock Exchange,Israel,F
 GJF.OL,Gjensidige Forsikring,GJF,Oslo Bors Asa,Norwegen,Finanzen,NOK,NO0010582521,iShares MSCI ACWI,False,Norwegen|GJENSIDIGE FORSIKRING
 HAG.DE,Hensoldt Ag,HAG,Xetra,Deutschland,Industrie,EUR,DE000HAG0005,iShares MSCI ACWI,False,Deutschland|HENSOLDT
 9602.T,Toho (Tokyo),9602,Tokyo Stock Exchange,Japan,Kommunikation,JPY,JP3598600009,iShares MSCI ACWI,False,Japan|TOHO TOKYO
-0300.HK,Midea Group Class H,300,Hong Kong Exchanges And Clearing Ltd,China,Zyklischer Konsum,HKD,CNE100001QQ5,iShares MSCI ACWI,True,China|MIDEA GROUP
+0300.HK,Midea Group Class H,300,Hong Kong Exchanges And Clearing Ltd,China,Zyklischer Konsum,HKD,CNE100006M58,iShares MSCI ACWI,True,China|MIDEA GROUP
 INDUSINDBK.NS,Indusind Bank,INDUSINDBK,National Stock Exchange Of India,Indien,Finanzen,INR,INE095A01012,iShares MSCI ACWI,True,Indien|INDUSIND BANK
 7181.T,Japan Post Insurance Ltd,7181,Tokyo Stock Exchange,Japan,Finanzen,JPY,JP3233250004,iShares MSCI ACWI,False,Japan|JAPAN POST INSURANCE
 CGPOWER.NS,Cg Power And Industrial Solutions,CGPOWER,National Stock Exchange Of India,Indien,Industrie,INR,INE067A01029,iShares MSCI ACWI,True,Indien|CG POWER AND INDUSTRIAL SOLUTIONS
@@ -1570,7 +1570,7 @@ BMED.MI,Banca Mediolanum,BMED,Borsa Italiana,Italien,Finanzen,EUR,IT0004776628,i
 GAIL.NS,Gail India Ltd,GAIL,National Stock Exchange Of India,Indien,Versorger,INR,INE129A01019,iShares MSCI ACWI,True,Indien|GAIL INDIA
 2618.TW,Eva Airways,2618,Taiwan Stock Exchange,Taiwan,Industrie,TWD,TW0002618006,iShares MSCI ACWI,True,Taiwan|EVA AIRWAYS
 3692.HK,Hansoh Pharmaceutical Group,3692,Hong Kong Exchanges And Clearing Ltd,China,Gesundheit,HKD,KYG549581067,iShares MSCI ACWI,True,China|HANSOH PHARMACEUTICAL GROUP
-2338.HK,Weichai Power Ltd H,2338,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE1000000D4,iShares MSCI ACWI,True,China|WEICHAI POWER
+2338.HK,Weichai Power Ltd H,2338,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE1000004L9,iShares MSCI ACWI,True,China|WEICHAI POWER
 PETGAS.KL,Petronas Gas,PETGAS,Bursa Malaysia,Malaysia,Versorger,MYR,MYL6033OO004,iShares MSCI ACWI,True,Malaysia|PETRONAS GAS
 DIXON.NS,Dixon Technologies (India) Ltd,DIXON,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE935N01020,iShares MSCI ACWI,True,Indien|DIXON TECHNOLOGIES INDIA
 ABVX.PA,Abivax Sa,ABVX,Nyse Euronext - Euronext Paris,Frankreich,Gesundheit,EUR,FR0012333284,iShares MSCI ACWI,False,Frankreich|ABIVAX
@@ -1581,7 +1581,7 @@ IHH.KL,Ihh Healthcare,IHH,Bursa Malaysia,Malaysia,Gesundheit,MYR,MYL5225OO007,iS
 WIPRO.NS,Wipro,WIPRO,National Stock Exchange Of India,Indien,IT,INR,INE075A01022,iShares MSCI ACWI,True,Indien|WIPRO
 6841.T,Yokogawa Electric,6841,Tokyo Stock Exchange,Japan,IT,JPY,JP3955000009,iShares MSCI ACWI,False,Japan|YOKOGAWA ELECTRIC
 PHOENIXLTD.NS,Phoenix Mills,PHOENIXLTD,National Stock Exchange Of India,Indien,Immobilien,INR,INE211B01039,iShares MSCI ACWI,True,Indien|PHOENIX MILLS
-COMI.CA,Commercial International Bank Egyp,COMI,Egyptian Exchange,Ägypten,Finanzen,EGP,QA0007227752,iShares MSCI ACWI,True,Ägypten|COMMERCIAL INTERNATIONAL BANK EGYP
+COMI.CA,Commercial International Bank Egyp,COMI,Egyptian Exchange,Ägypten,Finanzen,EGP,EGS60121C018,iShares MSCI ACWI,True,Ägypten|COMMERCIAL INTERNATIONAL BANK EGYP
 BBSE3.SA,Bb Seguridade Sa,BBSE3,XBSP,Brasilien,Finanzen,BRL,BRBBSEACNOR5,iShares MSCI ACWI,True,Brasilien|BB SEGURIDADE
 BIMBOA.MX,Grupo Bimbo A,BIMBOA,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,MXP495211262,iShares MSCI ACWI,True,Mexiko|GRUPO BIMBO
 7911.T,Toppan Holdings,7911,Tokyo Stock Exchange,Japan,Industrie,JPY,JP3629000005,iShares MSCI ACWI,False,Japan|TOPPAN HOLDINGS
@@ -1601,10 +1601,10 @@ ICICIGI.NS,Icici Lombard General Insurance Co,ICICIGI,National Stock Exchange Of
 MOL.BD,Mol Hungarian Oil And Gas,MOL,Budapest Stock Exchange,Ungarn,Energie,HUF,,iShares MSCI ACWI,True,Ungarn|MOL HUNGARIAN OIL AND GAS
 DNP.WA,Dino Polska,DNP,Warsaw Stock Exchange/Equities/Main Market,Polen,Basiskonsum,PLN,PLDINPL00011,iShares MSCI ACWI,True,Polen|DINO POLSKA
 DIE.BR,Dieteren (D) Sa,DIE,Nyse Euronext - Euronext Brussels,Belgien,Zyklischer Konsum,EUR,BE0974259880,iShares MSCI ACWI,False,Belgien|DIETEREN
-4768.T,Otsuka Corp,4768,Tokyo Stock Exchange,Japan,IT,JPY,,iShares MSCI ACWI,False,Japan|OTSUKA
+4768.T,Otsuka Corp,4768,Tokyo Stock Exchange,Japan,IT,JPY,JP3188200004,iShares MSCI ACWI,False,Japan|OTSUKA
 DU.AE,Emirates Integrated Telecommunicat,DU,Dubai Financial Market,VAE,Kommunikation,AED,,iShares MSCI ACWI,True,VAE|EMIRATES INTEGRATED TELECOMMUNICAT
 BELA.AT,Jumbo,BELA,Athens Exchange S.A. Cash Market,Griechenland,Zyklischer Konsum,EUR,GRS282183003,iShares MSCI ACWI,True,Griechenland|JUMBO
-1919.HK,Cosco Shipping Holdings Ltd H,1919,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE1000002S8,iShares MSCI ACWI,True,China|COSCO SHIPPING HOLDINGS
+1919.HK,Cosco Shipping Holdings Ltd H,1919,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,CNE1000002J7,iShares MSCI ACWI,True,China|COSCO SHIPPING HOLDINGS
 UNITDSPR.NS,United Spirits,UNITDSPR,National Stock Exchange Of India,Indien,Basiskonsum,INR,INE854D01024,iShares MSCI ACWI,True,Indien|UNITED SPIRITS
 005830.KS,Db Insurance Ltd,005830,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7005830005,iShares MSCI ACWI,True,Südkorea|DB INSURANCE
 ADNOCDRILL.AD,Adnoc Drilling Company,ADNOCDRILL,Abu Dhabi Securities Exchange,VAE,Energie,AED,AEA007301012,iShares MSCI ACWI,True,VAE|ADNOC DRILLING COMPANY
@@ -1620,8 +1620,8 @@ IREN,Iren,IREN,NASDAQ,USA,IT,USD,AU0000185993,iShares MSCI ACWI,False,USA|IREN
 4013.SR,Dr Sulaiman Al Habib Medical Grp,4013,Saudi Stock Exchange,Saudi-Arabien,Gesundheit,SAR,SA1510P1UMH1,iShares MSCI ACWI,True,Saudi-Arabien|DR SULAIMAN AL HABIB MEDICAL GRP
 JBS,Jbs N V Nv Class A,JBS,NYSE,Brasilien,Basiskonsum,USD,NL0015002J37,iShares MSCI ACWI,True,Brasilien|JBS
 UGPA3.SA,Ultrapar Participoes Sa,UGPA3,XBSP,Brasilien,Zyklischer Konsum,BRL,BRUGPAACNOR8,iShares MSCI ACWI,True,Brasilien|ULTRAPAR PARTICIPOES
-0836.HK,China Resources Power Ltd,836,Hong Kong Exchanges And Clearing Ltd,China,Versorger,HKD,,iShares MSCI ACWI,True,China|CHINA RESOURCES POWER
-0291.HK,China Resources Beer Holdings Ltd,291,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,,iShares MSCI ACWI,True,China|CHINA RESOURCES BEER HOLDINGS
+0836.HK,China Resources Power Ltd,836,Hong Kong Exchanges And Clearing Ltd,China,Versorger,HKD,HK0836012952,iShares MSCI ACWI,True,China|CHINA RESOURCES POWER
+0291.HK,China Resources Beer Holdings Ltd,291,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,HK0291001490,iShares MSCI ACWI,True,China|CHINA RESOURCES BEER HOLDINGS
 NYKAA.NS,Fsn E-Commerce Ventures,NYKAA,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE388Y01029,iShares MSCI ACWI,True,Indien|FSN E COMMERCE VENTURES
 ELISA.HE,Elisa,ELISA,Nasdaq Omx Helsinki Ltd.,Finnland,Kommunikation,EUR,FI0009007884,iShares MSCI ACWI,False,Finnland|ELISA
 042700.KS,Hanmi Semiconductor,042700,Korea Exchange (Stock Market),Südkorea,IT,KRW,KR7042700005,iShares MSCI ACWI,True,Südkorea|HANMI SEMICONDUCTOR
@@ -1632,7 +1632,7 @@ KOFUBL.MX,Coca-Cola Femsa Class Ubl Units,KOFUBL,Bolsa Mexicana De Valores,Mexik
 RENT3.SA,Localiza Rent A Car,RENT3,XBSP,Brasilien,Industrie,BRL,BRRENTACNOR4,iShares MSCI ACWI,True,Brasilien|LOCALIZA RENT A CAR
 OPCE.TA,Opc Energy Ltd,OPCE,Tel Aviv Stock Exchange,Israel,Versorger,ILA,IL0011415713,iShares MSCI ACWI,False,Israel|OPC ENERGY
 OUT.JO,Outsurance Group,OUT,Johannesburg Stock Exchange,Südafrika,Finanzen,ZAc,ZAE000314084,iShares MSCI ACWI,True,Südafrika|OUTSURANCE GROUP
-0788.HK,China Tower Corp Ltd H,788,Hong Kong Exchanges And Clearing Ltd,China,Kommunikation,HKD,CNE100006V65,iShares MSCI ACWI,True,China|CHINA TOWER
+0788.HK,China Tower Corp Ltd H,788,Hong Kong Exchanges And Clearing Ltd,China,Kommunikation,HKD,,iShares MSCI ACWI,True,China|CHINA TOWER
 2259.HK,Zijin Gold International Ltd,2259,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,HK0001200002,iShares MSCI ACWI,True,China|ZIJIN GOLD INTERNATIONAL
 BCI.SN,Banco De Credito E Inversion,BCI,Santiago Stock Exchange,Chile,Finanzen,CLP,CLP321331116,iShares MSCI ACWI,True,Chile|BANCO DE CREDITO E INVERSION
 IOC.NS,Indian Oil Corp,IOC,National Stock Exchange Of India,Indien,Energie,INR,INE242A01010,iShares MSCI ACWI,True,Indien|INDIAN OIL
@@ -1681,7 +1681,7 @@ GODREJCP.NS,Godrej Consumer Products Ltd,GODREJCP,National Stock Exchange Of Ind
 ICL.TA,Icl Group,ICL,Tel Aviv Stock Exchange,Israel,Rohstoffe,ILA,IL0002810146,iShares MSCI ACWI,False,Israel|ICL GROUP
 ANA.MC,Acciona,ANA,Bolsa De Madrid,Spanien,Versorger,EUR,ES0125220311,iShares MSCI ACWI,False,Spanien|ACCIONA
 BAAKOMB.PR,Komercni Bank,BAAKOMB,Prague Stock Exchange,Tschechien,Finanzen,CZK,CZ0008019106,iShares MSCI ACWI,True,Tschechien|KOMERCNI BANK
-OMAB.MX,Grupo Aeroportuario Del Centro Nor,OMAB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL CENTRO NOR
+OMAB.MX,Grupo Aeroportuario Del Centro Nor,OMAB,Bolsa Mexicana De Valores,Mexiko,Industrie,MXN,MX01OM000018,iShares MSCI ACWI,True,Mexiko|GRUPO AEROPORTUARIO DEL CENTRO NOR
 EMAARDEV.AE,Emaar Development,EMAARDEV,Dubai Financial Market,VAE,Immobilien,AED,AEE001901017,iShares MSCI ACWI,True,VAE|EMAAR DEVELOPMENT
 AKBNK-E.IS,Akbank A,AKBNK.E,Istanbul Stock Exchange,Türkei,Finanzen,TRY,,iShares MSCI ACWI,True,Türkei|AKBANK
 6488.TWO,Globalwafers Ltd,6488,Gretai Securities Market,Taiwan,IT,TWD,TW0006488000,iShares MSCI ACWI,True,Taiwan|GLOBALWAFERS
@@ -1690,7 +1690,7 @@ AMBANK.KL,Ammb Holdings,AMBANK,Bursa Malaysia,Malaysia,Finanzen,MYR,,iShares MSC
 BVN,Buenaventura Adr Representing,BVN,NYSE,Peru,Rohstoffe,USD,,iShares MSCI ACWI,True,Peru|BUENAVENTURA ADR REPRESENTING
 096770.KS,Sk Innovation Ltd,096770,Korea Exchange (Stock Market),Südkorea,Energie,KRW,KR7096770003,iShares MSCI ACWI,True,Südkorea|SK INNOVATION
 002371.SZ,Naura Technology Group Ltd A,002371,Shenzhen Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|NAURA TECHNOLOGY GROUP
-BEPC.TO,Brookfield Renewable Subordinate V,BEPC,Toronto Stock Exchange,Kanada,Versorger,CAD,,iShares MSCI ACWI,False,Kanada|BROOKFIELD RENEWABLE SUBORDINATE
+BEPC.TO,Brookfield Renewable Subordinate V,BEPC,Toronto Stock Exchange,Kanada,Versorger,CAD,CA11285B1085,iShares MSCI ACWI,False,Kanada|BROOKFIELD RENEWABLE SUBORDINATE
 071050.KS,Korea Investment Holdings Ltd,071050,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7071050009,iShares MSCI ACWI,True,Südkorea|KOREA INVESTMENT HOLDINGS
 6869.HK,Yangtze Optical Fibre And Cable Jo,6869,Hong Kong Exchanges And Clearing Ltd,China,IT,HKD,CNE100001T72,iShares MSCI ACWI,True,China|YANGTZE OPTICAL FIBRE AND CABLE JO
 2099.HK,China Gold International Resources,2099,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CA16890P1036,iShares MSCI ACWI,True,China|CHINA GOLD INTERNATIONAL RESOURCES
@@ -1758,13 +1758,13 @@ BPI.PS,Bank Of The Philippine Islands,BPI,Philippine Stock Exchange Inc.,Philipp
 MUTHOOTFIN.NS,Muthoot Finance Ltd,MUTHOOTFIN,National Stock Exchange Of India,Indien,Finanzen,INR,INE414G01012,iShares MSCI ACWI,True,Indien|MUTHOOT FINANCE
 KCHOL-E.IS,Koc Holding A,KCHOL.E,Istanbul Stock Exchange,Türkei,Industrie,TRY,,iShares MSCI ACWI,True,Türkei|KOC HOLDING
 IVN.TO,Ivanhoe Mines Class A,IVN,Toronto Stock Exchange,Kanada,Rohstoffe,CAD,CA46579R1047,iShares MSCI ACWI,False,Kanada|IVANHOE MINES
-1336.HK,New China Life Insurance Company L,1336,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000019Y0,iShares MSCI ACWI,True,China|NEW CHINA LIFE INSURANCE COMPANY
-CBQK.QA,Commercial Bank Of Qatar,CBQK,Qatar Exchange,Katar,Finanzen,QAR,,iShares MSCI ACWI,True,Katar|COMMERCIAL BANK OF QATAR
+1336.HK,New China Life Insurance Company L,1336,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100001922,iShares MSCI ACWI,True,China|NEW CHINA LIFE INSURANCE COMPANY
+CBQK.QA,Commercial Bank Of Qatar,CBQK,Qatar Exchange,Katar,Finanzen,QAR,QA0007227752,iShares MSCI ACWI,True,Katar|COMMERCIAL BANK OF QATAR
 LENSKART.NS,Lenskart Solutions Ltd,LENSKART,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,,iShares MSCI ACWI,True,Indien|LENSKART SOLUTIONS
 PCHEM.KL,Petronas Chemicals Group,PCHEM,Bursa Malaysia,Malaysia,Rohstoffe,MYR,MYL5183OO008,iShares MSCI ACWI,True,Malaysia|PETRONAS CHEMICALS GROUP
 247540.KQ,Ecopro Bm Ltd,247540,Korea Exchange (Kosdaq),Südkorea,Industrie,KRW,KR7247540008,iShares MSCI ACWI,True,Südkorea|ECOPRO BM
 FALABELLA.SN,Falabella Saci,FALABELLA,Santiago Stock Exchange,Chile,Zyklischer Konsum,CLP,CLP3880F1085,iShares MSCI ACWI,True,Chile|FALABELLA SACI
-1138.HK,Cosco Shipping Energy Transportati,1138,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,,iShares MSCI ACWI,True,China|COSCO SHIPPING ENERGY TRANSPORTATI
+1138.HK,Cosco Shipping Energy Transportati,1138,Hong Kong Exchanges And Clearing Ltd,China,Energie,HKD,CNE1000002S8,iShares MSCI ACWI,True,China|COSCO SHIPPING ENERGY TRANSPORTATI
 VOLTAS.NS,Voltas Ltd,VOLTAS,National Stock Exchange Of India,Indien,Zyklischer Konsum,INR,INE226A01021,iShares MSCI ACWI,True,Indien|VOLTAS
 MIL.WA,Bank Millennium Sa,MIL,Warsaw Stock Exchange/Equities/Main Market,Polen,Finanzen,PLN,PLBIG0000016,iShares MSCI ACWI,True,Polen|BANK MILLENNIUM
 ADANIENSOL.NS,Adani Energy Solutions Ltd,ADANIENSOL,National Stock Exchange Of India,Indien,Versorger,INR,,iShares MSCI ACWI,True,Indien|ADANI ENERGY SOLUTIONS
@@ -1796,12 +1796,12 @@ CVC.AS,Cvc Capital Partners Plc,CVC,Euronext Amsterdam,Niederlande,Finanzen,EUR,
 CLS.JO,Clicks Group,CLS,Johannesburg Stock Exchange,Südafrika,Basiskonsum,ZAc,ZAE000134854,iShares MSCI ACWI,True,Südafrika|CLICKS GROUP
 RICHTER.BD,Gedeon Richter,RICHTER,Budapest Stock Exchange,Ungarn,Gesundheit,HUF,,iShares MSCI ACWI,True,Ungarn|GEDEON RICHTER
 SALM.OL,Salmar,SALM,Oslo Bors Asa,Norwegen,Basiskonsum,NOK,NO0010310956,iShares MSCI ACWI,False,Norwegen|SALMAR
-6030.HK,Citic Securities Company H,6030,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE000001DB6,iShares MSCI ACWI,True,China|CITIC SECURITIES COMPANY
-BBDC3.SA,Banco Bradesco,BBDC3,XBSP,Brasilien,Finanzen,BRL,,iShares MSCI ACWI,True,Brasilien|BANCO BRADESCO
+6030.HK,Citic Securities Company H,6030,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000016V2,iShares MSCI ACWI,True,China|CITIC SECURITIES COMPANY
+BBDC3.SA,Banco Bradesco,BBDC3,XBSP,Brasilien,Finanzen,BRL,BRBBDCACNOR1,iShares MSCI ACWI,True,Brasilien|BANCO BRADESCO
 AMBUJACEM.NS,Ambuja Cements Ltd,AMBUJACEM,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE079A01024,iShares MSCI ACWI,True,Indien|AMBUJA CEMENTS
 000100.KS,Yuhan,000100,Korea Exchange (Stock Market),Südkorea,Gesundheit,KRW,KR7000100008,iShares MSCI ACWI,True,Südkorea|YUHAN
 267250.KS,Hd Hyundai Ltd,267250,Korea Exchange (Stock Market),Südkorea,Energie,KRW,KR7267250009,iShares MSCI ACWI,True,Südkorea|HD HYUNDAI
-0144.HK,China Merchants Port Holdings Ltd,144,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,,iShares MSCI ACWI,True,China|CHINA MERCHANTS PORT HOLDINGS
+0144.HK,China Merchants Port Holdings Ltd,144,Hong Kong Exchanges And Clearing Ltd,China,Industrie,HKD,HK0144000764,iShares MSCI ACWI,True,China|CHINA MERCHANTS PORT HOLDINGS
 1208.HK,Mmg Ltd,1208,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,HK1208013172,iShares MSCI ACWI,True,China|MMG
 YTLPOWR.KL,Ytl Power International,YTLPOWR,Bursa Malaysia,Malaysia,Versorger,MYR,MYL6742OO000,iShares MSCI ACWI,True,Malaysia|YTL POWER INTERNATIONAL
 JSL.NS,Jindal Stainless Ltd,JSL,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE220G01021,iShares MSCI ACWI,True,Indien|JINDAL STAINLESS
@@ -1813,11 +1813,11 @@ TIINDIA.NS,Tube Investments Of India Ltd,TIINDIA,National Stock Exchange Of Indi
 4151.T,Kyowa Kirin Ltd,4151,Tokyo Stock Exchange,Japan,Gesundheit,JPY,JP3256000005,iShares MSCI ACWI,False,Japan|KYOWA KIRIN
 PRESTIGE.NS,Prestige Estates Projects,PRESTIGE,National Stock Exchange Of India,Indien,Immobilien,INR,INE811K01011,iShares MSCI ACWI,True,Indien|PRESTIGE ESTATES PROJECTS
 SUNDARMFIN.NS,Sundaram Finance Ltd,SUNDARMFIN,National Stock Exchange Of India,Indien,Finanzen,INR,INE660A01013,iShares MSCI ACWI,True,Indien|SUNDARAM FINANCE
-ENRIN.NS,Siemens Energy India Ltd,ENRIN,National Stock Exchange Of India,Indien,Industrie,INR,,iShares MSCI ACWI,True,Indien|SIEMENS ENERGY INDIA
+ENRIN.NS,Siemens Energy India Ltd,ENRIN,National Stock Exchange Of India,Indien,Industrie,INR,INE1NPP01017,iShares MSCI ACWI,True,Indien|SIEMENS ENERGY INDIA
 LUND-B.ST,Lundbergforetagen Class B,LUND B,Nasdaq Omx Nordic,Schweden,Finanzen,SEK,,iShares MSCI ACWI,False,Schweden|LUNDBERGFORETAGEN
 F34.SI,Wilmar International,F34,Singapore Exchange,Singapur,Basiskonsum,SGD,SG1T56930848,iShares MSCI ACWI,False,Singapur|WILMAR INTERNATIONAL
 LTF.NS,L&T Finance Ltd,LTF,National Stock Exchange Of India,Indien,Finanzen,INR,INE498L01015,iShares MSCI ACWI,True,Indien|L&T FINANCE
-3908.HK,China International Capital H,3908,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE1000048J0,iShares MSCI ACWI,True,China|CHINA INTERNATIONAL CAPITAL
+3908.HK,China International Capital H,3908,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100002359,iShares MSCI ACWI,True,China|CHINA INTERNATIONAL CAPITAL
 000150.KS,Doosan Corp,000150,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7000150003,iShares MSCI ACWI,True,Südkorea|DOOSAN
 600674.SS,Sichuan Chuantou Energy Ltd A,600674,Shanghai Stock Exchange,China,Versorger,CNY,,iShares MSCI ACWI,True,China|SICHUAN CHUANTOU ENERGY
 VEDL.NS,Vedanta Ltd,VEDL,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE205A01025,iShares MSCI ACWI,True,Indien|VEDANTA
@@ -1861,7 +1861,7 @@ JSWENERGY.NS,Jsw Energy Ltd,JSWENERGY,National Stock Exchange Of India,Indien,Ve
 601816.SS,Beijing-Shanghai High Speed Railwa,601816,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|BEIJING SHANGHAI HIGH SPEED RAILWA
 ZYDUSLIFE.NS,Zydus Lifesciences Ltd,ZYDUSLIFE,National Stock Exchange Of India,Indien,Gesundheit,INR,INE010B01027,iShares MSCI ACWI,True,Indien|ZYDUS LIFESCIENCES
 SIGMAFA.MX,Alfa A,SIGMAFA,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,,iShares MSCI ACWI,True,Mexiko|ALFA
-1209.HK,China Resources Mixc Lifestyle Ser,1209,Hong Kong Exchanges And Clearing Ltd,China,Immobilien,HKD,,iShares MSCI ACWI,True,China|CHINA RESOURCES MIXC LIFESTYLE SER
+1209.HK,China Resources Mixc Lifestyle Ser,1209,Hong Kong Exchanges And Clearing Ltd,China,Immobilien,HKD,KYG2122G1064,iShares MSCI ACWI,True,China|CHINA RESOURCES MIXC LIFESTYLE SER
 2356.TW,Inventec,2356,Taiwan Stock Exchange,Taiwan,IT,TWD,TW0002356003,iShares MSCI ACWI,True,Taiwan|INVENTEC
 COROMANDEL.NS,Coromandel International Ltd,COROMANDEL,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE169A01031,iShares MSCI ACWI,True,Indien|COROMANDEL INTERNATIONAL
 003490.KS,Korean Air Lines,003490,Korea Exchange (Stock Market),Südkorea,Industrie,KRW,KR7003490000,iShares MSCI ACWI,True,Südkorea|KOREAN AIR LINES
@@ -1959,7 +1959,7 @@ DUBK.QA,Dukhan Bank,DUBK,Qatar Exchange,Katar,Finanzen,QAR,QA000B982PM1,iShares 
 601818.SS,China Everbright Bank Ltd A,601818,Shanghai Stock Exchange,China,Finanzen,CNY,,iShares MSCI ACWI,True,China|CHINA EVERBRIGHT BANK
 NMDC.NS,Nmdc Ltd,NMDC,National Stock Exchange Of India,Indien,Rohstoffe,INR,INE584A01023,iShares MSCI ACWI,True,Indien|NMDC
 002001.SZ,Zhejiang Nhu A,002001,Shenzhen Stock Exchange,China,Rohstoffe,CNY,,iShares MSCI ACWI,True,China|ZHEJIANG NHU
-KIMBERA.MX,Kimberly-Clark De Mexico Class A,KIMBERA,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,,iShares MSCI ACWI,True,Mexiko|KIMBERLY CLARK DE MEXICO
+KIMBERA.MX,Kimberly-Clark De Mexico Class A,KIMBERA,Bolsa Mexicana De Valores,Mexiko,Basiskonsum,MXN,MXP606941179,iShares MSCI ACWI,True,Mexiko|KIMBERLY CLARK DE MEXICO
 1044.HK,Hengan International Group,1044,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,KYG4402L1510,iShares MSCI ACWI,True,China|HENGAN INTERNATIONAL GROUP
 ENELCHILE.SN,Enel Chile Sa,ENELCHILE,Santiago Stock Exchange,Chile,Versorger,CLP,,iShares MSCI ACWI,True,Chile|ENEL CHILE
 MAP.MC,Mapfre Sa,MAP,Bolsa De Madrid,Spanien,Finanzen,EUR,ES0124244E34,iShares MSCI ACWI,False,Spanien|MAPFRE
@@ -1977,7 +1977,7 @@ GROWW.NS,Billionbrains Garage Ventures Ltd,GROWW,National Stock Exchange Of Indi
 4100.SR,Makkah Construction And Developmen,4100,Saudi Stock Exchange,Saudi-Arabien,Immobilien,SAR,SA0007879659,iShares MSCI ACWI,True,Saudi-Arabien|MAKKAH CONSTRUCTION AND DEVELOPMEN
 PETRONET.NS,Petronet Lng,PETRONET,National Stock Exchange Of India,Indien,Energie,INR,INE347G01014,iShares MSCI ACWI,True,Indien|PETRONET LNG
 MPHASIS.NS,Mphasis Ltd,MPHASIS,National Stock Exchange Of India,Indien,IT,INR,INE356A01018,iShares MSCI ACWI,True,Indien|MPHASIS
-1193.HK,China Resources Gas Group Ltd,1193,Hong Kong Exchanges And Clearing Ltd,China,Versorger,HKD,,iShares MSCI ACWI,True,China|CHINA RESOURCES GAS GROUP
+1193.HK,China Resources Gas Group Ltd,1193,Hong Kong Exchanges And Clearing Ltd,China,Versorger,HKD,BMG2113B1081,iShares MSCI ACWI,True,China|CHINA RESOURCES GAS GROUP
 603893.SS,Rockchip Electronics Ltd A,603893,Shanghai Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|ROCKCHIP ELECTRONICS
 ICICILIFE.NS,Icici Life Insurance Ltd,ICICILIFE,National Stock Exchange Of India,Indien,Finanzen,INR,,iShares MSCI ACWI,True,Indien|ICICI LIFE INSURANCE
 0241.HK,Alibaba Health Information Tech,241,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,BMG0171K1018,iShares MSCI ACWI,True,China|ALIBABA HEALTH INFORMATION TECH
@@ -2004,7 +2004,7 @@ ACP.WA,Asseco Poland Sa,ACP,Warsaw Stock Exchange/Equities/Main Market,Polen,IT,
 000792.SZ,Qinghai Salt Lake Industry Ltd A,000792,Shenzhen Stock Exchange,China,Rohstoffe,CNY,,iShares MSCI ACWI,True,China|QINGHAI SALT LAKE INDUSTRY
 2290.SR,Yanbu National Petrochemicals,2290,Saudi Stock Exchange,Saudi-Arabien,Rohstoffe,SAR,SA000A0HNF36,iShares MSCI ACWI,True,Saudi-Arabien|YANBU NATIONAL PETROCHEMICALS
 TATACOMM.NS,Tata Communications Ltd,TATACOMM,National Stock Exchange Of India,Indien,Kommunikation,INR,INE151A01013,iShares MSCI ACWI,True,Indien|TATA COMMUNICATIONS
-024110.KS,Industrial Bank Of Korea,024110,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,,iShares MSCI ACWI,True,Südkorea|INDUSTRIAL BANK OF KOREA
+024110.KS,Industrial Bank Of Korea,024110,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7024110009,iShares MSCI ACWI,True,Südkorea|INDUSTRIAL BANK OF KOREA
 002311.SZ,Guangdong Haid Group Ltd A,002311,Shenzhen Stock Exchange,China,Basiskonsum,CNY,,iShares MSCI ACWI,True,China|GUANGDONG HAID GROUP
 603986.SS,Gigadevice Semiconductor Inc A,603986,Shanghai Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|GIGADEVICE SEMICONDUCTOR
 0151.HK,Want Want China Holdings,151,Hong Kong Exchanges And Clearing Ltd,China,Basiskonsum,HKD,KYG9431R1039,iShares MSCI ACWI,True,China|WANT WANT CHINA HOLDINGS
@@ -2014,7 +2014,7 @@ TATACOMM.NS,Tata Communications Ltd,TATACOMM,National Stock Exchange Of India,In
 688120.SS,Hwatsing Technology Ltd A,688120,Shanghai Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|HWATSING TECHNOLOGY
 EREGL-E.IS,Eregli Demir Ve Celik Fabrikalari,EREGL.E,Istanbul Stock Exchange,Türkei,Rohstoffe,TRY,TRAEREGL91G3,iShares MSCI ACWI,True,Türkei|EREGLI DEMIR VE CELIK FABRIKALARI
 600089.SS,Tbea Ltd A,600089,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|TBEA
-1787.HK,Shandong Gold Mining Ltd H,1787,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE000001FR7,iShares MSCI ACWI,True,China|SHANDONG GOLD MINING
+1787.HK,Shandong Gold Mining Ltd H,1787,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE1000036N7,iShares MSCI ACWI,True,China|SHANDONG GOLD MINING
 2333.HK,Great Wall Motor Company Ltd H,2333,Hong Kong Exchanges And Clearing Ltd,China,Zyklischer Konsum,HKD,CNE100000338,iShares MSCI ACWI,True,China|GREAT WALL MOTOR COMPANY
 900948.SS,Inner Mongolia Yitai Coal Ltd B,900948,Shanghai Stock Exchange,China,Energie,CNY,,iShares MSCI ACWI,True,China|INNER MONGOLIA YITAI COAL
 000725.SZ,Boe Technology Group Ltd A,000725,Shenzhen Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|BOE TECHNOLOGY GROUP
@@ -2038,7 +2038,7 @@ GEKTERNA.AT,Gek Terna,GEKTERNA,Athens Exchange S.A. Cash Market,Griechenland,Ind
 002241.SZ,Goertek A,002241,Shenzhen Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|GOERTEK
 601872.SS,China Merchants Energy Shipping Lt,601872,Shanghai Stock Exchange,China,Energie,CNY,,iShares MSCI ACWI,True,China|CHINA MERCHANTS ENERGY SHIPPING LT
 601766.SS,Crrc Corp A,601766,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|CRRC
-1776.HK,Gf Securities H,1776,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE0000008L2,iShares MSCI ACWI,True,China|GF SECURITIES
+1776.HK,Gf Securities H,1776,Hong Kong Exchanges And Clearing Ltd,China,Finanzen,HKD,CNE100001TQ9,iShares MSCI ACWI,True,China|GF SECURITIES
 0916.HK,China Longyuan Power Group H,916,Hong Kong Exchanges And Clearing Ltd,China,Versorger,HKD,CNE100000HD4,iShares MSCI ACWI,True,China|CHINA LONGYUAN POWER GROUP
 688396.SS,China Resources Microelectronics L,688396,Shanghai Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|CHINA RESOURCES MICROELECTRONICS
 600015.SS,Hua Xia Bank Ltd A,600015,Shanghai Stock Exchange,China,Finanzen,CNY,,iShares MSCI ACWI,True,China|HUA XIA BANK
@@ -2053,7 +2053,7 @@ GEKTERNA.AT,Gek Terna,GEKTERNA,Athens Exchange S.A. Cash Market,Griechenland,Ind
 005940.KS,Nh Investment & Securities,005940,Korea Exchange (Stock Market),Südkorea,Finanzen,KRW,KR7005940002,iShares MSCI ACWI,True,Südkorea|NH INVESTMENT & SECURITIES
 AC.PS,Ayala Corp,AC,Philippine Stock Exchange Inc.,Philippinen,Industrie,PHP,PHY0486V1154,iShares MSCI ACWI,True,Philippinen|AYALA
 1030.SR,Saudi Investment Bank,1030,Saudi Stock Exchange,Saudi-Arabien,Finanzen,SAR,SA0007879063,iShares MSCI ACWI,True,Saudi-Arabien|SAUDI INVESTMENT BANK
-AXIA7.SA,Axia Energia Prf Sa,AXIA7,XBSP,Brasilien,Versorger,BRL,,iShares MSCI ACWI,True,Brasilien|AXIA ENERGIA
+AXIA7.SA,Axia Energia Prf Sa,AXIA7,XBSP,Brasilien,Versorger,BRL,BRAXIAACNPC9,iShares MSCI ACWI,True,Brasilien|AXIA ENERGIA
 000568.SZ,Luzhou Lao Jiao Ltd A,000568,Shenzhen Stock Exchange,China,Basiskonsum,CNY,,iShares MSCI ACWI,True,China|LUZHOU LAO JIAO
 000425.SZ,Xcmg Construction Machinery A,000425,Shenzhen Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|XCMG CONSTRUCTION MACHINERY
 600111.SS,China Northern Rare Earth (Group),600111,Shanghai Stock Exchange,China,Rohstoffe,CNY,,iShares MSCI ACWI,True,China|CHINA NORTHERN RARE EARTH GROUP
@@ -2103,7 +2103,7 @@ ISA.CL,Interconexion Electrica Sa,ISA,Bolsa De Valores De Colombia,Kolumbien,Ver
 9995.HK,Remegen H,9995,Hong Kong Exchanges And Clearing Ltd,China,Gesundheit,HKD,CNE1000048G6,iShares MSCI ACWI,True,China|REMEGEN
 300604.SZ,Hangzhou Chang Chuan Technology Lt,300604,Shenzhen Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|HANGZHOU CHANG CHUAN TECHNOLOGY LT
 600115.SS,China Eastern Airlines Corp Ltd A,600115,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|CHINA EASTERN AIRLINES
-3323.HK,China National Building Material L,3323,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE1000022N7,iShares MSCI ACWI,True,China|CHINA NATIONAL BUILDING MATERIAL
+3323.HK,China National Building Material L,3323,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE1000002N9,iShares MSCI ACWI,True,China|CHINA NATIONAL BUILDING MATERIAL
 601006.SS,Daqin Railway Ltd A,601006,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|DAQIN RAILWAY
 000657.SZ,China Tungsten And Hightech Materi,000657,Shenzhen Stock Exchange,China,Rohstoffe,CNY,,iShares MSCI ACWI,True,China|CHINA TUNGSTEN AND HIGHTECH MATERI
 002493.SZ,Rongsheng Petro Chemical Ltd A,002493,Shenzhen Stock Exchange,China,Rohstoffe,CNY,,iShares MSCI ACWI,True,China|RONGSHENG PETRO CHEMICAL
@@ -2125,7 +2125,7 @@ LEGN,Legend Biotech Adr Rep,LEGN,NASDAQ,China,Gesundheit,USD,US52490G1022,iShare
 000977.SZ,Inspur Electronic Information Indu,000977,Shenzhen Stock Exchange,China,IT,CNY,,iShares MSCI ACWI,True,China|INSPUR ELECTRONIC INFORMATION INDU
 601727.SS,Shanghai Electric Group Ltd A,601727,Shanghai Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|SHANGHAI ELECTRIC GROUP
 TMGH.CA,Talaat Moustafa Group,TMGH,Egyptian Exchange,Ägypten,Immobilien,EGP,EGS691S1C011,iShares MSCI ACWI,True,Ägypten|TALAAT MOUSTAFA GROUP
-1772.HK,Ganfeng Lithium Ltd H,1772,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE100000SF6,iShares MSCI ACWI,True,China|GANFENG LITHIUM
+1772.HK,Ganfeng Lithium Ltd H,1772,Hong Kong Exchanges And Clearing Ltd,China,Rohstoffe,HKD,CNE1000031W9,iShares MSCI ACWI,True,China|GANFENG LITHIUM
 600085.SS,Beijing Tongrentang Ltd A,600085,Shanghai Stock Exchange,China,Gesundheit,CNY,,iShares MSCI ACWI,True,China|BEIJING TONGRENTANG
 300014.SZ,Eve Energy A,300014,Shenzhen Stock Exchange,China,Industrie,CNY,,iShares MSCI ACWI,True,China|EVE ENERGY
 005385.KS,Hyundai Motor S1 Pref,005385,Korea Exchange (Stock Market),Südkorea,Zyklischer Konsum,KRW,,iShares MSCI ACWI,True,Südkorea|HYUNDAI MOTOR S1
