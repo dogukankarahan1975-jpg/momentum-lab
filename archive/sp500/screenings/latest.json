@@ -1,0 +1,466 @@
+{
+ "asof": "2026-11-27",
+ "methodology_version": "1.0.0",
+ "params_hash": "9e9068d7afa0",
+ "pipeline_version": "0.9.8",
+ "status": "ok",
+ "candidates": [
+  "OKTA",
+  "ILMN",
+  "MPC",
+  "HPE",
+  "MU",
+  "NTAP",
+  "FTNT",
+  "DELL",
+  "VLO",
+  "PSX"
+ ],
+ "top_pick": "ILMN",
+ "market": {
+  "proxy": "URTH",
+  "name": "iShares MSCI World ETF (USD)",
+  "date": "2026-11-27",
+  "above_ma200": false,
+  "dist_ma200": -0.0080952,
+  "dd_from_high": -0.065481,
+  "ret_12m": 0.085865,
+  "ret_24m": 0.27322,
+  "vol_3m": 0.18613,
+  "vol_change": 0.82126,
+  "vol_shock_threshold": 0.35323,
+  "vol_shock": true,
+  "bear_state": false,
+  "breadth_above_ma200": 0.62551
+ },
+ "universe": {
+  "source": "iShares Core S&P 500 (Bestandsliste)",
+  "as_of": "Nov 25, 2026",
+  "size": 505,
+  "priced": 503,
+  "eligible": 494,
+  "excluded_by_reason": {
+   "duplicate": 3,
+   "short_history": 5,
+   "jump": 1,
+   "no_data": 2
+  },
+  "watchlist": [],
+  "kind": "sp500",
+  "size_index": 505,
+  "tradable": {
+   "checked": true,
+   "source": "Deutsche Börse, Stand 2026-11-28",
+   "kept": 505,
+   "removed": 0,
+   "removed_examples": [],
+   "removed_cn_a": 0,
+   "unchecked": 71,
+   "not_found": 3,
+   "note": "3 Aktien mit Heimat-ISIN nicht in der Frankfurt-Liste (oft nur als ADR/GDR handelbar) – nur Hinweis, nicht entfernt."
+  },
+  "emerging": 0
+ },
+ "top50": [
+  [
+   "ABBV",
+   "Abbvie",
+   1.5815,
+   38,
+   0.29352,
+   0.47026
+  ],
+  [
+   "ADP",
+   "Automatic Data Processing Inc",
+   1.5937,
+   36,
+   0.075168,
+   0.50699
+  ],
+  [
+   "AIZ",
+   "Assurant Inc",
+   1.3887,
+   49,
+   0.36887,
+   0.23827
+  ],
+  [
+   "AMD",
+   "Advanced Micro Devices",
+   1.5492,
+   41,
+   1.1576,
+   0.67427
+  ],
+  [
+   "AMGN",
+   "Amgen Inc",
+   1.6167,
+   34,
+   0.58118,
+   0.3345
+  ],
+  [
+   "APA",
+   "Apa",
+   1.7711,
+   26,
+   1.2383,
+   0.33766
+  ],
+  [
+   "BDX",
+   "Becton Dickinson",
+   1.4083,
+   46,
+   0.35951,
+   0.31516
+  ],
+  [
+   "BIIB",
+   "Biogen",
+   1.8844,
+   20,
+   0.68005,
+   0.39885
+  ],
+  [
+   "CAH",
+   "Cardinal Health",
+   1.4013,
+   48,
+   0.5188,
+   0.22349
+  ],
+  [
+   "CNC",
+   "Centene Corp",
+   1.8436,
+   24,
+   1.0727,
+   0.57954
+  ],
+  [
+   "COP",
+   "Conocophillips",
+   1.4666,
+   44,
+   0.72088,
+   0.23318
+  ],
+  [
+   "CRL",
+   "Charles River Laboratories Interna",
+   2.3125,
+   14,
+   0.83757,
+   1.0957
+  ],
+  [
+   "CRWD",
+   "Crowdstrike Holdings Class A",
+   2.7133,
+   11,
+   1.0239,
+   1.3582
+  ],
+  [
+   "CSCO",
+   "Cisco Systems Inc",
+   1.4888,
+   43,
+   0.58905,
+   0.27158
+  ],
+  [
+   "CSX",
+   "Csx",
+   1.4111,
+   45,
+   0.47061,
+   0.15648
+  ],
+  [
+   "CVX",
+   "Chevron",
+   1.6366,
+   32,
+   0.52771,
+   0.25734
+  ],
+  [
+   "DDOG",
+   "Datadog Inc Class A",
+   1.8547,
+   23,
+   0.78163,
+   1.1168
+  ],
+  [
+   "DELL",
+   "Dell Technologies Inc Class C",
+   2.915,
+   8,
+   2.1275,
+   1.3313
+  ],
+  [
+   "DGX",
+   "Quest Diagnostics Inc",
+   1.5974,
+   35,
+   0.36824,
+   0.24321
+  ],
+  [
+   "EXPD",
+   "Expeditors International Of Washin",
+   2.2753,
+   15,
+   0.68597,
+   0.35495
+  ],
+  [
+   "FFIV",
+   "F5",
+   1.9384,
+   18,
+   0.58176,
+   0.54293
+  ],
+  [
+   "FTNT",
+   "Fortinet",
+   2.9582,
+   7,
+   1.1691,
+   1.1594
+  ],
+  [
+   "HPE",
+   "Hewlett Packard Enterprise",
+   3.093,
+   4,
+   1.5615,
+   1.1374
+  ],
+  [
+   "HPQ",
+   "Hp Inc",
+   1.4963,
+   42,
+   0.26402,
+   0.7368
+  ],
+  [
+   "HST",
+   "Host Hotels & Resorts Reit",
+   1.9248,
+   19,
+   0.63611,
+   0.26543
+  ],
+  [
+   "HUM",
+   "Humana",
+   1.6339,
+   33,
+   0.43454,
+   0.85953
+  ],
+  [
+   "ILMN",
+   "Illumina Inc",
+   3.763,
+   2,
+   1.785,
+   1.1745
+  ],
+  [
+   "JNJ",
+   "Johnson & Johnson",
+   1.7019,
+   28,
+   0.44396,
+   0.20533
+  ],
+  [
+   "KO",
+   "Coca-Cola",
+   1.8844,
+   21,
+   0.33605,
+   0.2237
+  ],
+  [
+   "LITE",
+   "Lumentum Holdings",
+   2.207,
+   16,
+   3.4695,
+   0.007561
+  ],
+  [
+   "LLY",
+   "Eli Lilly",
+   1.4081,
+   47,
+   0.56096,
+   0.48106
+  ],
+  [
+   "MPC",
+   "Marathon Petroleum",
+   3.3841,
+   3,
+   1.2589,
+   0.93144
+  ],
+  [
+   "MRK",
+   "Merck & Co Inc",
+   1.6381,
+   31,
+   0.65891,
+   0.30348
+  ],
+  [
+   "MRVL",
+   "Marvell Technology",
+   1.7307,
+   27,
+   1.7503,
+   0.54025
+  ],
+  [
+   "MU",
+   "Micron Technology",
+   3.079,
+   5,
+   3.2245,
+   0.7711
+  ],
+  [
+   "NTAP",
+   "Netapp Inc",
+   3.027,
+   6,
+   0.97184,
+   1.1098
+  ],
+  [
+   "NUE",
+   "Nucor",
+   1.6433,
+   30,
+   0.90038,
+   0.26558
+  ],
+  [
+   "OKTA",
+   "Okta Class A",
+   3.789,
+   1,
+   1.5116,
+   1.9691
+  ],
+  [
+   "PANW",
+   "Palo Alto Networks",
+   2.705,
+   12,
+   0.82351,
+   1.1963
+  ],
+  [
+   "PSX",
+   "Phillips 66",
+   2.7269,
+   10,
+   1.0417,
+   0.65701
+  ],
+  [
+   "RVTY",
+   "Revvity",
+   2.6416,
+   13,
+   0.67002,
+   0.86675
+  ],
+  [
+   "STX",
+   "Seagate Technology Holdings Plc",
+   1.5616,
+   40,
+   1.9168,
+   0.12252
+  ],
+  [
+   "TRGP",
+   "Targa Resources",
+   1.8354,
+   25,
+   1.0075,
+   0.26633
+  ],
+  [
+   "TRV",
+   "Travelers Companies",
+   2.0488,
+   17,
+   0.49108,
+   0.31709
+  ],
+  [
+   "TWLO",
+   "Twilio Class A",
+   1.8833,
+   22,
+   1.2234,
+   0.78526
+  ],
+  [
+   "VEEV",
+   "Veeva Systems Class A",
+   1.568,
+   39,
+   0.060097,
+   0.95363
+  ],
+  [
+   "VLO",
+   "Valero Energy Corp",
+   2.8229,
+   9,
+   1.2687,
+   0.63981
+  ],
+  [
+   "VTRS",
+   "Viatris",
+   1.6618,
+   29,
+   0.86024,
+   0.28284
+  ],
+  [
+   "WAT",
+   "Waters Corp",
+   1.3734,
+   50,
+   0.33205,
+   0.56293
+  ],
+  [
+   "XOM",
+   "Exxonmobil Holdings Corp",
+   1.5901,
+   37,
+   0.59672,
+   0.2302
+  ]
+ ]
+}

@@ -2,7 +2,7 @@
  "asof": "2026-11-27",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.9.6",
+ "pipeline_version": "0.9.8",
  "status": "ok",
  "candidates": [
   "1303.TW",
@@ -44,7 +44,7 @@
    "short_history": 34,
    "penny": 79,
    "gaps": 8,
-   "liquidity": 10,
+   "liquidity": 9,
    "zero_volume": 22,
    "crosscheck": 6,
    "jump": 1,
@@ -56,7 +56,7 @@
   "size_index": 2186,
   "tradable": {
    "checked": true,
-   "source": "Deutsche Börse, Stand 2026-11-27",
+   "source": "Deutsche Börse, Stand 2026-11-28",
    "kept": 1986,
    "removed": 0,
    "removed_examples": [],
