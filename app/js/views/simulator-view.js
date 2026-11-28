@@ -134,17 +134,17 @@ export async function renderSimulator(el, data) {
       parts.push(html`<div class="panel simcard" data-calc="${r.key}" role="button" tabindex="0" style="border-left:4px solid ${COLORS[r.key]};cursor:pointer">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><h3 style="margin:0">${r.label}</h3>${r === best && res.length > 1 ? html`<span class="badge b-buy">Am meisten nach Steuern</span>` : ''}</div>
         <div class="grid2" style="margin-top:8px">
-          <div class="stat"><div class="l">Vermögen heute${isEtf ? ' (nie verkauft)' : ''}</div><div class="v">${fmtEUR(r.final, 0)}</div></div>
-          <div class="stat"><div class="l">Eingezahlt</div><div class="v">${fmtEUR(r.contrib, 0)}</div></div>
-          <div class="stat"><div class="l">${isEtf ? 'Buchgewinn' : 'Gewinn'}</div><div class="v ${gainNow >= 0 ? 'pos' : 'neg'}">${fmtEUR(gainNow, 0)}</div></div>
-          <div class="stat"><div class="l">Rendite pro Jahr${isEtf ? ' (deine Raten)' : ''}</div><div class="v">${fmtPct(r.irr)}</div></div>
+          <div class="stat"><div class="l">Auszahlung, wenn du heute alles verkaufst</div><div class="v">${fmtEUR(r.afterTax, 0)}</div></div>
+          <div class="stat"><div class="l">Selbst eingezahlt</div><div class="v">${fmtEUR(r.contrib, 0)}</div></div>
+          <div class="stat"><div class="l">Gewinn nach Kosten und Steuern</div><div class="v ${gainAfter >= 0 ? 'pos' : 'neg'}">${fmtEUR(gainAfter, 0)}</div></div>
+          <div class="stat"><div class="l">Deine Rendite pro Jahr, nach allem</div><div class="v">${fmtPct(r.irrAfter)}</div></div>
         </div>
-        ${isEtf && r.fundPa != null ? html`<p class="small" style="margin:8px 0 0"><b>Der ETF selbst: ${fmtPct(r.fundPa)} pro Jahr</b> (Kurs in Euro vom ${fmtDate(r.start)} bis ${fmtDate(r.end)}). Diesen Wert zeigen die meisten Online-Rechner. „Rendite pro Jahr (deine Raten)“ ist der Zinssatz auf deine monatlichen Einzahlungen: Spätere Raten waren kürzer investiert, deshalb weichen beide Werte voneinander ab.</p>` : ''}
-        <p class="xs muted" style="margin:8px 0 0">${isEtf
-          ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
-          : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}${r.divTotal > 1 ? ` (inkl. Steuer auf ${fmtEUR(r.divTotal, 0)} Dividenden, jährlich versteuert)` : ''}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
+        <p class="xs muted" style="margin:8px 0 0">Gewinn = Auszahlung − eingezahlt. Darin steckt alles: Kursgewinne, Dividenden und die Gewinne aus Verkäufen, die danach weiter angelegt wurden. Rendite pro Jahr = Zinssatz auf dein Geld, mit dem Zeitpunkt jeder Einzahlung (Sparkonto-Vergleich). ${isEtf
+          ? html`Ohne Verkauf (nie verkauft): Depotwert ${fmtEUR(r.final, 0)}, Buchgewinn ${fmtEUR(gainNow, 0)}, ${fmtPct(r.irr)} p. a. – darin ist die Steuer auf die Vorabpauschale (${fmtEUR(r.taxesPaid, 0)}) schon bezahlt, die Steuer auf den Kursgewinn noch nicht.`
+          : html`Ohne Verkauf: Depotwert ${fmtEUR(r.final, 0)} (darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}), Buchgewinn ${fmtEUR(gainNow, 0)}, ${fmtPct(r.irr)} p. a. Unterwegs schon gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}${r.divTotal > 1 ? ` (inkl. Steuer auf ${fmtEUR(r.divTotal, 0)} Dividenden)` : ''}.`}
           Größter Rückgang ${fmtPct(r.maxDD, 0)}. ${fmtNum(r.trades, 0)} Orders, Gebühren ${fmtEUR(r.fees, 0)}, Spread ${fmtEUR(r.spreadCost, 0)}.</p>
-        ${yrs.length ? html`<p class="small" style="margin:8px 0 0">Rendite je Kalenderjahr: ${yrs.map(([y, v], j) => html`<span style="white-space:nowrap"><b class="${v.ret >= 0 ? 'pos' : 'neg'}">${y}${partYear(r, y, j, yrs.length) ? '*' : ''} ${fmtPct(v.ret)}</b></span>`).reduce((a, x, j) => (j ? html`${a}, ${x}` : x), '')}${yrs.some(([y], j) => partYear(r, y, j, yrs.length)) ? html`<span class="xs muted"> (* Teiljahr)</span>` : ''}</p>` : ''}
+        ${isEtf && r.fundPa != null ? html`<p class="xs muted" style="margin:8px 0 0">Zum Vergleich: Der ETF-Kurs selbst stieg ${fmtPct(r.fundPa)} pro Jahr (${fmtDate(r.start)} bis ${fmtDate(r.end)}, vor Steuern und Kosten). Das zeigen Online-Rechner – es ist die Leistung des Fonds, nicht deine Rendite auf die Raten.</p>` : ''}
+        ${yrs.length ? html`<p class="small" style="margin:8px 0 0">Wie gut lief die Strategie je Kalenderjahr (zeitgewichtet, unabhängig von deinen Einzahlungen): ${yrs.map(([y, v], j) => html`<span style="white-space:nowrap"><b class="${v.ret >= 0 ? 'pos' : 'neg'}">${y}${partYear(r, y, j, yrs.length) ? '*' : ''} ${fmtPct(v.ret)}</b></span>`).reduce((a, x, j) => (j ? html`${a}, ${x}` : x), '')}${yrs.some(([y], j) => partYear(r, y, j, yrs.length)) ? html`<span class="xs muted"> (* Teiljahr)</span>` : ''}</p>` : ''}
         <p class="small" style="margin:8px 0 0;color:var(--ice)">Antippen für die komplette Rechnung ›</p>
       </div>`);
     }
@@ -354,7 +354,7 @@ function showCalc(r, data) {
     row('<b>= Auszahlung</b>', `<b>${e(c.afterTax)}</b>`, 'sum'),
     row('− selbst eingezahlt', `− ${e(c.contrib)}`),
     row('<b>= Gewinn nach allen Kosten und Steuern</b>', `<b class="${c.afterTax - c.contrib >= 0 ? 'pos' : 'neg'}">${e(c.afterTax - c.contrib)}</b>`, 'sum'),
-    row('Rendite pro Jahr auf deine Raten, nach allem', fmtPct(r.irrAfter)),
+    row('Deine Rendite pro Jahr, nach allem', fmtPct(r.irrAfter)),
   ]));
   const ys = Object.keys(r.yearly).sort();
   const paid = ys.filter((y) => Math.abs(r.yearly[y].tax) > 0.005);
@@ -365,7 +365,7 @@ function showCalc(r, data) {
   parts.push('<h3>7. Wertentwicklung je Jahr</h3>' + tbl([
     '<tr><th>Jahr</th><th class="n">Rendite</th><th class="n">Eingezahlt</th><th class="n">Wert 31.12.</th></tr>',
     ...ys.map((y) => { const v = r.yearly[y]; return `<tr><td>${y}</td><td class="n ${v.ret == null ? '' : v.ret >= 0 ? 'pos' : 'neg'}">${v.ret == null ? '–' : fmtPct(v.ret)}</td><td class="n">${fmtEUR(v.contrib, 0)}</td><td class="n">${fmtEUR(v.valueEnd ?? v.value, 0)}</td></tr>`; }),
-  ]) + '<p class="xs muted">Rendite im Jahr = zeitgewichtet: nur Kursentwicklung (nach Steuern, Gebühren), Einzahlungen zählen nicht als Gewinn. So rechnen auch Fondsanbieter. „Rendite pro Jahr (deine Raten)“ auf der Kachel ist dagegen der Zinssatz auf deine Einzahlungen über den ganzen Zeitraum.</p>');
+  ]) + '<p class="xs muted">Rendite im Jahr = zeitgewichtet: nur Kursentwicklung (nach Steuern, Gebühren), Einzahlungen zählen nicht als Gewinn. So rechnen auch Fondsanbieter. „Deine Rendite pro Jahr, nach allem“ auf der Kachel ist dagegen der Zinssatz auf deine Einzahlungen über den ganzen Zeitraum, wenn du heute alles verkaufst.</p>');
   if (r.open.length) {
     parts.push('<h3>8. Offene Positionen beim Schlussverkauf</h3>' + tbl([
       '<tr><th>Aktie</th><th class="n">Einstand</th><th class="n">Wert</th><th class="n">Gewinn</th></tr>',
