@@ -3,17 +3,17 @@ AAPL,Apple,AAPL,NASDAQ,USA,IT,USD,US0378331005,iShares Core S&P 500 (Bestandslis
 MSFT,Microsoft,MSFT,NASDAQ,USA,IT,USD,US5949181045,iShares Core S&P 500 (Bestandsliste),False,USA|MICROSOFT
 NVDA,Nvidia,NVDA,NASDAQ,USA,IT,USD,US67066G1040,iShares Core S&P 500 (Bestandsliste),False,USA|NVIDIA
 AMZN,Amazon.Com Inc,AMZN,NASDAQ,USA,Zyklischer Konsum,USD,US0231351067,iShares Core S&P 500 (Bestandsliste),False,USA|AMAZON COM
-GOOGL,Alphabet Class A,GOOGL,NASDAQ,USA,Kommunikation,USD,US02079K1079,iShares Core S&P 500 (Bestandsliste),False,USA|ALPHABET
+GOOGL,Alphabet Class A,GOOGL,NASDAQ,USA,Kommunikation,USD,US02079K3059,iShares Core S&P 500 (Bestandsliste),False,USA|ALPHABET
 AVGO,Broadcom Inc,AVGO,NASDAQ,USA,IT,USD,US11135F1012,iShares Core S&P 500 (Bestandsliste),False,USA|BROADCOM
 META,Meta Platforms Class A,META,NASDAQ,USA,Kommunikation,USD,US30303M1027,iShares Core S&P 500 (Bestandsliste),False,USA|META PLATFORMS
-GOOG,Alphabet Class C,GOOG,NASDAQ,USA,Kommunikation,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|ALPHABET
+GOOG,Alphabet Class C,GOOG,NASDAQ,USA,Kommunikation,USD,US02079K1079,iShares Core S&P 500 (Bestandsliste),False,USA|ALPHABET
 LLY,Eli Lilly,LLY,NYSE,USA,Gesundheit,USD,US5324571083,iShares Core S&P 500 (Bestandsliste),False,USA|ELI LILLY
 BRK-B,Berkshire Hathaway Inc Class B,BRK B,NYSE,USA,Finanzen,USD,US0846707026,iShares Core S&P 500 (Bestandsliste),False,USA|BERKSHIRE HATHAWAY
 TSLA,Tesla Inc,TSLA,NASDAQ,USA,Zyklischer Konsum,USD,US88160R1014,iShares Core S&P 500 (Bestandsliste),False,USA|TESLA
 JPM,Jpmorgan Chase & Co,JPM,NYSE,USA,Finanzen,USD,US46625H1005,iShares Core S&P 500 (Bestandsliste),False,USA|JPMORGAN CHASE
 V,Visa Class A,V,NYSE,USA,Finanzen,USD,US92826C8394,iShares Core S&P 500 (Bestandsliste),False,USA|VISA
 MU,Micron Technology,MU,NASDAQ,USA,IT,USD,US5951121038,iShares Core S&P 500 (Bestandsliste),False,USA|MICRON TECHNOLOGY
-AMD,Advanced Micro Devices,AMD,NASDAQ,USA,IT,USD,CNE100003MM9,iShares Core S&P 500 (Bestandsliste),False,USA|ADVANCED MICRO DEVICES
+AMD,Advanced Micro Devices,AMD,NASDAQ,USA,IT,USD,US0079031078,iShares Core S&P 500 (Bestandsliste),False,USA|ADVANCED MICRO DEVICES
 JNJ,Johnson & Johnson,JNJ,NYSE,USA,Gesundheit,USD,US4781601046,iShares Core S&P 500 (Bestandsliste),False,USA|JOHNSON & JOHNSON
 XOM,Exxonmobil Holdings Corp,XOM,NYSE,USA,Energie,USD,US30233Q1085,iShares Core S&P 500 (Bestandsliste),False,USA|EXXONMOBIL HOLDINGS
 WMT,Walmart,WMT,NASDAQ,USA,Basiskonsum,USD,US9311421039,iShares Core S&P 500 (Bestandsliste),False,USA|WALMART
@@ -44,7 +44,7 @@ WFC,Wells Fargo,WFC,NYSE,USA,Finanzen,USD,US9497461015,iShares Core S&P 500 (Bes
 LIN,Linde Plc,LIN,NASDAQ,USA,Rohstoffe,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|LINDE
 GS,Goldman Sachs Group,GS,NYSE,USA,Finanzen,USD,US38141G1040,iShares Core S&P 500 (Bestandsliste),False,USA|GOLDMAN SACHS GROUP
 LRCX,Lam Research,LRCX,NASDAQ,USA,IT,USD,US5128073062,iShares Core S&P 500 (Bestandsliste),False,USA|LAM RESEARCH
-IBM,International Business Machines Co,IBM,NYSE,USA,IT,USD,US4601461035,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL BUSINESS MACHINES
+IBM,International Business Machines Co,IBM,NYSE,USA,IT,USD,US4592001014,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL BUSINESS MACHINES
 GILD,Gilead Sciences,GILD,NASDAQ,USA,Gesundheit,USD,US3755581036,iShares Core S&P 500 (Bestandsliste),False,USA|GILEAD SCIENCES
 DIS,Walt Disney,DIS,NYSE,USA,Kommunikation,USD,US2546871060,iShares Core S&P 500 (Bestandsliste),False,USA|WALT DISNEY
 CRWD,Crowdstrike Holdings Class A,CRWD,NASDAQ,USA,IT,USD,US22788C1053,iShares Core S&P 500 (Bestandsliste),False,USA|CROWDSTRIKE HOLDINGS
@@ -98,7 +98,7 @@ PH,Parker-Hannifin,PH,NYSE,USA,Industrie,USD,US7010941042,iShares Core S&P 500 (
 BKNG,Booking Holdings,BKNG,NASDAQ,USA,Zyklischer Konsum,USD,US09857L1089,iShares Core S&P 500 (Bestandsliste),False,USA|BOOKING HOLDINGS
 CME,Cme Group Class A,CME,NASDAQ,USA,Finanzen,USD,US12572Q1058,iShares Core S&P 500 (Bestandsliste),False,USA|CME GROUP
 COF,Capital One Financial Corp,COF,NYSE,USA,Finanzen,USD,US14040H1059,iShares Core S&P 500 (Bestandsliste),False,USA|CAPITAL ONE FINANCIAL
-SO,Southern,SO,NYSE,USA,Versorger,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|SOUTHERN
+SO,Southern,SO,NYSE,USA,Versorger,USD,US8425871071,iShares Core S&P 500 (Bestandsliste),False,USA|SOUTHERN
 STX,Seagate Technology Holdings Plc,STX,NASDAQ,USA,IT,USD,IE00BKVD2N49,iShares Core S&P 500 (Bestandsliste),False,USA|SEAGATE TECHNOLOGY HOLDINGS
 NEM,Newmont,NEM,NYSE,USA,Rohstoffe,USD,US6516391066,iShares Core S&P 500 (Bestandsliste),False,USA|NEWMONT
 CVS,Cvs Health,CVS,NYSE,USA,Gesundheit,USD,US1266501006,iShares Core S&P 500 (Bestandsliste),False,USA|CVS HEALTH
@@ -106,7 +106,7 @@ MRSH,Marsh,MRSH,NYSE,USA,Finanzen,USD,US5717481023,iShares Core S&P 500 (Bestand
 DUK,Duke Energy Corp,DUK,NYSE,USA,Versorger,USD,US26441C2044,iShares Core S&P 500 (Bestandsliste),False,USA|DUKE ENERGY
 APP,Applovin Class A,APP,NASDAQ,USA,Kommunikation,USD,US03831W1080,iShares Core S&P 500 (Bestandsliste),False,USA|APPLOVIN
 BNY,Bank Of New York Mellon Corp,BNY,NYSE,USA,Finanzen,USD,US0640581007,iShares Core S&P 500 (Bestandsliste),False,USA|BANK OF NEW YORK MELLON
-ICE,Intercontinental Exchange Inc,ICE,NYSE,USA,Finanzen,USD,GB00BHJYC057,iShares Core S&P 500 (Bestandsliste),False,USA|INTERCONTINENTAL EXCHANGE
+ICE,Intercontinental Exchange Inc,ICE,NYSE,USA,Finanzen,USD,US45866F1049,iShares Core S&P 500 (Bestandsliste),False,USA|INTERCONTINENTAL EXCHANGE
 WDC,Western Digital Corp,WDC,NASDAQ,USA,IT,USD,US9581021055,iShares Core S&P 500 (Bestandsliste),False,USA|WESTERN DIGITAL
 MMM,3M,MMM,NYSE,USA,Industrie,USD,US88579Y1010,iShares Core S&P 500 (Bestandsliste),False,USA|3M
 MPC,Marathon Petroleum,MPC,NYSE,USA,Energie,USD,US56585A1025,iShares Core S&P 500 (Bestandsliste),False,USA|MARATHON PETROLEUM
@@ -144,7 +144,7 @@ MRNA,Moderna,MRNA,NASDAQ,USA,Gesundheit,USD,,iShares Core S&P 500 (Bestandsliste
 WMB,Williams,WMB,NYSE,USA,Energie,USD,US9694571004,iShares Core S&P 500 (Bestandsliste),False,USA|WILLIAMS
 CDNS,Cadence Design Systems,CDNS,NASDAQ,USA,IT,USD,US1273871087,iShares Core S&P 500 (Bestandsliste),False,USA|CADENCE DESIGN SYSTEMS
 TMUS,T Mobile Us Inc,TMUS,NASDAQ,USA,Kommunikation,USD,US8725901040,iShares Core S&P 500 (Bestandsliste),False,USA|T MOBILE US
-CL,Colgate-Palmolive,CL,NYSE,USA,Basiskonsum,USD,INE259A01022,iShares Core S&P 500 (Bestandsliste),False,USA|COLGATE PALMOLIVE
+CL,Colgate-Palmolive,CL,NYSE,USA,Basiskonsum,USD,US1941621039,iShares Core S&P 500 (Bestandsliste),False,USA|COLGATE PALMOLIVE
 GLW,Corning,GLW,NYSE,USA,IT,USD,US2193501051,iShares Core S&P 500 (Bestandsliste),False,USA|CORNING
 CTAS,Cintas,CTAS,NASDAQ,USA,Industrie,USD,US1729081059,iShares Core S&P 500 (Bestandsliste),False,USA|CINTAS
 TGT,Target Corp,TGT,NYSE,USA,Basiskonsum,USD,US87612E1064,iShares Core S&P 500 (Bestandsliste),False,USA|TARGET
@@ -153,7 +153,7 @@ RCL,Royal Caribbean Group,RCL,NYSE,USA,Zyklischer Konsum,USD,LR0008862868,iShare
 ECL,Ecolab,ECL,NYSE,USA,Rohstoffe,USD,US2788651006,iShares Core S&P 500 (Bestandsliste),False,USA|ECOLAB
 EOG,Eog Resources,EOG,NYSE,USA,Energie,USD,US26875P1012,iShares Core S&P 500 (Bestandsliste),False,USA|EOG RESOURCES
 SNPS,Synopsys,SNPS,NASDAQ,USA,IT,USD,US8716071076,iShares Core S&P 500 (Bestandsliste),False,USA|SYNOPSYS
-CEG,Constellation Energy Corp,CEG,NASDAQ,USA,Versorger,USD,US21036P1084,iShares Core S&P 500 (Bestandsliste),False,USA|CONSTELLATION ENERGY
+CEG,Constellation Energy Corp,CEG,NASDAQ,USA,Versorger,USD,US21037T1097,iShares Core S&P 500 (Bestandsliste),False,USA|CONSTELLATION ENERGY
 SPG,Simon Property Group Reit Inc,SPG,NYSE,USA,Immobilien,USD,US8288061091,iShares Core S&P 500 (Bestandsliste),False,USA|SIMON PROPERTY GROUP
 AJG,Arthur J Gallagher,AJG,NYSE,USA,Finanzen,USD,US3635761097,iShares Core S&P 500 (Bestandsliste),False,USA|ARTHUR J GALLAGHER
 INTU,Intuit,INTU,NASDAQ,USA,IT,USD,US4612021034,iShares Core S&P 500 (Bestandsliste),False,USA|INTUIT
@@ -168,14 +168,14 @@ ABNB,Airbnb Class A,ABNB,NASDAQ,USA,Zyklischer Konsum,USD,US0090661010,iShares C
 SLB,Slb,SLB,NYSE,USA,Energie,USD,AN8068571086,iShares Core S&P 500 (Bestandsliste),False,USA|SLB
 CI,Cigna,CI,NYSE,USA,Gesundheit,USD,US1255231003,iShares Core S&P 500 (Bestandsliste),False,USA|CIGNA
 ROST,Ross Stores Inc,ROST,NASDAQ,USA,Zyklischer Konsum,USD,US7782961038,iShares Core S&P 500 (Bestandsliste),False,USA|ROSS STORES
-HON,Honeywell International Inc,HON,NASDAQ,USA,Industrie,USD,US4385162056,iShares Core S&P 500 (Bestandsliste),False,USA|HONEYWELL INTERNATIONAL
+HON,Honeywell International Inc,HON,NASDAQ,USA,Industrie,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|HONEYWELL INTERNATIONAL
 APD,Air Products And Chemicals,APD,NYSE,USA,Rohstoffe,USD,US0091581068,iShares Core S&P 500 (Bestandsliste),False,USA|AIR PRODUCTS AND CHEMICALS
 FCX,Freeport Mcmoran Inc,FCX,NYSE,USA,Rohstoffe,USD,US35671D8570,iShares Core S&P 500 (Bestandsliste),False,USA|FREEPORT MCMORAN
 AEP,American Electric Power Inc,AEP,NASDAQ,USA,Versorger,USD,US0255371017,iShares Core S&P 500 (Bestandsliste),False,USA|AMERICAN ELECTRIC POWER
 ALL,Allstate Corp,ALL,NYSE,USA,Finanzen,USD,US0200021014,iShares Core S&P 500 (Bestandsliste),False,USA|ALLSTATE
 FDX,Fedex Corp,FDX,NYSE,USA,Industrie,USD,US31428X1063,iShares Core S&P 500 (Bestandsliste),False,USA|FEDEX
 COR,Cencora,COR,NYSE,USA,Gesundheit,USD,US03073E1055,iShares Core S&P 500 (Bestandsliste),False,USA|CENCORA
-KMB,Kimberly Clark,KMB,NASDAQ,USA,Basiskonsum,USD,MXP606941179,iShares Core S&P 500 (Bestandsliste),False,USA|KIMBERLY CLARK
+KMB,Kimberly Clark,KMB,NASDAQ,USA,Basiskonsum,USD,US4943681035,iShares Core S&P 500 (Bestandsliste),False,USA|KIMBERLY CLARK
 VRT,Vertiv Holdings Class A,VRT,NYSE,USA,Industrie,USD,US92537N1081,iShares Core S&P 500 (Bestandsliste),False,USA|VERTIV HOLDINGS
 CAH,Cardinal Health,CAH,NYSE,USA,Gesundheit,USD,US14149Y1082,iShares Core S&P 500 (Bestandsliste),False,USA|CARDINAL HEALTH
 BSX,Boston Scientific,BSX,NYSE,USA,Gesundheit,USD,US1011371077,iShares Core S&P 500 (Bestandsliste),False,USA|BOSTON SCIENTIFIC
@@ -370,7 +370,7 @@ LUV,Southwest Airlines,LUV,NYSE,USA,Industrie,USD,,iShares Core S&P 500 (Bestand
 CMS,Cms Energy,CMS,NYSE,USA,Versorger,USD,US1258961002,iShares Core S&P 500 (Bestandsliste),False,USA|CMS ENERGY
 SYF,Synchrony Financial,SYF,NYSE,USA,Finanzen,USD,US87165B1035,iShares Core S&P 500 (Bestandsliste),False,USA|SYNCHRONY FINANCIAL
 TROW,T Rowe Price Group,TROW,NASDAQ,USA,Finanzen,USD,US74144T1088,iShares Core S&P 500 (Bestandsliste),False,USA|T ROWE PRICE GROUP
-IFF,International Flavors & Fragrances,IFF,NYSE,USA,Rohstoffe,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL FLAVORS & FRAGRANCES
+IFF,International Flavors & Fragrances,IFF,NYSE,USA,Rohstoffe,USD,US4595061015,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL FLAVORS & FRAGRANCES
 CDW,Cdw,CDW,NASDAQ,USA,IT,USD,US12514G1085,iShares Core S&P 500 (Bestandsliste),False,USA|CDW
 PKG,Packaging Corp Of America,PKG,NYSE,USA,Rohstoffe,USD,US6951561090,iShares Core S&P 500 (Bestandsliste),False,USA|PACKAGING CORP OF AMERICA
 SW,Smurfit Westrock Plc,SW,NYSE,USA,Rohstoffe,USD,IE00028FXN24,iShares Core S&P 500 (Bestandsliste),False,USA|SMURFIT WESTROCK
@@ -383,11 +383,11 @@ FOXA,Fox Class A,FOXA,NASDAQ,USA,Kommunikation,USD,US35137L1052,iShares Core S&P
 PTC,Ptc,PTC,NASDAQ,USA,IT,USD,US69370C1009,iShares Core S&P 500 (Bestandsliste),False,USA|PTC
 PFG,Principal Financial Group Inc,PFG,NASDAQ,USA,Finanzen,USD,US74251V1026,iShares Core S&P 500 (Bestandsliste),False,USA|PRINCIPAL FINANCIAL GROUP
 TSCO,Tractor Supply,TSCO,NASDAQ,USA,Zyklischer Konsum,USD,US8923561067,iShares Core S&P 500 (Bestandsliste),False,USA|TRACTOR SUPPLY
-STZ,Constellation Brands Class A,STZ,NYSE,USA,Basiskonsum,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|CONSTELLATION BRANDS
+STZ,Constellation Brands Class A,STZ,NYSE,USA,Basiskonsum,USD,US21036P1084,iShares Core S&P 500 (Bestandsliste),False,USA|CONSTELLATION BRANDS
 AMCR,Amcor Plc,AMCR,NYSE,USA,Rohstoffe,USD,JE00BV7DQ550,iShares Core S&P 500 (Bestandsliste),False,USA|AMCOR
 ZBH,Zimmer Biomet Holdings,ZBH,NYSE,USA,Gesundheit,USD,US98956P1021,iShares Core S&P 500 (Bestandsliste),False,USA|ZIMMER BIOMET HOLDINGS
 INCY,Incyte Corp,INCY,NASDAQ,USA,Gesundheit,USD,US45337C1027,iShares Core S&P 500 (Bestandsliste),False,USA|INCYTE
-DD,Dupont De Nemours,DD,NYSE,USA,Industrie,USD,US26614N2018,iShares Core S&P 500 (Bestandsliste),False,USA|DUPONT DE NEMOURS
+DD,Dupont De Nemours,DD,NYSE,USA,Industrie,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|DUPONT DE NEMOURS
 BBY,Best Buy,BBY,NYSE,USA,Zyklischer Konsum,USD,US0865161014,iShares Core S&P 500 (Bestandsliste),False,USA|BEST BUY
 EVRG,Evergy,EVRG,NASDAQ,USA,Versorger,USD,US30034W1062,iShares Core S&P 500 (Bestandsliste),False,USA|EVERGY
 EXE,Expand Energy,EXE,NASDAQ,USA,Energie,USD,US1651677353,iShares Core S&P 500 (Bestandsliste),False,USA|EXPAND ENERGY
@@ -412,7 +412,7 @@ GPC,Genuine Parts,GPC,NYSE,USA,Zyklischer Konsum,USD,US3724601055,iShares Core S
 HST,Host Hotels & Resorts Reit,HST,NASDAQ,USA,Immobilien,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|HOST HOTELS & RESORTS
 J,Jacobs Solutions Inc,J,NYSE,USA,Industrie,USD,US46982L1089,iShares Core S&P 500 (Bestandsliste),False,USA|JACOBS SOLUTIONS
 NDSN,Nordson,NDSN,NASDAQ,USA,Industrie,USD,US6556631025,iShares Core S&P 500 (Bestandsliste),False,USA|NORDSON
-IP,International Paper,IP,NYSE,USA,Rohstoffe,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL PAPER
+IP,International Paper,IP,NYSE,USA,Rohstoffe,USD,US4601461035,iShares Core S&P 500 (Bestandsliste),False,USA|INTERNATIONAL PAPER
 CHRW,Ch Robinson Worldwide,CHRW,NASDAQ,USA,Industrie,USD,US12541W2098,iShares Core S&P 500 (Bestandsliste),False,USA|CH ROBINSON WORLDWIDE
 JBHT,Jb Hunt Transport Services,JBHT,NASDAQ,USA,Industrie,USD,US4456581077,iShares Core S&P 500 (Bestandsliste),False,USA|JB HUNT TRANSPORT SERVICES
 RVTY,Revvity,RVTY,NYSE,USA,Gesundheit,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|REVVITY
@@ -451,7 +451,7 @@ MAA,Mid America Apartment Communities,MAA,NYSE,USA,Immobilien,USD,US59522J1034,i
 CLX,Clorox,CLX,NYSE,USA,Basiskonsum,USD,US1890541097,iShares Core S&P 500 (Bestandsliste),False,USA|CLOROX
 RDDT,Reddit Class A,RDDT,NYSE,USA,Kommunikation,USD,US75734B1008,iShares Core S&P 500 (Bestandsliste),False,USA|REDDIT
 GDDY,Godaddy Class A,GDDY,NYSE,USA,IT,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|GODADDY
-SMCI,Super Micro Computer Inc,SMCI,NASDAQ,USA,IT,USD,US86800U3023,iShares Core S&P 500 (Bestandsliste),False,USA|SUPER MICRO COMPUTER
+SMCI,Super Micro Computer Inc,SMCI,NASDAQ,USA,IT,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|SUPER MICRO COMPUTER
 JKHY,Jack Henry And Associates Inc,JKHY,NASDAQ,USA,Finanzen,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|JACK HENRY AND ASSOCIATES
 TRMB,Trimble Inc,TRMB,NASDAQ,USA,IT,USD,US8962391004,iShares Core S&P 500 (Bestandsliste),False,USA|TRIMBLE
 AKAM,Akamai Technologies Inc,AKAM,NASDAQ,USA,IT,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|AKAMAI TECHNOLOGIES
@@ -490,7 +490,7 @@ FRT,Federal Realty Investment Trust Re,FRT,NYSE,USA,Immobilien,USD,,iShares Core
 HSIC,Henry Schein,HSIC,NASDAQ,USA,Gesundheit,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|HENRY SCHEIN
 NCLH,Norwegian Cruise Line Holdings,NCLH,NYSE,USA,Zyklischer Konsum,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|NORWEGIAN CRUISE LINE HOLDINGS
 APTV,Aptiv Plc,APTV,NYSE,USA,Zyklischer Konsum,USD,JE00BTDN8H13,iShares Core S&P 500 (Bestandsliste),False,USA|APTIV
-FOX,Fox Class B,FOX,NASDAQ,USA,Kommunikation,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|FOX
+FOX,Fox Class B,FOX,NASDAQ,USA,Kommunikation,USD,US35137L2043,iShares Core S&P 500 (Bestandsliste),False,USA|FOX
 AOS,A O Smith,AOS,NYSE,USA,Industrie,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|A O SMITH
 ERIE,Erie Indemnity Class A,ERIE,NASDAQ,USA,Finanzen,USD,US29530P1021,iShares Core S&P 500 (Bestandsliste),False,USA|ERIE INDEMNITY
 ARE,Alexandria Real Estate Equities Re,ARE,NYSE,USA,Immobilien,USD,,iShares Core S&P 500 (Bestandsliste),False,USA|ALEXANDRIA REAL ESTATE EQUITIES RE

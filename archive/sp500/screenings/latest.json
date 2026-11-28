@@ -2,7 +2,7 @@
  "asof": "2026-11-27",
  "methodology_version": "1.0.0",
  "params_hash": "9e9068d7afa0",
- "pipeline_version": "0.9.8",
+ "pipeline_version": "0.9.9",
  "status": "ok",
  "candidates": [
   "OKTA",
@@ -55,9 +55,9 @@
    "removed": 0,
    "removed_examples": [],
    "removed_cn_a": 0,
-   "unchecked": 71,
-   "not_found": 3,
-   "note": "3 Aktien mit Heimat-ISIN nicht in der Frankfurt-Liste (oft nur als ADR/GDR handelbar) – nur Hinweis, nicht entfernt."
+   "unchecked": 68,
+   "not_found": 1,
+   "note": "1 Aktien mit Heimat-ISIN nicht in der Frankfurt-Liste (oft nur als ADR/GDR handelbar) – nur Hinweis, nicht entfernt."
   },
   "emerging": 0
  },
