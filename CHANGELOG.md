@@ -1,5 +1,9 @@
 # Änderungen
 
+## 28.11.2026 – Umstieg auf Claude Code
+- Neu: CLAUDE.md mit allen Projektregeln (kostenlos, nichts erfinden, Depot lokal, keine Anlageberatung, Deutsch, genaue Tipp-Schritte, Tests vor jedem Commit).
+- Workflow-Vorlage (docs/workflow/momentum-lab.yml): Datenlauf startet auch bei Änderungen in app/, pipeline/ und tools/ – nötig, weil Änderungen künftig per Pull Request statt per Zip kommen. Die Änderung am echten Workflow muss einmal von Hand gemacht werden.
+
 ## Pipeline 0.9.11 – 28.11.2026
 - Neue Backtest-Strategie „Gewinner halten“: An jedem Screening-Termin (monatlich, vierteljährlich … wie eingestellt) fließt das ganze Geld auf dem Konto – alle Monatsbudgets seit dem letzten Termin plus Dividenden – in die Nr. 1 der Stage-1-Liste. Nie verkaufen; nur wenn die Kursdaten einer Aktie enden (Übernahme/Delisting), wird zum letzten Kurs verkauft und das Geld beim nächsten Termin wieder angelegt. Kein Startkapital. Haltedauer und Verkaufssignal gelten hier nicht.
 - „Am meisten nach Steuern“ vergleicht jetzt den Gewinn nach Steuern (fair, auch wenn eine Strategie ohne Startkapital rechnet).

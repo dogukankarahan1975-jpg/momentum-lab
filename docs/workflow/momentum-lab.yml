@@ -16,6 +16,9 @@ on:
       - "momentum-lab*.zip"
       - ".github/workflows/momentum-lab.yml"
       - "config/**"
+      - "app/**"
+      - "pipeline/**"
+      - "tools/**"
 
 permissions:
   contents: write
