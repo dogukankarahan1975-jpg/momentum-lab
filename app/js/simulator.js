@@ -249,7 +249,7 @@ export function targetList(data, key, k, rest, minScore = 4, ex = null) {
   }
   const src = (st.list === 's2' ? (data.s2[k] || []) : (data.cand[k] || [])).filter(okI);
   let t = src.slice(0, st.n);
-  if (rest === 'top' && t.length < st.n) {
+  if ((rest === 'top' || st.never) && t.length < st.n) {   // „Gewinner halten“: immer die Nr. 1, notfalls aus der Rangliste
     const extra = (data.rank[k] || []).filter((i) => !t.includes(i) && okI(i));
     t = t.concat(extra).slice(0, st.n);
   }

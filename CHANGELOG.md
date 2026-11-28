@@ -1,5 +1,10 @@
 # Änderungen
 
+## Pipeline 0.9.13 – 28.11.2026
+- Order-Protokoll („Jede Order nachvollziehen“): Monate ohne Screening-Termin standen dort als „keine Aktie auf der Liste“. Jetzt steht „kein Screening-Termin, Geld bleibt bis zum nächsten Termin auf dem Konto“. Ein Termin ohne Geld (z. B. nach Ende der Monatsbudgets) heißt jetzt „kein Geld zum Anlegen“.
+- „Gewinner halten“ kauft immer die Nr. 1, unabhängig von der Einstellung für freie Plätze (falls es keinen Kandidaten gibt: Nr. 1 der Rangliste).
+- Neuer Test: monatlich = jeden Monat genau ein Kauf der Nr. 1.
+
 ## Pipeline 0.9.12 – 28.11.2026
 - Simulator-Kacheln zeigen jetzt groß das Ergebnis „heute alles verkauft“: Auszahlung nach Gebühren, Spread und Steuern, selbst eingezahlt, Gewinn nach allem (= Auszahlung − eingezahlt) und deine Rendite pro Jahr nach allem (Zinsfuß auf deine Einzahlungen). Gilt für alle Strategien und den ETF.
 - Depotwert ohne Verkauf, Buchgewinn und Rendite ohne Verkauf stehen nur noch im Kleingedruckten. Die ETF-Kursrendite ist als „Zum Vergleich“ gekennzeichnet, die Kalenderjahr-Renditen als zeitgewichtete Leistung der Strategie (unabhängig von deinen Einzahlungen).

@@ -205,7 +205,7 @@ export async function renderSimulator(el, data) {
         const ev = byK.get(m.k) || [];
         const head = r.kind === 'etf'
           ? html`<b>${fmtDate(data.points[m.k])}</b>: Sparrate ${fmtEUR(m.budget, 2)} in den ETF.`
-          : html`<b>${fmtDate(data.points[m.k])}</b>: Konto vorher ${fmtEUR(z(m.carried), 2)}${Math.abs(m.tax) > 0.005 ? html`, Steuer ${m.tax > 0 ? '−' : '+'}${fmtEUR(Math.abs(m.tax), 2)}` : ''}, Budget +${fmtEUR(m.budget, 2)}${m.proceeds ? html`, Verkaufserlöse +${fmtEUR(m.proceeds, 2)}` : ''} → angelegt ${fmtEUR(m.invest, 2)}${m.n ? html`, je Aktie ${fmtEUR(m.each, 2)} (${m.n} auf der Liste)` : html` (keine Aktie auf der Liste)`} → Konto danach ${fmtEUR(z(m.cashAfter), 2)}.`;
+          : html`<b>${fmtDate(data.points[m.k])}</b>: Konto vorher ${fmtEUR(z(m.carried), 2)}${Math.abs(m.tax) > 0.005 ? html`, Steuer ${m.tax > 0 ? '−' : '+'}${fmtEUR(Math.abs(m.tax), 2)}` : ''}, Budget +${fmtEUR(m.budget, 2)}${m.proceeds ? html`, Verkaufserlöse +${fmtEUR(m.proceeds, 2)}` : ''} → ${!m.screen ? html`kein Screening-Termin (${freqText(opts.freq, opts.shift)}), Geld bleibt bis zum nächsten Termin auf dem Konto` : html`angelegt ${fmtEUR(m.invest, 2)}${!m.n ? html` (keine Aktie auf der Liste)` : m.invest > 0 ? html`, je Aktie ${fmtEUR(m.each, 2)} (${m.n} auf der Liste)` : html` (kein Geld zum Anlegen)`}`} → Konto danach ${fmtEUR(z(m.cashAfter), 2)}.`;
         const rows = ev.map((e) => {
           if (e.type === 'Halten') {
             return html`<div class="row"><div class="grow"><div class="title">Halten: ${e.name}</div><div class="sub" style="white-space:normal">${e.why}</div></div><div class="end"><span class="badge b-stop">wartet</span></div></div>`;

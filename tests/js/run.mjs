@@ -489,6 +489,19 @@ test('Simulator: Gewinner halten – nur Nr. 1 kaufen, nie verkaufen, kein Start
   assert.ok(buys.every((l, j) => j === 0 || l.k - buys[j - 1].k === 3));
 });
 
+test('Simulator: Gewinner halten monatlich – jeden Monat ein Kauf der Nr. 1, Termine im Protokoll markiert', () => {
+  const d = simData();
+  for (const rest of ['top', 'cash', 'etf']) {
+    const r = simRun(d, 'hold1', { ...simOpts, freq: 'monthly', rest });
+    const buys = r.log.filter((l) => l.type === 'Kauf');
+    assert.equal(buys.length, r.months.length);          // jeder Monat = Screening = genau ein Kauf
+    assert.ok(r.months.every((m) => m.screen && m.n === 1));
+  }
+  const q = simRun(d, 'hold1', { ...simOpts, freq: 'quarterly' });
+  assert.ok(q.months.some((m) => !m.screen));             // Zwischenmonate: kein Termin (nicht „keine Aktie“)
+  assert.ok(q.months.filter((m) => m.screen).every((m) => m.n === 1));
+});
+
 test('Simulator: Schlussrechnung geht auf (Wert − Verkaufskosten − Steuer = nach Steuern)', () => {
   const d = simData();
   for (const key of ['s1top5', 'world']) {
