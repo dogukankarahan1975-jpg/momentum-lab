@@ -1,5 +1,10 @@
 # Änderungen
 
+## Pipeline 0.9.12 – 28.11.2026
+- Simulator-Kacheln zeigen jetzt groß das Ergebnis „heute alles verkauft“: Auszahlung nach Gebühren, Spread und Steuern, selbst eingezahlt, Gewinn nach allem (= Auszahlung − eingezahlt) und deine Rendite pro Jahr nach allem (Zinsfuß auf deine Einzahlungen). Gilt für alle Strategien und den ETF.
+- Depotwert ohne Verkauf, Buchgewinn und Rendite ohne Verkauf stehen nur noch im Kleingedruckten. Die ETF-Kursrendite ist als „Zum Vergleich“ gekennzeichnet, die Kalenderjahr-Renditen als zeitgewichtete Leistung der Strategie (unabhängig von deinen Einzahlungen).
+- Keine Rechenänderung, nur Anzeige.
+
 ## 28.11.2026 – Umstieg auf Claude Code
 - Neu: CLAUDE.md mit allen Projektregeln (kostenlos, nichts erfinden, Depot lokal, keine Anlageberatung, Deutsch, genaue Tipp-Schritte, Tests vor jedem Commit).
 - Workflow-Vorlage (docs/workflow/momentum-lab.yml): Datenlauf startet auch bei Änderungen in app/, pipeline/ und tools/ – nötig, weil Änderungen künftig per Pull Request statt per Zip kommen. Die Änderung am echten Workflow muss einmal von Hand gemacht werden.
