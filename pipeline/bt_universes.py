@@ -899,16 +899,17 @@ def build_name_index(nport_rows: list, universe_names: list[tuple[str, str]]) ->
 
 def norm_loose(x: str) -> str:
     """Zusätzlich „Series L“, „NVS“ u. ä. Zusätze entfernen (Vorzugsaktien bleiben unterscheidbar)."""
-    x = re.sub(r"\b(SERIES\s+[A-Z0-9]+|NVS|NON[- ]VOTING|REG(ISTERED)?|BEARER|ORDINARY SHARES?)\b", " ",
+    x = re.sub(r"\b(SERIES\s+[A-Z0-9]+|NVS|NON[- ]VOTING|REG(ISTERED)?|BEARER|ORDINARY SHARES?|GENUSSCHEIN|"
+               r"PARTICIPATION CERTIFICATES?)\b", " ",
                _strip_suffix(x).upper())
     return norm_name(x)
 
 
 def match_name(idx: dict, name: str, country: str) -> str | None:
     idx.setdefault("loose", {})
-    for key, d in ((norm_full(name), idx["full"]), (norm_name(_strip_suffix(name)), idx["norm"]),
-                   (norm_loose(name), idx["loose"])):
-        if not key or len(key) < 3:
+    for n_key, (key, d) in enumerate(((norm_full(name), idx["full"]), (norm_name(_strip_suffix(name)), idx["norm"]),
+                                      (norm_loose(name), idx["loose"]))):
+        if not key or len(key) < (2 if n_key == 0 else 3):      # „BP PLC“, „3M Co“: kurze Namen nur bei vollem Treffer
             continue
         cand = d.get(key)
         if not cand:
@@ -919,6 +920,18 @@ def match_name(idx: dict, name: str, country: str) -> str | None:
         same = {i for i, c in cand if c == country}
         if len(same) == 1:
             return next(iter(same))
+        # mehrdeutig (z. B. alte und neue ISIN nach Umstrukturierung, Stamm- und Vorzugsaktie): die ISIN, die schon in
+        # der ERSTEN N-PORT-Meldung stand (zeitlich am nächsten an der alten Meldung); bei mehreren die mit klar
+        # größtem Gewicht (mind. doppelt so groß). Der strenge Kursabgleich (bad_early_mappings) prüft danach jede Zuordnung.
+        first, w = idx.get("first") or {}, idx.get("w") or {}
+        pool = same or isins
+        if first and pool:
+            f0 = min(first.get(i, "9999") for i in pool)
+            early = sorted((i for i in pool if first.get(i, "9999") == f0), key=lambda i: -w.get(i, 0.0))
+            if len(early) == 1:
+                return early[0]
+            if len(early) > 1 and w.get(early[0], 0.0) >= 2 * w.get(early[1], 0.0) > 0:
+                return early[0]
     return None
 
 
@@ -1019,6 +1032,30 @@ def suspicious_symbol(sym: str | None, cur: str, country: str) -> bool:
         return False
     want_c = {c for c, ex in YEX_BY_COUNTRY.items() if ex & want}
     return home not in want_c
+
+
+def dedupe_isin_map(imap: dict, meta: dict, uni_norm: dict, weight: dict) -> list[str]:
+    """Ein Kurskürzel darf nur zu EINER ISIN gehören. Mehrfachzuordnungen entstehen durch Namensähnlichkeit
+    (A-Aktie und H-Aktie derselben Bank, Vorzugs- und Stammaktie, „National Bank of Greece“ → National Bank of Canada).
+    Behalten wird die ISIN, deren Währung/Land zur Börse des Kürzels passt, dann die mit gleichem Namen wie in der
+    heutigen Liste (voller Name inkl. Aktienklasse, uni_norm = norm_full), dann die mit dem größten Gewicht. Rückgabe: die übrigen ISIN (Zuordnung ungültig).
+    meta: isin -> (name, currency, country)."""
+    groups: dict[str, list[str]] = {}
+    for i in meta:
+        sym = imap.get(i)
+        if sym:
+            groups.setdefault(sym, []).append(i)
+    losers = []
+    for sym, isins in groups.items():
+        if len(isins) < 2:
+            continue
+
+        def score(i, sym=sym):
+            n, cur, cc = meta[i]
+            return (not suspicious_symbol(sym, cur, cc), norm_full(n) == uni_norm.get(sym), weight.get(i, 0.0), i)
+        best = max(isins, key=score)
+        losers += [i for i in isins if i != best]
+    return losers
 
 
 def yahoo_symbol_for_isin(http_json, isin: str, cur: str, country: str) -> str | None:

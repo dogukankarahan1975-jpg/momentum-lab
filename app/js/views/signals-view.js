@@ -37,7 +37,7 @@ export async function render(root) {
     const tax = s.signal === 'VERKAUF' || s.signal === 'VERKAUF PRÜFEN' ? estimateSaleTax(it.unreal, state.settings) : null;
     parts.push(html`<section class="panel">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-        <div style="min-width:0"><h3 style="font-size:17px">${s.name}</h3><div class="xs muted">${s.symbol}${row?.rank ? `, Rang ${row.rank} (${fmtRankPct(row.pct)})` : ''}${s.universe && s.universe !== getUniverse() ? `, bewertet im ${UNIVERSE_LABEL[s.universe]}` : ''}</div></div>
+        <div style="min-width:0"><h3 style="font-size:17px">${s.name}</h3><div class="xs muted">${s.symbol}${row?.rank ? `, Rang ${row.rank} (${fmtRankPct(row.pct)})` : ''}${s.uniKey && s.uniKey !== getUniverse() ? `, bewertet im ${UNIVERSE_LABEL[s.uniKey]}` : ''}</div></div>
         <div style="text-align:right">${badge(s.signal)}<div class="xs muted" style="margin-top:4px">Dringlichkeit: ${s.urgency}</div></div>
       </div>
       ${(() => { const h = it ? holdStatus(it.pos, it, todayISO()) : null; return h ? html`<div class="note ${h.state === 'verkaufen' ? 'error' : h.state === 'warten' ? 'warn' : 'info'}" style="margin:10px 0"><div><b>Deine Haltedauer (${h.months} Monate):</b> ${h.text}</div></div>` : ''; })()}

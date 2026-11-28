@@ -75,10 +75,10 @@ export async function loadScreen(fresh = false) {
     const other = universe === 'sp500' ? 'acwi' : 'sp500';
     try {
       const o = parseScreen(await getJSON('screen.json', { fresh, timeout: 30000, uni: other }));
-      s.other = { ...o, universe: other };
+      s.other = { ...o, uniKey: other };
     } catch { s.other = null; }
   }
-  s.universe = universe;
+  s.uniKey = universe;
   memo.set('screen', s);
   return s;
 }

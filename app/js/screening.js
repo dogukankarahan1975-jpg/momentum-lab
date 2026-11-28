@@ -50,7 +50,7 @@ export function computeSignals(screen, status, pf, plans, settings) {
     });
     return { positionId: it.pos.id, symbol: it.pos.symbol, name: it.pos.name, ...ev,
       unreal: it.unreal, mvEUR: it.mvEUR, weight: it.weight, asof: src.asof,
-      universe: own ? screen.universe : src.universe };
+      uniKey: own ? screen.uniKey : src.uniKey };
   });
 }
 
@@ -142,9 +142,10 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
 
     // ---------------- Depot
     const pf = computePortfolio(positions, txs, screen);
-    const matched = pf.open.filter((i) => screen.bySymbol.get(i.pos.symbol)?.last_close != null).length;
+    const matched = pf.open.filter((i) => rowWithSource(screen, i.pos.symbol).row?.last_close != null).length;
+    const fromOther = pf.open.filter((i) => !screen.bySymbol.get(i.pos.symbol) && screen.other?.bySymbol?.get(i.pos.symbol)).length;
     set(I.depot, pf.open.length === 0 ? 'ok' : matched === pf.open.length ? 'ok' : 'warn',
-      pf.open.length ? `${pf.open.length} Positionen, ${matched} davon mit aktuellen Daten` : 'Noch keine Depotpositionen erfasst');
+      pf.open.length ? `${pf.open.length} Positionen, ${matched} davon mit aktuellen Daten${fromOther ? ` (${fromOther} aus dem anderen Screening bewertet)` : ''}` : 'Noch keine Depotpositionen erfasst');
 
     const signals = computeSignals(screen, status, pf, plans, settings);
     const cnt = {};
@@ -152,7 +153,7 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
     set(I.signals, 'ok', signals.length ? Object.entries(cnt).map(([k, v]) => `${v}× ${k}`).join(', ') : 'Keine Positionen zu bewerten');
 
     const snapshot = {
-      id: uid(), createdAt: new Date().toISOString(), asof: screen.asof, generated_at: screen.generated_at, universe: getUniverse(),
+      id: uid(), createdAt: new Date().toISOString(), asof: screen.asof, generated_at: screen.generated_at, uniKey: getUniverse(),
       methodology_version: screen.methodology_version, params_hash: screen.params_hash, pipeline_version: screen.pipeline_version,
       status: screen.status, freshness: fr, demo: !!screen.demo, top_pick: screen.top_pick,
       candidates: screen.candidates.map((s) => {

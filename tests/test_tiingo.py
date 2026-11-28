@@ -85,13 +85,14 @@ def test_etf_crosscheck(tmp_path):
     import json
     import pandas as pd
     from pipeline.audit import etf_crosscheck
-    pts = list(pd.date_range("2015-01-30", "2020-12-31", freq="ME"))
+    pts = list(pd.date_range("2015-01-30", "2020-12-31", freq="ME") + pd.Timedelta(days=1))   # Monatsanfang
     fx = pd.DataFrame({"USD": 1.1}, index=pd.bdate_range("2014-12-01", "2021-01-31"))
     px = [100 * 1.01 ** i for i in range(len(pts))]
     (tmp_path / "audit").mkdir()
-    ref = {d.strftime("%Y-%m"): 110 * 1.01 ** i for i, d in enumerate(pts)}
+    ref = {(d - pd.Timedelta(days=1)).strftime("%Y-%m"): 110 * 1.01 ** i for i, d in enumerate(pts)}  # Monatsende davor
     (tmp_path / "audit" / "tiingo-reference.json").write_text(json.dumps({"IVV": ref}))
     res = etf_crosscheck({"points": [d.strftime("%Y-%m-%d") for d in pts],
                           "bench": {"sp500": {"name": "SXR8", "px": px}}}, fx, tmp_path)
-    assert len(res) == 1 and res[0]["ok"] and abs(res[0]["diff_pa_pct"]) < 0.01
+    assert len(res) == 1 and res[0]["ok"] is True and abs(res[0]["diff_pa_pct"]) < 0.01
+    assert res[0]["median_abs_month_diff_pct"] < 0.01
     assert abs(res[0]["cagr_ours_pct"] - (1.01 ** 12 - 1) * 100) < 0.02

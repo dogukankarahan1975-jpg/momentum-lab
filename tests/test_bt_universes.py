@@ -247,3 +247,32 @@ def test_episode_filter_reused_ticker():
     out, st = bu.episode_filter(months, {"DELL": pd.Series(1.0, index=idx)})
     assert out["2010-05"][0][0] is None and out["2025-05"][0][0] == "DELL"
     assert st["episodes"] == 2 and st["episodes_without_prices"] == 1
+
+
+def test_dedupe_isin_map_keeps_home_listing():
+    from pipeline import bt_universes as bu
+    imap = {"CNE1000003G1": "1398.HK", "CNE000001P37": "1398.HK", "US02079K3059": "GOOGL", "US02079K1079": "GOOGL",
+            "GRS003003035": "NA.TO", "CA6330671034": "NA.TO", "US0378331005": "AAPL"}
+    meta = {"CNE1000003G1": ("INDUSTRIAL AND COMMERCIAL BANK OF CHINA H", "HKD", "CN"),
+            "CNE000001P37": ("INDUSTRIAL AND COMMERCIAL BANK OF CHINA A", "CNY", "CN"),
+            "US02079K3059": ("ALPHABET INC CLASS A", "USD", "US"), "US02079K1079": ("ALPHABET INC CLASS C", "USD", "US"),
+            "GRS003003035": ("NATIONAL BANK OF GREECE SA", "EUR", "GR"), "CA6330671034": ("NATIONAL BANK OF CANADA", "CAD", "CA"),
+            "US0378331005": ("APPLE INC", "USD", "US")}
+    uni_norm = {"GOOGL": bu.norm_full("Alphabet Inc Class A")}
+    w = {"US02079K3059": 1.0, "US02079K1079": 1.2}
+    losers = set(bu.dedupe_isin_map(imap, meta, uni_norm, w))
+    assert losers == {"CNE000001P37", "US02079K1079", "GRS003003035"}
+
+
+def test_match_name_ambiguous_prefers_first_filing_and_short_names():
+    from pipeline import bt_universes as bu
+    rows = [["US30233Q1085", "EXXONMOBIL HOLDINGS CORPORATION", "US", "USD", 1, 10.0],
+            ["US30231G1022", "EXXON MOBIL CORPORATION", "US", "USD", 1, 500.0],
+            ["GB0007980591", "BP PLC", "GB", "GBP", 1, 50.0]]
+    idx = bu.build_name_index(rows, [])
+    idx["first"] = {"US30231G1022": "2019-10", "GB0007980591": "2019-10", "US30233Q1085": "2026-04"}
+    idx["w"] = {r[0]: r[5] for r in rows}
+    assert bu.match_name(idx, "Exxon Mobil Corp.", "US") == "US30231G1022"
+    assert bu.match_name(idx, "BP PLC", "GB") == "GB0007980591"
+    idx2 = bu.build_name_index(rows, [])        # ohne Zeitinformation bleibt Mehrdeutiges unzugeordnet
+    assert bu.match_name(idx2, "Exxon Mobil Corp.", "US") is None

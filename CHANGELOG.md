@@ -1,5 +1,12 @@
 # Änderungen
 
+## Pipeline 0.9.9 – 28.11.2026
+- Fehler behoben: Im Screening-Ablauf stand „undefined Aktien, Quelle: undefined“ und „NaN ohne Kursdaten“ (App-Fehler aus 0.9.8, die Daten selbst waren richtig).
+- ACWI-Backtest: Hauptursache für „unstimmig“ gefunden. Durch eine zu grobe Namenszuordnung (erste 10 Buchstaben) gehörten 108 Kürzel zu zwei verschiedenen Wertpapieren, z. B. chinesische A-Aktie und H-Aktie derselben Bank, „National Bank of Greece“ → National Bank of Canada, Alphabet A/C. Dann sprang das Kursverhältnis und der Titel wurde verworfen (68 der 81 „unstimmigen“). Jetzt: ein Kürzel gehört genau einer ISIN (Heimatbörse und voller Name entscheiden), die übrigen 262 ISIN werden neu über OpenFIGI zugeordnet.
+- Ältere ACWI-Meldungen (vor 2019): bessere Namenszuordnung (kurze Namen wie „BP PLC“, „3M Co“; bei mehrdeutigen Namen die ISIN aus der ersten N-PORT-Meldung). Jede Zuordnung muss weiterhin den strengen Kursabgleich bestehen.
+- Yahoo-ISIN-Suche bekommt mehr Zeit pro Lauf.
+- ETF-Gegenprobe korrigiert: verglich Monatsanfang mit Monatsende (daher scheinbar 1 % p. a. Abweichung). Die Kurse selbst stimmen: Yahoo und Tiingo liefern für URTH identische Monatsrenditen.
+
 ## Pipeline 0.9.8 – 28.11.2026
 - Screening wahlweise für MSCI ACWI oder S&P 500: Umschalter oben unter Übersicht, Screening, Top 10 und Signale. Der Datenlauf erstellt beide Screenings (S&P 500 nach dem ACWI-Lauf, eigene Dateien unter data/sp500/ und eigenes Archiv unter archive/sp500/). Bestandsliste: iShares Core S&P 500 (UCITS mit ISIN, sonst US-Fonds IVV). Depot-Aktien, die nur in der anderen Liste stehen, werden in ihrer eigenen Liste bewertet (Hinweis „bewertet im …“), nie ohne Daten mit einem Signal versehen.
 - S&P-500-ETF-Sparplan: rechnet jetzt mit den echten Kursen des iShares Core S&P 500 UCITS ETF (Xetra, Euro, SXR8) statt mit dem Index abzüglich Kosten. Vor dem Start des ETF (2010) wird der Total-Return-Index (abzgl. 0,07 % p. a.) nur angehängt, wenn er im gemeinsamen Zeitraum nachweislich zum ETF passt (gleiche Prüfung wie beim MSCI World).

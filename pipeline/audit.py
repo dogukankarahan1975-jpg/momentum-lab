@@ -127,7 +127,10 @@ def etf_crosscheck(sim: dict, fx: pd.DataFrame | None, archive_root: Path) -> li
         if not b or not ref or len(pts) != len(b["px"]):
             continue
         ours = pd.Series(b["px"], index=pts, dtype=float).dropna()
-        ours = ours.groupby(ours.index.strftime("%Y-%m")).last()
+        # Simulator-Stichtage sind die ersten Handelstage eines Monats (≈ Schlusskurs des Vormonats); Tiingo-Werte
+        # sind Monatsendkurse. Deshalb zählt ein Stichtag in den ersten Tagen eines Monats zum Vormonat.
+        ours.index = (ours.index - pd.Timedelta(days=7)).strftime("%Y-%m")
+        ours = ours.groupby(level=0).last()
         t = pd.Series(ref, dtype=float)
         rate = usd.resample("ME").last().dropna()
         rate.index = rate.index.strftime("%Y-%m")
@@ -144,7 +147,7 @@ def etf_crosscheck(sim: dict, fx: pd.DataFrame | None, archive_root: Path) -> li
                     "cagr_ours_pct": round(co * 100, 2), "cagr_reference_pct": round(ct * 100, 2),
                     "diff_pa_pct": round((co - ct) * 100, 2),
                     "median_abs_month_diff_pct": round(float(d.median()) * 100, 2),
-                    "ok": abs(co - ct) <= 0.01})
+                    "ok": bool(abs(co - ct) <= 0.01)})
     return out
 
 

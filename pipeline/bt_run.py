@@ -229,20 +229,41 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
             by_date[f["date"][:7]] = f["rows"]
     # ISIN -> Symbol: heutige ACWI-Liste (Name), sonst OpenFIGI
     imap = st.get("isin_map", {})
-    by_norm = {}
-    for n, s in zip(universe.get("name", []), universe.get("symbol", [])):
-        by_norm.setdefault(bu.norm_name(n)[:10], s)
+    # Zuordnung über den Namen nur bei GLEICHEM vollständigen Namen und GLEICHEM Land (früher: erste 10 Buchstaben –
+    # das ordnete z. B. chinesische A-Aktien der H-Aktie oder „National Bank of Greece“ der kanadischen Bank zu)
+    by_norm, uni_norm = {}, {}
+    for n, sym, isn in zip(universe.get("name", []), universe.get("symbol", []),
+                           universe.get("isin", [""] * len(universe))):
+        isn = str(isn or "").strip().upper()
+        if len(isn) == 12:      # ISIN der heutigen Liste kann aus diesen SEC-Daten stammen -> nur für Name + Land
+            by_norm.setdefault((bu.norm_full(n), isn[:2]), sym)      # voller Name (mit Aktienklasse) + Land der ISIN
+        uni_norm.setdefault(sym, bu.norm_full(n))
+    meta_all, weight_all = {}, {}
+    for rows in by_date.values():
+        for isin, name, country, cur, px, val in rows:
+            meta_all[isin] = (name, cur, country)
+            weight_all[isin] = max(weight_all.get(isin, 0.0), val or 0.0)
     todo, countries = [], {}
     for rows in by_date.values():
         for isin, name, country, *_ in rows:
             if isin in imap:
                 continue
-            k = bu.norm_name(name)[:10]
+            k = (bu.norm_full(name), str(isin)[:2])
             if k in by_norm:
                 imap[isin] = by_norm[k]
             else:
                 todo.append(isin)
                 countries[isin] = country
+    # alte Doppelzuordnungen (ein Kürzel für mehrere ISIN) auflösen und die übrigen ISIN neu bei OpenFIGI abfragen
+    if st.get("imap_ver", 1) < 2:
+        losers = bu.dedupe_isin_map(imap, meta_all, uni_norm, weight_all)
+        for i in losers:
+            imap.pop(i, None)
+            st.get("yahoo_isin", {}).pop(i, None)
+            todo.append(i)
+            countries[i] = meta_all[i][2]
+        log(f"[bt-acwi] Doppelzuordnungen aufgelöst: {len(losers)} ISIN werden neu zugeordnet")
+        st["imap_ver"] = 2
     todo = list(dict.fromkeys(todo))
     if todo and http_post_json is not None:
         got = bu.map_isins_openfigi(http_post_json, todo, countries, log=log)
@@ -265,7 +286,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         sus.sort(key=lambda i: -weight.get(i, 0.0))
         n_fix = 0
         for i in sus[:600]:
-            if time.time() > deadline - 62 * 60:
+            if time.time() > deadline - 52 * 60:
                 break
             sym = bu.yahoo_symbol_for_isin(http_json, i, *meta[i]) if http_json else None
             yl[i] = sym or ""
@@ -274,6 +295,9 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         for i, sym in yl.items():
             if sym:
                 imap[i] = sym
+        # danach darf kein Kürzel mehr zu zwei ISIN gehören (sonst springt das Kursverhältnis -> „unstimmig“)
+        for i in bu.dedupe_isin_map(imap, meta_all, uni_norm, weight_all):
+            imap[i] = ""
         if sus:
             log(f"[bt-acwi] Yahoo-Suche: {min(len(sus), 600)} verdächtige Zuordnungen geprüft, {n_fix} korrigiert, "
                 f"{max(0, len(sus) - 600)} offen")
@@ -290,6 +314,11 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
     nq_info = {"filings": 0, "rows": 0, "mapped": 0, "weight_mapped": 0.0}
     if nport_start:
         idx = bu.build_name_index([r for rows in by_date.values() for r in rows], [])
+        idx["first"], idx["w"] = {}, {}
+        for m in sorted(by_date):
+            for r in by_date[m]:
+                idx["first"].setdefault(r[0], m)
+                idx["w"][r[0]] = max(idx["w"].get(r[0], 0.0), r[5] or 0.0)
         uni_idx = bu.build_name_index([[sym, n, bu.COUNTRY_ISO.get(str(c).upper(), "")] for sym, n, c in
                                        zip(universe.get("symbol", []), universe.get("name", []),
                                            universe.get("country", [""] * len(universe)))], [])
@@ -297,7 +326,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         for acc, f in sorted(st.get("nq", {}).items(), key=lambda kv: (kv[1].get("date") or "")):
             if not f.get("rows") or not f.get("date") or f["date"][:7] >= nport_start:
                 continue
-            out = []
+            out, used = [], set()
             for name, cc, shares, val in f["rows"]:
                 isin = bu.match_name(idx, name, cc)
                 sym = imap.get(isin) if isin else None
@@ -305,6 +334,9 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
                     sym = bu.match_name(uni_idx, name, cc)
                 if sym and sym.endswith((".SS", ".SZ")):
                     continue
+                if sym in used:          # ein Kürzel nur einmal je Meldung (sonst zwei verschiedene Kurse)
+                    sym = None
+                used.add(sym)
                 out.append([sym, name, cc, "", val / shares, "USD", round(val, 2)])
                 wt_all += val
                 wt_map += val if sym else 0.0

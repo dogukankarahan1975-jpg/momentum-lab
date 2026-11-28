@@ -22,7 +22,7 @@ export async function render(root) {
   parts.push(html`<section class="panel">
     <h3>Screening</h3>
     ${universeSwitch(getUniverse())}
-    <p class="muted small">${snap ? `Zuletzt am ${fmtDateTime(snap.createdAt)}${snap.universe ? ` (${UNIVERSE_LABEL[snap.universe] || snap.universe})` : ''} mit Daten vom ${fmtDate(snap.asof)}: ${snap.candidates.length} Kandidaten.` : 'Noch kein Screening durchgeführt.'}</p>
+    <p class="muted small">${snap ? `Zuletzt am ${fmtDateTime(snap.createdAt)}${snap.uniKey ? ` (${UNIVERSE_LABEL[snap.uniKey]})` : ''} mit Daten vom ${fmtDate(snap.asof)}: ${snap.candidates.length} Kandidaten.` : 'Noch kein Screening durchgeführt.'}</p>
     <button class="screen-btn" id="go-screen">SCREENING STARTEN</button>
   </section>`);
 

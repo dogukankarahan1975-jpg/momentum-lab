@@ -16,7 +16,7 @@ export async function render(root, symbol) {
   if (!r) { root.innerHTML = String(note('error', `Keine Daten zu ${symbol}.`)); return; }
   const fromOther = screen !== sel;
   let d = null;
-  if (r.has_detail) { try { d = await loadDetail(symbol, fromOther ? screen.universe : undefined); } catch { d = null; } }
+  if (r.has_detail) { try { d = await loadDetail(symbol, fromOther ? screen.uniKey : undefined); } catch { d = null; } }
   const isCand = screen.candidates.includes(symbol);
   const hold = screen.params?.hold_max_pct ?? 0.2;
   const held = state.positions.find((p) => p.symbol === symbol);
@@ -30,7 +30,7 @@ export async function render(root, symbol) {
     <h1>${r.name}</h1>
     <div class="chips" style="margin:6px 0 12px"><span class="chip">${symbol}</span><span class="chip">${r.country}</span><span class="chip">${r.sector}</span>${r.isin ? html`<span class="chip">${r.isin}</span>` : ''}
       ${symbol === screen.top_pick ? badge('TOP PICK') : isCand ? badge('KAUF-KANDIDAT') : ''}${held ? html`<span class="chip" style="color:var(--ice)">im Depot</span>` : ''}</div>`);
-  if (fromOther) parts.push(note('info', `Diese Aktie steht nicht im gewählten Screening. Rang und Werte stammen aus dem ${UNIVERSE_LABEL[screen.universe] || 'anderen'}-Screening.`));
+  if (fromOther) parts.push(note('info', `Diese Aktie steht nicht im gewählten Screening. Rang und Werte stammen aus dem ${UNIVERSE_LABEL[screen.uniKey] || 'anderen'}-Screening.`));
   if (isHidden) parts.push(note('warn', html`<b>Ausgeblendet:</b> Du hast markiert, dass es diese Aktie bei Trade Republic nicht gibt. Sie erscheint nicht in Top 10, Stage 2 und im Simulator.`));
   if (r.Z != null) {
     parts.push(html`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline">
