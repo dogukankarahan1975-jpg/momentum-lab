@@ -225,3 +225,25 @@ def test_bad_early_mappings():
            "2019-10": [["G", "", "", "", 100.0, "USD", 1], ["W", "", "", "", 100.0, "USD", 1]]}
     bad, st = bu.bad_early_mappings(ref, {"G": good, "W": wrong}, lambda c, e: 1.0, "2019-10")
     assert bad == {"W"} and st["early_checked"] == 2
+
+
+def test_parse_nq_real_layout_with_source_linebreaks():
+    """Echte SEC-Dateien (Donnelley-HTML) haben Zeilenumbrüche mitten in Tabellenzeilen und Kapitälchen-Titel."""
+    rows = "".join(f"<TR>\n<TD>Firma {i} Ltd.</TD>\n<TD></TD>\n<TD ALIGN=right>1{i:03d}</TD>\n<TD>$</TD>\n"
+                   f"<TD ALIGN=right>2{i:03d}</TD>\n</TR>\n" for i in range(350))
+    raw = ("<P><B>Schedule of Investments</B><FONT SIZE=1>(Unaudited)</FONT>\n</P>\n"
+           "<P><B>i</B>S<FONT SIZE=2>HARES</FONT><SUP>&reg;</SUP>MSCI ACWI\nI<FONT SIZE=2>NDEX</FONT> F<FONT SIZE=2>UND"
+           "</FONT></P>\n<P>October 31, 2010</P>\n<TABLE>\n<TR><TD>COMMON STOCKS&#151;98.24%</TD></TR>\n"
+           "<TR><TD>AUSTRALIA&#151;3.40%</TD></TR>\n" + rows + "</TABLE>")
+    d = bu.parse_nq_acwi(raw)
+    assert d["date"] == "2010-10-31" and len(d["rows"]) == 350
+    assert d["rows"][0] == ["Firma 0 Ltd.", "AU", 1000.0, 2000.0]
+
+
+def test_episode_filter_reused_ticker():
+    idx = pd.date_range("2016-01-01", "2026-06-30", freq="D")
+    months = {f"{y}-{m:02d}": [["DELL", "", "", "", None, "USD"]] for y in (2010, 2011) for m in range(1, 13)}
+    months.update({f"2025-{m:02d}": [["DELL", "", "", "", None, "USD"]] for m in range(1, 13)})
+    out, st = bu.episode_filter(months, {"DELL": pd.Series(1.0, index=idx)})
+    assert out["2010-05"][0][0] is None and out["2025-05"][0][0] == "DELL"
+    assert st["episodes"] == 2 and st["episodes_without_prices"] == 1

@@ -1,4 +1,4 @@
-import { freshness, loadScreen, loadStatus, cachedStatus } from '../data.js';
+import { freshness, loadScreen, loadStatus, cachedStatus, getUniverse, rowWithSource, UNIVERSE_LABEL } from '../data.js';
 import { computePortfolio, estimateSaleTax } from '../depot.js';
 import { fmtDate, fmtEUR, fmtPct, fmtRankPct } from '../fmt.js';
 import { bestAlternative, computeSignals } from '../screening.js';
@@ -6,7 +6,8 @@ import { urgencyRank } from '../signals.js';
 import { holdStatus } from '../holding.js';
 import { todayISO } from '../fmt.js';
 import { latestScreening, state } from '../state.js';
-import { badge, empty, holdBand, html, note } from '../ui.js';
+import { badge, empty, holdBand, html, note, universeSwitch } from '../ui.js';
+import { wireUniverse } from '../main.js';
 
 export async function render(root) {
   let screen;
@@ -24,18 +25,19 @@ export async function render(root) {
   const held = new Set(pf.open.map((i) => i.pos.symbol));
   const parts = [html`<h1>Portfolio Intelligence</h1>
     <p class="lede">Ein Signal für jede gehaltene Aktie. Das Verkaufssignal der App (oben rechts) ist getrennt von deiner eigenen Haltedauer (eigener Kasten).</p>
-    <p class="small muted">Datenstand ${fmtDate(screen.asof)} (${fr.label}), Methodik v${screen.methodology_version}${snap ? `, letztes gespeichertes Screening ${fmtDate(snap.createdAt.slice(0, 10))}` : ''}.</p>`];
+    ${universeSwitch(getUniverse())}
+    <p class="small muted">Aktienliste ${UNIVERSE_LABEL[getUniverse()]}, Datenstand ${fmtDate(screen.asof)} (${fr.label}), Methodik v${screen.methodology_version}${snap ? `, letztes gespeichertes Screening ${fmtDate(snap.createdAt.slice(0, 10))}` : ''}. Aktien, die in beiden Listen stehen (z. B. Apple), werden in der gewählten Liste bewertet; Aktien, die nur in der anderen Liste stehen, in ihrer eigenen.</p>`];
   if (screen.demo) parts.push(html`<div class="demo-banner">DEMO-DATEN – Signale sind nur ein Funktionstest</div>`);
   if (!pf.open.length) {
     parts.push(empty('Keine Positionen im Depot', 'Erfasse deine Aktien unter Depot. Danach erscheinen hier Halte-, Kauf- und Verkaufssignale.', html`<a class="btn" href="#/depot">Zum Depot</a>`));
   }
   for (const s of sigs) {
     const it = pf.open.find((i) => i.pos.id === s.positionId);
-    const row = screen.bySymbol.get(s.symbol);
+    const { row } = rowWithSource(screen, s.symbol);
     const tax = s.signal === 'VERKAUF' || s.signal === 'VERKAUF PRÜFEN' ? estimateSaleTax(it.unreal, state.settings) : null;
     parts.push(html`<section class="panel">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-        <div style="min-width:0"><h3 style="font-size:17px">${s.name}</h3><div class="xs muted">${s.symbol}${row?.rank ? `, Rang ${row.rank} (${fmtRankPct(row.pct)})` : ''}</div></div>
+        <div style="min-width:0"><h3 style="font-size:17px">${s.name}</h3><div class="xs muted">${s.symbol}${row?.rank ? `, Rang ${row.rank} (${fmtRankPct(row.pct)})` : ''}${s.universe && s.universe !== getUniverse() ? `, bewertet im ${UNIVERSE_LABEL[s.universe]}` : ''}</div></div>
         <div style="text-align:right">${badge(s.signal)}<div class="xs muted" style="margin-top:4px">Dringlichkeit: ${s.urgency}</div></div>
       </div>
       ${(() => { const h = it ? holdStatus(it.pos, it, todayISO()) : null; return h ? html`<div class="note ${h.state === 'verkaufen' ? 'error' : h.state === 'warten' ? 'warn' : 'info'}" style="margin:10px 0"><div><b>Deine Haltedauer (${h.months} Monate):</b> ${h.text}</div></div>` : ''; })()}
@@ -78,4 +80,5 @@ export async function render(root) {
     <p><b>SPARPLAN FORTSETZEN</b>, solange die Aktie zu den besten ${Math.round((screen.params?.savings_max_pct ?? 0.05) * 100)} % gehört. Sonst <b>SPARPLAN STOPPEN</b>: Die Position wird weiter gehalten, nur neues Geld wechselt.</p>
     <p style="margin:0" class="muted">Diese Regeln wurden vor dem Backtest festgelegt und werden nicht laufend angepasst. Momentum Lab ist keine Anlageberatung.</p></div>`);
   root.innerHTML = parts.join('');
+  wireUniverse(root);
 }

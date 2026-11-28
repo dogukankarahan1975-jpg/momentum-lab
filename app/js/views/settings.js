@@ -67,7 +67,7 @@ export async function render(root) {
       <div class="grow"><div class="title" style="white-space:normal">${v.name} ${srcTag(v.type || 'database')}</div>
       <div class="sub" style="white-space:normal">${sourceDetail(k, v)}</div></div>
       <span class="badge ${v.ok ? 'b-buy' : 'b-sell'}">${v.ok ? 'ok' : 'Problem'}</span></div>`)}</div>
-      <p class="xs muted">Kurse: Yahoo Finance (inoffiziell, frei, keine Garantie). Wechselkurse: Europäische Zentralbank (offiziell). Universum: iShares MSCI ACWI (Large und Mid Caps, Industrie- und Schwellenländer), nur in Deutschland handelbare Aktien (Liste der Deutschen Börse, Annäherung an Trade Republic). Gegenprüfung: iShares-Kurse. US-Fundamentaldaten: SEC EDGAR (offiziell). Nachrichten: Google News RSS (Sekundärquelle).</p>`);
+      <p class="xs muted">Kurse: Yahoo Finance (inoffiziell, frei, keine Garantie). Wechselkurse: Europäische Zentralbank (offiziell). Universum: wahlweise iShares MSCI ACWI (Large und Mid Caps, Industrie- und Schwellenländer) oder S&amp;P 500 (Bestandsliste des iShares Core S&amp;P 500), umschaltbar unter Screening; nur in Deutschland handelbare Aktien (Liste der Deutschen Börse, Annäherung an Trade Republic). Gegenprüfung: iShares-Kurse. US-Fundamentaldaten: SEC EDGAR (offiziell). Nachrichten: Google News RSS (Sekundärquelle).</p>`);
   }
 
   // Methodik

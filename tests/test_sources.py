@@ -345,3 +345,20 @@ def test_isin_enrichment_from_json():
                               ["700", "TENCENT HOLDINGS LTD", "x", "Equity", "KYG875721634"]]})
     out, err = universe.add_isins(frame, lambda u: js, "acwi")
     assert list(out["isin"]) == ["US0378331005", "KYG875721634", ""] and err is None
+
+
+def test_sp500_universe_kind(tmp_path):
+    """S&P 500 als zweites Screening: eigene Bestandsliste; ohne Liste kein Ersatz-Universum unter falschem Namen."""
+    assert "sp500" in universe.UNIVERSES and universe.UNIVERSES["sp500"]["min"] >= 400
+    rows = "\n".join(f'"T{i}","FIRMA {i} INC","Information Technology","Equity","1,000.00","0.2","1,000.00","10.00",'
+                     f'"-","US00000000{i:02d}","-","100.00","United States","NASDAQ","USD","1.00","-"' for i in range(3))
+    text = ISHARES_SAMPLE.split("Ticker,")[0] + "Ticker," + ISHARES_SAMPLE.split("Ticker,")[1].split("\n")[0] + "\n" + rows + "\n"
+    with pytest.raises(RuntimeError):      # nur 3 statt >= 450 Aktien und kein Archiv
+        universe.load_universe(lambda u: text, tmp_path / "u", kind="sp500")
+    big = "\n".join(f'"T{i}","FIRMA {i} INC","Information Technology","Equity","1,000.00","0.2","1,000.00","10.00",'
+                    f'"-","-","-","100.00","United States","NASDAQ","USD","1.00","-"' for i in range(470))
+    text2 = ISHARES_SAMPLE.split("Ticker,")[0] + "Ticker," + ISHARES_SAMPLE.split("Ticker,")[1].split("\n")[0] + "\n" + big + "\n"
+    res = universe.load_universe(lambda u: text2 if u.endswith(".csv") else "{}", tmp_path / "u", kind="sp500",
+                                 sec_store=tmp_path / "fehlt.json.gz")
+    assert len(res.frame) == 470 and res.source.startswith("iShares Core S&P 500")
+    assert (tmp_path / "u" / "latest-sp500.csv").exists()

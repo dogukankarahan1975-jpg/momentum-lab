@@ -1,8 +1,9 @@
-import { cachedStatus, freshness, loadStatus } from '../data.js';
+import { cachedStatus, freshness, getUniverse, loadStatus, UNIVERSE_LABEL } from '../data.js';
 import { fmtDate, fmtDateTime } from '../fmt.js';
 import { latestScreening, state } from '../state.js';
 import { getSetting } from '../store.js';
-import { chevron, html, note } from '../ui.js';
+import { chevron, html, note, universeSwitch } from '../ui.js';
+import { wireUniverse } from '../main.js';
 
 export async function render(root) {
   const [status, snap, lastBackup, changes] = await Promise.all([
@@ -20,7 +21,8 @@ export async function render(root) {
   // Screening
   parts.push(html`<section class="panel">
     <h3>Screening</h3>
-    <p class="muted small">${snap ? `Zuletzt am ${fmtDateTime(snap.createdAt)} mit Daten vom ${fmtDate(snap.asof)}: ${snap.candidates.length} Kandidaten.` : 'Noch kein Screening durchgeführt.'}</p>
+    ${universeSwitch(getUniverse())}
+    <p class="muted small">${snap ? `Zuletzt am ${fmtDateTime(snap.createdAt)}${snap.universe ? ` (${UNIVERSE_LABEL[snap.universe] || snap.universe})` : ''} mit Daten vom ${fmtDate(snap.asof)}: ${snap.candidates.length} Kandidaten.` : 'Noch kein Screening durchgeführt.'}</p>
     <button class="screen-btn" id="go-screen">SCREENING STARTEN</button>
   </section>`);
 
@@ -35,5 +37,6 @@ export async function render(root) {
   </div>
   <p class="xs muted">Momentum Lab ist ein privates Analysewerkzeug und keine Anlageberatung. Alle Signale folgen festen, dokumentierten Regeln.</p>`);
   root.innerHTML = parts.join('');
+  wireUniverse(root);
   root.querySelector('#go-screen').onclick = () => { sessionStorage.setItem('autorun', '1'); location.hash = '#/screening'; };
 }

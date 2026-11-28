@@ -218,6 +218,59 @@ test('Screening-Monate verschieben', () => {
   const b = simRun(simData(), 's1top10', { ...simOpts, freq: 'quarterly', shift: 1 });
   assert.notEqual(a.months.filter((m) => m.screen).map((m) => m.k).join(), b.months.filter((m) => m.screen).map((m) => m.k).join());
 });
+// ---- Unabhängige Nachrechnung der Steuer (Werte von Hand gerechnet, siehe docs/PRUEFBERICHT.md)
+const taxData = (pxA, extra = {}) => {
+  const K = pxA.length - 1;
+  const pts = Array.from({ length: K + 1 }, (_, k) => new Date(Date.UTC(2023, k, 2)).toISOString().slice(0, 10));
+  return {
+    signal_dates: pts.slice(0, K), points: pts, syms: ['A'], names: ['Alpha'], sectors: ['IT'], px: [pxA],
+    rank: pts.slice(0, K).map(() => []), cand: pts.slice(0, K).map((_, k) => (k === 0 ? [0] : [])),
+    cand_z: pts.slice(0, K).map(() => [5]),
+    s2: pts.slice(0, K).map(() => []), hold: pts.slice(0, K).map(() => '0'),
+    bench: { msci_world: { name: 'W', start: pts[0], px: pts.map(() => 10) }, sp500: { name: 'S', start: pts[0], px: pts.map(() => 20) } },
+    ...extra,
+  };
+};
+const taxOpts = { startYear: 2023, budget: 0, initial: 1000, dyn: 0, feeBuy: 0, feeSell: 0, feeEtf: 0, spread: 0, spreadEtf: 0,
+  hold: '1', rest: 'cash', minScore: 0 };
+test('Steuer-Nachrechnung: Aktiengewinn 3.000 € (2023) -> (3.000 − 1.000) × 26,375 % = 527,50 €', () => {
+  const r = simRun(taxData([100, 400, 400]), 's1min4', taxOpts);
+  near(r.taxesPaid, 527.5, 1e-6);
+  near(r.final, 4000 - 527.5, 1e-6);
+});
+test('Steuer-Nachrechnung: Verlust 2023 wird 2024 mit Aktiengewinn verrechnet', () => {
+  // Jan 2023 kaufen 1.000 €, Feb verkaufen 500 € (−500), nichts mehr bis Jan 2024: 0 € Steuer.
+  const px = [100, 50, ...Array(11).fill(50), 50];
+  const r = simRun(taxData(px), 's1min4', taxOpts);
+  assert.equal(r.taxesPaid, 0);
+  // Zweiter Fall: gleicher Verlust, dann Neukauf Jan 2024 und Gewinn 2.500 € -> (2.500 − 500 − 1.000) × 26,375 % = 263,75 €
+  const px2 = [100, 50, ...Array(10).fill(50), 50, 300, 300];
+  const d2 = taxData(px2);
+  d2.cand = d2.cand.map((c, k) => (k === 0 || k === 12 ? [0] : []));
+  const r2 = simRun(d2, 's1min4', taxOpts);
+  near(r2.taxesPaid, 263.75, 1e-6);
+});
+test('Steuer-Nachrechnung: Dividende 2.040 € -> (2.040 − 1.000) × 26,375 % = 274,30 €', () => {
+  const px = [100, 102, 102];
+  const d = taxData(px, { div: { 0: [[1, 0.02 / 0.98]] } });   // Dividende = 2 % des Wertes am Punkt 1 vor Wiederanlage
+  const r = simRun(d, 's1min4', { ...taxOpts, initial: 100000, hold: 'signal' });
+  // Wert am Punkt 1 = 102.000 €, davon Dividende 102.000 × f mit f = dy/(1+dy) = 0,02 -> 2.040 €
+  near(r.divTotal, 2040, 1e-6);
+  near(r.taxesPaid, (2040 - 1000) * 0.26375, 1e-6);
+});
+test('Steuer-Nachrechnung: Vorabpauschale 2025 je Anteil (Kauf im Januar, Kurs 100 -> 110)', () => {
+  // 100.000 € Startkapital im Januar 2025 zu 100 € = 1.000 Anteile. Basisertrag je Anteil 100 × 2,53 % × 0,7 = 1,771 €,
+  // Kursanstieg 10 € -> Vorabpauschale 1.771 €, nach 30 % Teilfreistellung 1.239,70 €, minus 1.000 € -> 239,70 € × 26,375 %
+  const K = 13;
+  const pts = Array.from({ length: K + 1 }, (_, k) => new Date(Date.UTC(2025, k, 2)).toISOString().slice(0, 10));
+  const pxE = pts.map((_, k) => (k === 0 ? 100 : 110));
+  const d = { signal_dates: pts.slice(0, K), points: pts, syms: ['A'], names: ['A'], sectors: [''], px: [pts.map(() => 1)],
+    rank: pts.slice(0, K).map(() => []), cand: pts.slice(0, K).map(() => []), s2: pts.slice(0, K).map(() => []), hold: pts.slice(0, K).map(() => '0'),
+    bench: { msci_world: { name: 'W', start: pts[0], px: pxE }, sp500: { name: 'S', start: pts[0], px: pxE } } };
+  const r = simRun(d, 'world', { ...taxOpts, startYear: 2025, initial: 100000 });
+  near(r.vpTotal, 1771, 1e-6);
+  near(r.taxesPaid, (1771 * 0.7 - 1000) * 0.26375, 1e-6);
+});
 test('Simulator: Startkapital + Budget nur als Starthilfe', () => {
   const r = simRun(simData(), 'sp500', { ...simOpts, initial: 1000, budgetMonths: 6 });
   near(r.contrib, 1000 + 6 * 100);           // danach keine Einzahlungen mehr
@@ -251,6 +304,17 @@ test('Simulator: IRR stimmt bei 0 % und Monatsliste', () => {
   assert.equal(ml[0].name, 'Alpha'); assert.equal(ml[0].cand, true); assert.equal(ml[1].cand, false);
 });
 
+test('Simulator: Fondsrendite p. a. und zeitgewichtete Rendite beim ETF-Sparplan', () => {
+  const d = simData();
+  const r = simRun(d, 'world', simOpts);
+  // ETF steigt 1 % pro Monat: Fondsrendite = (Kurs Ende / Kurs Start)^(1/Jahre) − 1, unabhängig von den Raten
+  const yrs = (Date.parse(d.points[25]) - Date.parse(d.points[0])) / (365.25 * 864e5);
+  near(r.fundPa, Math.pow(1.01 ** 25, 1 / yrs) - 1, 1e-9);
+  near(r.twrPa, r.fundPa, 1e-6);           // ohne Kosten und Steuern: zeitgewichtet = Fonds
+  assert.ok(r.irr > 0 && Math.abs(r.irr - r.fundPa) < 0.01);
+  const s = simRun(d, 'sp500', simOpts);   // konstanter Kurs: 0 %
+  near(s.fundPa, 0, 1e-12);
+});
 test('Simulator: ETF-Sparplan verkauft nie, Wert = Anteile × Kurs', () => {
   const d = simData();
   const r = simRun(d, 'world', simOpts);

@@ -20,7 +20,7 @@ Grundsätze:
 
 | Regel | Wert | Begründung |
 |---|---|---|
-| Quelle | Bestandteile des MSCI ACWI (iShares MSCI ACWI, tägliche Bestandsliste; Standard ab Pipeline 0.7.0). Umschaltbar auf MSCI World über `config/universe.txt` | breite, regelbasierte Large-/Mid-Cap-Auswahl aus Industrie- und Schwellenländern; MSCI ACWI Momentum verwendet den Mutterindex als Universum |
+| Quelle | Bestandteile des MSCI ACWI (iShares MSCI ACWI, tägliche Bestandsliste; Standard ab Pipeline 0.7.0). Umschaltbar auf MSCI World über `config/universe.txt`. Ab 0.9.8 zusätzlich ein zweites, getrenntes Screening der S&P-500-Mitglieder (Bestandsliste iShares Core S&P 500); Auswahl in der App, Abschalten mit `aus` in `config/screening_sp500.txt` | breite, regelbasierte Large-/Mid-Cap-Auswahl aus Industrie- und Schwellenländern; MSCI ACWI Momentum verwendet den Mutterindex als Universum |
 | Handelbarkeit | nur Aktien, deren ISIN an der Börse Frankfurt handelbar ist (offizielle Liste der Deutschen Börse); China-A-Aktien (Shanghai/Shenzhen) immer ausgeschlossen | Annäherung an das Angebot von Trade Republic, das keine eigene Liste veröffentlicht; einzelne Abweichungen möglich, deshalb lokale Ausblende-Funktion in der App |
 | Währungen | EZB-Referenzkurse; für Währungen ohne EZB-Kurs (TWD, SAR, AED, QAR, KWD, CLP, COP, PEN, EGP) Yahoo-Devisenkurse | Umrechnung in EUR |
 | Fallback | zuletzt archivierte Liste, danach statisches Notfall-Universum | Ausfallsicherheit |

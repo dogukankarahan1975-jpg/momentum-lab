@@ -1,9 +1,9 @@
-import { loadScreen, reasonText } from '../data.js';
+import { getUniverse, loadScreen, reasonText, UNIVERSE_LABEL } from '../data.js';
 import { fmtDate, fmtDateTime, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
 import { runScreening, STEP_DEFS, STEP_GROUPS } from '../screening.js';
 import { screenings, state } from '../state.js';
-import { badge, chevron, empty, esc, html, note, openSheet } from '../ui.js';
-import { refreshHeader } from '../main.js';
+import { badge, chevron, empty, esc, html, note, openSheet, universeSwitch } from '../ui.js';
+import { refreshHeader, wireUniverse } from '../main.js';
 
 const ICON = { ok: '✓', warn: '!', err: '×', run: '…', wait: '', skip: '–' };
 const ICLS = { ok: 'ok', warn: 'warn', err: 'err', run: 'run', wait: '', skip: '' };
@@ -24,7 +24,8 @@ export async function render(root) {
   const last = history[0] || null;
   const showLast = last?.steps?.length === STEP_DEFS.length;
   root.innerHTML = String(html`<h1>Screening</h1>
-    <p class="lede">Lädt den neuesten geprüften Datenstand, prüft ihn auf Aktualität und Fehler, wendet die Momentum-Regeln an (Stage 1), zeigt die Fortsetzungsanalyse der Kandidaten (Stage 2) und bewertet dein Depot. Ergebnisse werden mit Datum und Methodik-Version gespeichert.</p>
+    ${universeSwitch(getUniverse())}
+    <p class="lede">Aktienliste: <b>${UNIVERSE_LABEL[getUniverse()]}</b>. Die Wahl gilt auch für Top 10, Depot-Signale und Signale. Lädt den neuesten geprüften Datenstand, prüft ihn auf Aktualität und Fehler, wendet die Momentum-Regeln an (Stage 1), zeigt die Fortsetzungsanalyse der Kandidaten (Stage 2) und bewertet dein Depot. Ergebnisse werden mit Datum und Methodik-Version gespeichert.</p>
     <button class="screen-btn" id="run">SCREENING STARTEN</button>
     <div id="result" style="margin-top:14px"></div>
     <section class="panel" id="steps-panel"><h3>Ablauf</h3><div id="steps">${stepsHTML(showLast ? last.steps : STEP_DEFS.map(([, group, label]) => ({ label, group, state: 'wait' })))}</div>
@@ -33,6 +34,7 @@ export async function render(root) {
     <div id="universe"><p class="muted small">Wird nach dem Laden der Daten angezeigt.</p></div>
     <h2>Frühere Screenings</h2>
     <div id="history"></div>`);
+  wireUniverse(root);
   const btn = root.querySelector('#run');
   const resEl = root.querySelector('#result');
   const stepsEl = root.querySelector('#steps');

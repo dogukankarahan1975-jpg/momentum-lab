@@ -43,11 +43,23 @@ ACWI_URLS = [
 ISIN_JSON_URLS = {
     "acwi": ["https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf/1467271812596.ajax?tab=all&fileType=json"],
     "world": ["https://www.ishares.com/us/products/239696/ishares-msci-world-etf/1467271812596.ajax?tab=all&fileType=json"],
+    "sp500": ["https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf/1467271812596.ajax?tab=all&fileType=json"],
 }
+
+# S&P 500: zuerst die Bestandsliste des iShares Core S&P 500 UCITS ETF (mit ISIN-Spalte, Seite Schweiz),
+# dann die des US-Fonds IVV (ohne ISIN; ISIN dann aus der JSON-Liste bzw. den SEC-Meldungen)
+SP500_URLS = [
+    "https://www.ishares.com/ch/individual/en/products/253743/ishares-sp-500-b-ucits-etf-acc-fund/latest-holdings.csv",
+    "https://www.ishares.com/ch/individual/en/products/253743/x/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239726/x/latest-holdings.csv",
+    "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf/1467271812596.ajax?fileType=csv&fileName=IVV_holdings&dataType=fund",
+]
 
 UNIVERSES = {
     "world": {"label": "iShares MSCI World (URTH)", "urls": ISHARES_URLS, "min": 500},
     "acwi": {"label": "iShares MSCI ACWI", "urls": ACWI_URLS, "min": 1500},
+    "sp500": {"label": "iShares Core S&P 500 (Bestandsliste)", "urls": SP500_URLS, "min": 450},
 }
 
 COLUMN_ALIASES = {
@@ -477,8 +489,10 @@ def isins_from_sec(frame: pd.DataFrame, store: Path) -> tuple[pd.DataFrame, floa
     return f, float((f.loc[rel, "isin"].astype(str).str.len() == 12).mean()) if rel.any() else 0.0
 
 
-def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str = "acwi") -> UniverseResult:
-    """http_get(url) -> str. Fällt schrittweise auf Archiv und Notfall-Universum zurück."""
+def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str = "acwi",
+                  sec_store: Path | None = None) -> UniverseResult:
+    """http_get(url) -> str. Fällt schrittweise auf Archiv und Notfall-Universum zurück.
+    sec_store: Datei mit den SEC-Meldungen des ACWI-ETF (ISIN-Ersatzquelle), Standard snapshot_dir/bt-acwi.json.gz."""
     warnings: list[str] = []
     spec = UNIVERSES.get(kind, UNIVERSES["acwi"])
     if not offline:
@@ -506,7 +520,7 @@ def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str
                 has_isin = share > 0.8
                 src = "iShares-JSON-Liste"
                 if not has_isin:
-                    frame, share = isins_from_sec(frame, snapshot_dir / "bt-acwi.json.gz")
+                    frame, share = isins_from_sec(frame, sec_store or snapshot_dir / "bt-acwi.json.gz")
                     has_isin, src = share > 0.8, "SEC-Meldungen (N-PORT) des iShares MSCI ACWI ETF"
                 w = w + ([] if has_isin else
                          [f"Bestandsliste ohne ISIN – Prüfung „in Deutschland handelbar“ nicht möglich ({err or f'nur {share:.0%} zugeordnet'})"])
@@ -530,5 +544,7 @@ def load_universe(http_get, snapshot_dir: Path, offline: bool = False, kind: str
             frame["index_weight"] = None
             warnings.append(f"Universum aus Archiv verwendet ({name})")
             return UniverseResult(frame, "Archiv", None, warnings)
+    if kind == "sp500":     # kein Notfall-Universum aus Welt-Aktien unter dem Namen S&P 500
+        raise RuntimeError("S&P-500-Bestandsliste weder online noch im Archiv verfügbar")
     warnings.append("Notfall-Universum verwendet – deutlich kleiner als MSCI World")
     return UniverseResult(from_seed(), "Notfall-Universum", None, warnings)

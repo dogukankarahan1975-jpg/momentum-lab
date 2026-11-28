@@ -1,5 +1,19 @@
 # Änderungen
 
+## Pipeline 0.9.8 – 28.11.2026
+- Screening wahlweise für MSCI ACWI oder S&P 500: Umschalter oben unter Übersicht, Screening, Top 10 und Signale. Der Datenlauf erstellt beide Screenings (S&P 500 nach dem ACWI-Lauf, eigene Dateien unter data/sp500/ und eigenes Archiv unter archive/sp500/). Bestandsliste: iShares Core S&P 500 (UCITS mit ISIN, sonst US-Fonds IVV). Depot-Aktien, die nur in der anderen Liste stehen, werden in ihrer eigenen Liste bewertet (Hinweis „bewertet im …“), nie ohne Daten mit einem Signal versehen.
+- S&P-500-ETF-Sparplan: rechnet jetzt mit den echten Kursen des iShares Core S&P 500 UCITS ETF (Xetra, Euro, SXR8) statt mit dem Index abzüglich Kosten. Vor dem Start des ETF (2010) wird der Total-Return-Index (abzgl. 0,07 % p. a.) nur angehängt, wenn er im gemeinsamen Zeitraum nachweislich zum ETF passt (gleiche Prüfung wie beim MSCI World).
+- ETF-Karten zeigen zusätzlich „Der ETF selbst: x % pro Jahr“ (Kursentwicklung in Euro). Online-Rechner zeigen meist diesen Wert; „Rendite pro Jahr (deine Raten)“ ist der Zinssatz auf die monatlichen Einzahlungen.
+- Gegenprobe der ETF-Linien in jedem Lauf: S&P 500 gegen IVV, MSCI World gegen URTH (Tiingo, in Euro mit EZB-Kurs).
+- Zeitbudget: Backtest-Teil endet nach 105 statt 118 Minuten, damit das S&P-500-Screening im selben Lauf Platz hat.
+
+## Pipeline 0.9.7 – 28.11.2026 (Prüfung, siehe docs/PRUEFBERICHT.md)
+- ACWI vor 2019: Leser der alten SEC-Meldungen korrigiert (Zeilenumbrüche im HTML-Quelltext); alle Meldungen werden neu gelesen.
+- ACWI: falsche Börsenzuordnungen (z. B. US-Aktie in Mailand, schwedische Aktienklassen) werden über die Yahoo-Suche per ISIN mit Heimatbörse korrigiert.
+- S&P 500: wiederverwendete Kürzel je Mitgliedsphase geprüft; Monate nach dem letzten Datensatz-Stichtag nutzen die exakte aktuelle Liste, sobald alle Änderungen erfolgt sind.
+- Steuer: Dividenden werden jährlich versteuert (bisher erst beim Verkauf); Vorabpauschale je Anteil nach § 18 InvStG (Kurs am Jahresanfang, 1/12-Kürzung im Erwerbsjahr).
+- Neu: automatische Prüfung in jedem Datenlauf (Simulator auf echten Daten, Indexmitgliedschaft am Stichtag, unabhängige Steuer-Nachrechnung, Kursvergleich Yahoo ↔ Tiingo, Ausreißer). Ergebnis in archive/audit/latest.json und als Kurzfassung in der App.
+
 ## Pipeline 0.9.6 – 27.11.2026
 - MSCI ACWI vor 2019: ältere SEC-Meldungen des iShares MSCI ACWI ETF (N-Q und N-CSR/N-CSRS, ab 2008) werden ausgelesen (Name, Stückzahl, Wert je Aktie). Zuordnung zu Kurskürzeln nur über den exakten Namen aus den späteren N-PORT-Meldungen (mit ISIN) bzw. der heutigen Liste; mehrdeutige Namen werden nicht verwendet. Strenge Kursprüfung: Das Verhältnis Yahoo-Kurs / gemeldeter Kurs darf sich zwischen zwei Stichtagen höchstens um 12 % ändern (außer um typische Split-Faktoren), sonst gilt die Aktie in diesem Zeitraum als nicht zugeordnet. Der Backtest beginnt erst, wenn durchgehend mindestens 85 % des damaligen Indexgewichts geprüfte Kurse haben.
 - Die älteren Meldungen werden über mehrere Läufe verteilt geladen (Zeitlimit).

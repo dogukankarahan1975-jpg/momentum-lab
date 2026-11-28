@@ -280,7 +280,9 @@ def update_prices(symbols: list[str], store: PriceStore, currency_hints: dict, f
             continue
         if refresh_if_older_days is not None and entry is not None and entry.get("fetched") and \
                 (today - pd.Timestamp(entry["fetched"])).days < refresh_if_older_days:
-            status[sym] = "aus Cache (noch aktuell)"
+            # heute schon geladen (z. B. im ersten Screening desselben Laufs) = so gut wie ein frischer Abruf
+            status[sym] = "ok (heute bereits geladen)" if (today - pd.Timestamp(entry["fetched"])).days < 1 \
+                else "aus Cache (noch aktuell)"
             continue
         full = full_refresh or entry is None or entry.get("full") is None or \
             (today - pd.Timestamp(entry["full"])).days > 8

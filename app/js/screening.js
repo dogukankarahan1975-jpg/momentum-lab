@@ -1,6 +1,6 @@
 // Ablauf "SCREENING STARTEN": Stage 1 (11 Schritte), Stage 2 (8 Schritte), Depot (3 Schritte).
 // Abbruch bei fehlenden/alten Daten. Stage 2 wird im nächtlichen Datenlauf berechnet; hier wird sie geprüft und gezeigt.
-import { freshness, loadDetail, loadScreen, loadStage2, loadStatus, reasonText } from './data.js';
+import { freshness, getUniverse, loadDetail, loadScreen, loadStage2, loadStatus, reasonText, rowWithSource } from './data.js';
 import { computePortfolio } from './depot.js';
 import { fmtDate, fmtDateTime, fmtPct, uid } from './fmt.js';
 import { evaluateHolding } from './signals.js';
@@ -38,15 +38,19 @@ export function computeSignals(screen, status, pf, plans, settings) {
   const planBy = {};
   for (const p of plans) if (p.active !== false) planBy[p.positionId] = p;
   return pf.open.map((it) => {
-    const row = screen.bySymbol.get(it.pos.symbol) || null;
+    // Bewertung immer in der Liste, in der die Aktie steht (Rang im S&P 500 bzw. im ACWI)
+    const { row, screen: src } = rowWithSource(screen, it.pos.symbol);
+    const own = src === screen;
     const ev = evaluateHolding({
-      row, fresh: fr, globalStatus: screen.status === 'fehler' || status?.overall === 'fehler' ? 'fehler' : screen.status,
-      inCandidates: screen.candidates.includes(it.pos.symbol), topPick: screen.top_pick, weight: it.weight,
-      maxWeight: settings.maxWeight, plan: planBy[it.pos.id] || null, bestAlternative: alt, params: screen.params,
-      reasonLabel: (c) => reasonText(c, screen),
+      row, fresh: own ? fr : freshness(src.asof),
+      globalStatus: src.status === 'fehler' || (own && status?.overall === 'fehler') ? 'fehler' : src.status,
+      inCandidates: src.candidates.includes(it.pos.symbol), topPick: src.top_pick, weight: it.weight,
+      maxWeight: settings.maxWeight, plan: planBy[it.pos.id] || null, bestAlternative: own ? alt : bestAlternative(src, held),
+      params: src.params, reasonLabel: (c) => reasonText(c, src),
     });
     return { positionId: it.pos.id, symbol: it.pos.symbol, name: it.pos.name, ...ev,
-      unreal: it.unreal, mvEUR: it.mvEUR, weight: it.weight, asof: screen.asof };
+      unreal: it.unreal, mvEUR: it.mvEUR, weight: it.weight, asof: src.asof,
+      universe: own ? screen.universe : src.universe };
   });
 }
 
@@ -148,7 +152,7 @@ export async function runScreening({ positions, txs, plans, settings, onStep }) 
     set(I.signals, 'ok', signals.length ? Object.entries(cnt).map(([k, v]) => `${v}× ${k}`).join(', ') : 'Keine Positionen zu bewerten');
 
     const snapshot = {
-      id: uid(), createdAt: new Date().toISOString(), asof: screen.asof, generated_at: screen.generated_at,
+      id: uid(), createdAt: new Date().toISOString(), asof: screen.asof, generated_at: screen.generated_at, universe: getUniverse(),
       methodology_version: screen.methodology_version, params_hash: screen.params_hash, pipeline_version: screen.pipeline_version,
       status: screen.status, freshness: fr, demo: !!screen.demo, top_pick: screen.top_pick,
       candidates: screen.candidates.map((s) => {

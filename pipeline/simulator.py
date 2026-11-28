@@ -88,6 +88,49 @@ def chain_backfill(main: pd.Series, candidates: list, log=print) -> tuple[pd.Ser
     return pd.concat([early, main]).sort_index(), info
 
 
+def bench_lines(bench_eur: dict, points: list, backfill: list | None, log=print) -> dict:
+    """ETF-Sparplan-Linien (Euro) auf den Simulator-Zeitpunkten: MSCI World = iShares Core MSCI World (EUNL),
+    S&P 500 = iShares Core S&P 500 (SXR8), jeweils echte ETF-Kurse; davor nur geprüfte Verlängerungen."""
+    bench_out = {}
+    sp_tr = None
+    if bench_eur.get("sp500_tr") is not None:
+        # Index ohne Kosten: laufende ETF-Kosten (0,07 % p. a.) abziehen – nur als Verlängerung vor dem ETF-Start
+        t = bench_eur["sp500_tr"]["eur"].dropna()
+        if len(t) >= 250:
+            sp_tr = t * np.exp(-0.0007 * ((t.index - t.index[0]).days / 365.25))
+    etf_ok = bench_eur.get("sp500_eur") is not None and len(bench_eur["sp500_eur"]["eur"].dropna()) >= 250
+    for key, b in bench_eur.items():
+        if key not in ("msci_world_eur", "sp500_eur") and not (key == "sp500_tr" and not etf_ok):
+            continue
+        s = b["eur"].dropna()
+        if key == "sp500_tr" and sp_tr is not None:
+            s = sp_tr
+        if len(s) < 250:
+            continue
+        ext = None
+        if key == "msci_world_eur" and backfill:
+            s, ext = chain_backfill(s, backfill, log=log)
+        if key == "sp500_eur" and sp_tr is not None:
+            # echter ETF (iShares Core S&P 500, Xetra, Euro); vor seinem Start der Total-Return-Index abzgl. Kosten,
+            # nur wenn beide im gemeinsamen Zeitraum nachweislich übereinstimmen (gleiche Prüfung wie MSCI World)
+            s, ext = chain_backfill(s, [{"symbol": "^SP500TR", "name": "S&P 500 Total-Return-Index (in Euro, abzgl. 0,07 % Kosten)",
+                                         "eur": sp_tr}], log=log)
+        ser = s.reindex(s.index.union(pd.DatetimeIndex(points))).ffill(limit=7).reindex(points)
+        ser[pd.DatetimeIndex(points) < s.index[0]] = np.nan
+        bench_out[key] = {"name": b["name"], "start": s.index[0].strftime("%Y-%m-%d"), "px": [_round(x) for x in ser.values]}
+        if ext:
+            bench_out[key]["extended"] = ext
+    # S&P 500: echter ETF (SXR8) bevorzugt; nur ohne ETF-Kurse der Index abzgl. Kosten
+    if "sp500_eur" in bench_out:
+        bench_out["sp500"] = bench_out.pop("sp500_eur")
+        bench_out.pop("sp500_tr", None)
+    elif "sp500_tr" in bench_out:
+        bench_out["sp500"] = bench_out.pop("sp500_tr")
+    if "msci_world_eur" in bench_out:
+        bench_out["msci_world"] = bench_out.pop("msci_world_eur")
+    return bench_out
+
+
 def measure_bias(ctx, dates: list, ref: pd.Series | None) -> dict | None:
     """Vorsprung der gleichgewichteten Backtest-Liste (alle zulässigen Aktien, monatlich neu gewichtet, ohne Kosten)
     vor einem echten Index-ETF im selben Zeitraum. Dient als gemessener Korrekturwert für den Simulator."""
@@ -156,6 +199,22 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
     last_day = ctx.price_eur.index[ctx.price_eur.index <= asof][-1]
     points = exec_days + ([last_day] if last_day > exec_days[-1] else [])
     px = ctx.price_eur.reindex(columns=sym_list).reindex(points)
+    # Dividendenrendite je Zeitraum (Punkt k-1 -> k) aus dem Verhältnis bereinigter/unbereinigter Kurs (Landeswährung):
+    # Yahoo/Tiingo erhöhen adj/close an jedem Ex-Tag um die Dividende. Damit kann der Simulator Dividenden jährlich
+    # versteuern, obwohl die Kurse die Dividende bereits enthalten (wiederangelegt).
+    div = {}
+    try:
+        adj_l = ctx.panel.adj.reindex(columns=sym_list).ffill(limit=10).reindex(points)
+        cl_l = ctx.panel.close.reindex(columns=sym_list).ffill(limit=10).reindex(points)
+        ratio = adj_l / cl_l
+        dyv = (ratio / ratio.shift(1) - 1).clip(lower=0)
+        for j, s in enumerate(sym_list):
+            col = dyv[s].values
+            pts = [[k, round(float(v), 5)] for k, v in enumerate(col) if k > 0 and np.isfinite(v) and 0.0002 < v < 0.5]
+            if pts:
+                div[str(j)] = pts
+    except Exception as exc:  # noqa: BLE001
+        log(f"[simulator] Dividenden nicht ermittelbar: {exc}")
     for k, d in enumerate(dates):
         top, order, cand, s2_order, s2_score, world_used = raw_lists[k]
         idx = {s: syms[s] for s in top}
@@ -186,32 +245,7 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
             else:
                 code.append("0")
         holds.append("".join(code))
-    bench_out = {}
-    for key, b in bench_eur.items():
-        if key not in ("msci_world_eur", "sp500_tr", "sp500_eur"):
-            continue
-        s = b["eur"].dropna()
-        if len(s) < 250:
-            continue
-        ext = None
-        if key == "msci_world_eur" and backfill:
-            s, ext = chain_backfill(s, backfill, log=log)
-        if key == "sp500_tr":  # Index ohne Kosten: laufende ETF-Kosten (0,07 % p. a.) abziehen
-            yrs = (s.index - s.index[0]).days / 365.25
-            s = s * np.exp(-0.0007 * yrs)
-        ser = s.reindex(s.index.union(pd.DatetimeIndex(points))).ffill(limit=7).reindex(points)
-        ser[pd.DatetimeIndex(points) < s.index[0]] = np.nan
-        bench_out[key] = {"name": b["name"], "start": s.index[0].strftime("%Y-%m-%d"), "px": [_round(x) for x in ser.values]}
-        if ext:
-            bench_out[key]["extended"] = ext
-    # S&P 500: Index (Total Return) bevorzugt, sonst ETF
-    if "sp500_tr" in bench_out:
-        bench_out["sp500"] = bench_out.pop("sp500_tr")
-        bench_out.pop("sp500_eur", None)
-    elif "sp500_eur" in bench_out:
-        bench_out["sp500"] = bench_out.pop("sp500_eur")
-    if "msci_world_eur" in bench_out:
-        bench_out["msci_world"] = bench_out.pop("msci_world_eur")
+    bench_out = bench_lines(bench_eur, points, backfill, log=log)
     # Kursdaten enden (Delisting, Übernahme): letzten Kurs fortschreiben, Ende markieren
     ended = {}
     for j, sname in enumerate(sym_list):
@@ -236,6 +270,7 @@ def build_sim_data(ctx, meta: pd.DataFrame, bench_eur: dict, asof: pd.Timestamp,
         "points": [d.strftime("%Y-%m-%d") for d in points],
         "syms": sym_list, "names": names, "sectors": sectors,
         "px": [[_round(x) for x in px[s].values] for s in sym_list],
+        "div": div,
         "rank": ranks, "cand": cands, "cand_z": zs, "rank_z": zr, "hold": holds, "s2": s2, "s2_score": s2sc, "s2_version": "2.0.0",
         "s2_world": [bool(x[5]) for x in raw_lists],
         "bench": bench_out,

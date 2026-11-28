@@ -85,7 +85,9 @@ export function computePosition(pos, txs, mark) {
   };
 }
 
-export function markFor(pos, screen, today = todayISO()) {
+export function markFor(pos, screen0, today = todayISO()) {
+  // Aktie nicht im gewählten Screening (z. B. ACWI-Aktie bei S&P-500-Auswahl): Kurs aus dem anderen Screening
+  const screen = !screen0?.bySymbol?.get(pos.symbol) && screen0?.other?.bySymbol?.get(pos.symbol) ? screen0.other : screen0;
   const row = screen?.bySymbol?.get(pos.symbol);
   const rates = screen?.fx?.rates || {};
   if (row && Number.isFinite(row.last_close)) {

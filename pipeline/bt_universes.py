@@ -290,9 +290,12 @@ def sp500_from_snapshots(snaps: list, cur: pd.DataFrame | None, today: pd.Timest
             continue
         mem = {yahoo_us(t) for t in snaps[j][1]}
         if e > last_d and late_adds:
-            adds = [t for d, t in late_adds if d <= e]
-            mem |= set(adds)
-            mem -= set(gone[:len(adds)])          # je Aufnahme fällt ein (unbekannt wann) gestrichener Titel heraus
+            if e >= late_adds[-1][0] and cur is not None:
+                mem = {yahoo_us(t) for t in cur["ticker"]}     # alle Änderungen erfolgt -> aktuelle Liste ist exakt
+            else:
+                adds = [t for d, t in late_adds if d <= e]
+                mem |= set(adds)
+                mem -= set(gone[:len(adds)])      # Übergangsmonat: Zeitpunkt der Streichung unbekannt (Näherung)
         out[ym] = sorted(mem)
     sizes = {m: len(v) for m, v in out.items()}
     ok_from = None
@@ -611,9 +614,9 @@ def figi_to_yahoo(data: list[dict], country: str) -> str | None:
     suf = EXCH_SUFFIX[ex]
     if ex == "HK" and t.isdigit():
         t = t.zfill(4)
-    t = t.replace("/", "-").replace(" ", "-")
+    t = t.rstrip("/").replace("/", "-").replace(" ", "-")      # „BP/“ -> BP, „BT/A“ -> BT-A
     if suf in (".L",):
-        t = t.rstrip(".").replace("-", "-")
+        t = t.rstrip(".")
     return t + suf
 
 
@@ -769,7 +772,8 @@ def norm_full(x: str) -> str:
 def html_lines(raw: str) -> list[str]:
     """HTML -> Zeilen; Tabellenzellen durch Tabulator getrennt, Fußnoten-Hochzeichen entfernt."""
     import html as _html
-    h = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", raw)
+    h = re.sub(r"[\r\n]+", " ", raw)          # Zeilenumbrüche im HTML-Quelltext sind bedeutungslos
+    h = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", h)
     h = re.sub(r"(?is)<sup\b.*?</sup>", "", h)
     h = re.sub(r"(?i)</t[dh]\s*>", "\t", h)
     h = re.sub(r"(?i)</tr\s*>|<br\s*/?>|</p\s*>|</div\s*>|</h\d\s*>|</li\s*>", "\n", h)
@@ -962,3 +966,107 @@ def bad_early_mappings(ref_months: dict, close: dict, fx_local_per_usd, cut: str
             bad.add(s)
             st["early_bad"] += 1
     return bad, st
+
+
+# ------------------------------------------------------------------ ISIN -> Yahoo über die Yahoo-Suche (Prüfpfad)
+# Yahoo-Börsenkürzel je Handelswährung bzw. Land: so wird die HEIMATBÖRSE gewählt (nicht z. B. Mailand für eine US-Aktie)
+YEX_BY_CUR = {
+    "USD": {"NYQ", "NMS", "NGM", "NCM", "ASE", "PCX", "BTS", "NAS", "NYS"}, "GBP": {"LSE"}, "GBX": {"LSE"},
+    "JPY": {"JPX", "TYO"}, "HKD": {"HKG"}, "CAD": {"TOR"}, "AUD": {"ASX"}, "CHF": {"EBS"}, "SEK": {"STO"},
+    "DKK": {"CPH"}, "NOK": {"OSL"}, "KRW": {"KSC", "KOE"}, "TWD": {"TAI", "TWO"}, "INR": {"NSI", "BSE"},
+    "BRL": {"SAO"}, "MXN": {"MEX"}, "ZAR": {"JNB"}, "SGD": {"SES"}, "ILS": {"TLV"}, "SAR": {"SAU"},
+    "THB": {"SET"}, "MYR": {"KLS"}, "IDR": {"JKT"}, "PHP": {"PHS"}, "TRY": {"IST"}, "PLN": {"WSE"},
+    "CLP": {"SGO"}, "QAR": {"DOH"}, "AED": {"DFM", "ABU"}, "KWD": {"KUW"}, "CNY": {"SHH", "SHZ"}, "NZD": {"NZE"},
+    "COP": {"BVC"}, "EGP": {"CAI"}, "HUF": {"BUD"}, "CZK": {"PRA"}, "PEN": {"LIM"},
+}
+YEX_EUR = {"DE": {"GER"}, "FR": {"PAR"}, "NL": {"AMS"}, "IT": {"MIL"}, "ES": {"MCE"}, "FI": {"HEL"}, "BE": {"BRU"},
+           "AT": {"VIE"}, "PT": {"LIS"}, "IE": {"ISE"}, "GR": {"ATH"}, "LU": {"AMS", "PAR"}}
+YEX_BY_COUNTRY = {"US": YEX_BY_CUR["USD"], "GB": {"LSE"}, "JP": {"JPX"}, "HK": {"HKG"}, "CA": {"TOR"}, "AU": {"ASX"},
+                  "CH": {"EBS"}, "SE": {"STO"}, "DK": {"CPH"}, "NO": {"OSL"}, "KR": {"KSC", "KOE"}, "TW": {"TAI", "TWO"},
+                  "IN": {"NSI", "BSE"}, "BR": {"SAO"}, "MX": {"MEX"}, "ZA": {"JNB"}, "SG": {"SES"}, "IL": {"TLV"},
+                  "SA": {"SAU"}, "TH": {"SET"}, "MY": {"KLS"}, "ID": {"JKT"}, "PH": {"PHS"}, "TR": {"IST"},
+                  "PL": {"WSE"}, "CL": {"SGO"}, "QA": {"DOH"}, "AE": {"DFM", "ABU"}, "KW": {"KUW"},
+                  "CN": {"HKG", "SHH", "SHZ"}, "NZ": {"NZE"}, **YEX_EUR}
+SUFFIX_HOME = {"": "US", ".L": "GB", ".T": "JP", ".HK": "HK", ".TO": "CA", ".AX": "AU", ".SW": "CH", ".ST": "SE",
+               ".CO": "DK", ".OL": "NO", ".KS": "KR", ".KQ": "KR", ".TW": "TW", ".TWO": "TW", ".NS": "IN", ".BO": "IN",
+               ".SA": "BR", ".MX": "MX", ".JO": "ZA", ".SI": "SG", ".TA": "IL", ".SR": "SA", ".BK": "TH", ".KL": "MY",
+               ".JK": "ID", ".PS": "PH", ".IS": "TR", ".WA": "PL", ".SN": "CL", ".QA": "QA", ".AE": "AE", ".KW": "KW",
+               ".SS": "CN", ".SZ": "CN", ".NZ": "NZ", ".DE": "DE", ".F": "DE", ".PA": "FR", ".AS": "NL", ".MI": "IT",
+               ".MC": "ES", ".HE": "FI", ".BR": "BE", ".VI": "AT", ".LS": "PT", ".IR": "IE", ".AT": "GR"}
+
+
+def preferred_exchanges(cur: str, country: str) -> set:
+    cur = (cur or "").upper()
+    if cur == "EUR":
+        return YEX_EUR.get(country, set().union(*YEX_EUR.values()))
+    if cur and cur in YEX_BY_CUR:
+        return YEX_BY_CUR[cur]
+    return YEX_BY_COUNTRY.get(country, set())
+
+
+def suspicious_symbol(sym: str | None, cur: str, country: str) -> bool:
+    """Symbol passt nicht zur Heimatbörse (z. B. US-Aktie mit Endung .MI/.SW/.MX) oder hat ungültige Zeichen."""
+    if not sym:
+        return True
+    if any(ch in sym for ch in "*/ ") or sym.endswith("-" + sym.rsplit(".", 1)[-1]) or "-." in sym:
+        return True
+    suf = "." + sym.rsplit(".", 1)[1] if "." in sym and not sym.split(".")[-1].isdigit() else ""
+    if "." in sym and sym.rsplit(".", 1)[1] in ("A", "B", "C"):          # z. B. BRK.B (US-Klasse) -> US
+        suf = ""
+    home = SUFFIX_HOME.get(suf)
+    want = preferred_exchanges(cur, country)
+    if not want or home is None:
+        return False
+    want_c = {c for c, ex in YEX_BY_COUNTRY.items() if ex & want}
+    return home not in want_c
+
+
+def yahoo_symbol_for_isin(http_json, isin: str, cur: str, country: str) -> str | None:
+    """ISIN in der Yahoo-Suche nachschlagen und die Notierung an der Heimatbörse wählen; sonst None."""
+    try:
+        js = http_json(YAHOO_SEARCH.format(q=isin))
+    except Exception:  # noqa: BLE001
+        return None
+    want = preferred_exchanges(cur, country)
+    cands = [q for q in js.get("quotes", []) if q.get("quoteType") in (None, "EQUITY") and q.get("symbol")]
+    for q in cands:
+        if q.get("exchange") in want:
+            return str(q["symbol"])
+    return None
+
+
+def episode_filter(months: dict, close: dict, min_share: float = 0.8) -> tuple[dict, dict]:
+    """Prüft jede zusammenhängende Mitgliedschaft eines Kürzels einzeln. Wurde ein Kürzel wiederverwendet
+    (z. B. DELL: alte Dell Inc. bis 2013, Dell Technologies ab 2024), zählt nur die Phase, für die es Kurse gibt;
+    die andere gilt als ohne Kurse (statt das Kürzel ganz zu verwerfen)."""
+    order = sorted(months)
+    pos = {m: int(m[:4]) * 12 + int(m[5:7]) for m in order}          # Kalendermonate: Lücken = neue Phase
+    eps: dict[str, list[list[str]]] = {}
+    for m in order:
+        for r in months[m]:
+            s = r[0]
+            if not s:
+                continue
+            lst = eps.setdefault(s, [])
+            if lst and pos[lst[-1][-1]] == pos[m] - 1:
+                lst[-1].append(m)
+            else:
+                lst.append([m])
+    drop, st = set(), {"episodes": 0, "episodes_without_prices": 0}
+    for s, lst in eps.items():
+        ser = close.get(s)
+        ser = ser.dropna() if ser is not None else None
+        for ep in lst:
+            st["episodes"] += 1
+            if ser is None or ser.empty:
+                ok = False
+            else:
+                have = sum(1 for m in ep if ser.index[0] <= _me(m) <= ser.index[-1] + pd.Timedelta(days=10))
+                ok = have >= min_share * len(ep)
+            if not ok:
+                st["episodes_without_prices"] += 1
+                drop.update((s, m) for m in ep)
+    if not drop:
+        return months, st
+    out = {m: [([None] + r[1:]) if (r[0], m) in drop else r for r in rows] for m, rows in months.items()}
+    return out, st

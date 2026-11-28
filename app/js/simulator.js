@@ -87,7 +87,7 @@ export function startIndex(data, year) {
 
 function newBook() {
   return {
-    cash: 0, lots: new Map(), etfUnits: 0, etfBasis: 0, gains: {}, carry: 0, curYear: null, vpT: {}, paidYear: {}, monthTax: 0,
+    cash: 0, lots: new Map(), etfUnits: 0, etfBasis: 0, gains: {}, div: {}, carry: 0, curYear: null, vpT: {}, paidYear: {}, monthTax: 0,
     contrib: 0, fees: 0, spreadCost: 0, taxes: 0, trades: 0, hcount: new Map(), yearly: {}, flows: [], log: [], months: [],
   };
 }
@@ -131,7 +131,7 @@ function buyEtf(b, amount, px, o, k, why) {
   const units = (amount - o.feeEtf - sc) / px;
   b.etfUnits += units;
   b.etfBasis += amount; b.cash -= amount; b.fees += o.feeEtf; b.spreadCost += sc; b.trades += 1;
-  if (b.etfYear) b.etfYear.buys.push({ amount, month: Number(why.date?.slice(5, 7) || 1) - 1 });
+  if (b.etfYear) b.etfYear.buys.push({ units, month: Number(why.date?.slice(5, 7) || 1) - 1 });
   b.log.push({ k, type: 'ETF-Kauf', sym: 'ETF', name: why.name, px, shares: units, amount, fee: o.feeEtf, spread: sc, why: why.text, cash: b.cash });
   return true;
 }
@@ -141,7 +141,7 @@ function buyEtf(b, amount, px, o, k, why) {
 // ersten Handelstag des Folgejahres belastet. Nicht verrechnete Aktienverluste werden ins nächste Jahr vorgetragen.
 function liability(b, y, extraStock = 0, extraGeneral = 0) {
   const g = (b.gains[y] || 0) + b.carry + extraStock;           // Aktien-Verlusttopf: nur mit Aktiengewinnen
-  const general = (b.vpT[y] || 0) + extraGeneral;                // allgemeiner Topf (Vorabpauschale, ETF-Gewinne)
+  const general = (b.vpT[y] || 0) + (b.div[y] || 0) + extraGeneral;  // allgemeiner Topf (Dividenden, Vorabpauschale, ETF)
   const taxable = Math.max(0, g) + general;                       // allgemeine Verluste dürfen Aktiengewinne mindern
   return Math.max(0, taxable - allowance(y)) * TAX;
 }
@@ -156,8 +156,9 @@ function withhold(b, y, k, what) {
   const g = (b.gains[y] || 0) + b.carry;
   const parts = [`Aktien ${y} bisher ${eur(b.gains[y] || 0)}${b.carry ? ` (Verlustvortrag ${eur(b.carry)})` : ''}`];
   if (b.vpT[y]) parts.push(`Vorabpauschale steuerpflichtig ${eur(b.vpT[y])}`);
+  if (b.div[y]) parts.push(`Dividenden ${y} ${eur(b.div[y])}`);
   b.log.push({ k, type: 'Steuer', name: d > 0 ? `einbehalten (${what})` : `erstattet (${what})`, amount: d,
-    why: `${parts.join('; ')}. Steuerpflichtig ${eur(Math.max(0, g) + (b.vpT[y] || 0))} − ${eur(allowance(y))} Sparer-Pauschbetrag → Steuer im Jahr ${eur(due)}, davon schon gezahlt ${eur(due - d)}.`, cash: b.cash });
+    why: `${parts.join('; ')}. Steuerpflichtig ${eur(Math.max(0, g) + (b.vpT[y] || 0) + (b.div[y] || 0))} − ${eur(allowance(y))} Sparer-Pauschbetrag → Steuer im Jahr ${eur(due)}, davon schon gezahlt ${eur(due - d)}.`, cash: b.cash });
   return d;
 }
 
@@ -177,19 +178,40 @@ function newYear(b, year, k, pxE) {
 }
 
 function vorabpauschale(b, y, pxNow) {
-  // Basisertrag = Wert Jahresanfang × Basiszins × 0,7 (+ Käufe im Jahr anteilig je volle Monate), höchstens der Wertzuwachs
+  // § 18 InvStG je Anteil: Basisertrag = Kurs am Jahresanfang × Basiszins × 0,7, höchstens der Kursanstieg im Jahr
+  // (letzter minus erster Kurs; thesaurierender ETF ohne Ausschüttungen). Im Erwerbsjahr: minus 1/12 je vollem Monat
+  // vor dem Kaufmonat (§ 18 Abs. 2 InvStG).
   const e = b.etfYear;
   if (!e || e.year !== y) return;
   const bz = BASISZINS[y] || 0;
-  if (!bz || !(pxNow > 0)) return;
-  const vEnd = b.etfUnits * pxNow;
-  const bought = e.buys.reduce((s, x) => s + x.amount, 0);
-  const gain = vEnd - e.v0 - bought;
-  const base = e.v0 * bz * 0.7 + e.buys.reduce((s, x) => s + x.amount * bz * 0.7 * (12 - x.month) / 12, 0);
-  const vp = Math.max(0, Math.min(gain, base));
+  if (!bz || !(pxNow > 0) || !(e.p0 > 0)) return;
+  const perUnit = Math.max(0, Math.min(e.p0 * bz * 0.7, pxNow - e.p0));
+  const vp = perUnit * (e.units0 + e.buys.reduce((s, x) => s + x.units * (12 - x.month) / 12, 0));
   if (!b.vp) b.vp = {};
   b.vp[y] = vp;
   b.vpTotal = (b.vpTotal || 0) + vp;
+}
+
+// Dividenden: Die Kurse (bereinigt) enthalten sie bereits als wiederangelegt. Die Bank versteuert sie aber im Jahr der
+// Zahlung (allgemeiner Topf – Aktienverluste dürfen nicht gegengerechnet werden, § 20 Abs. 6 Satz 4 EStG).
+// Daher: Dividendenbetrag ermitteln, Steuer sofort einbehalten, Einstand um die wiederangelegte Dividende erhöhen.
+function payDividends(b, data, k, y, idx) {
+  const map = data.div;
+  if (!map) return;
+  for (const [sym, lots] of b.lots) {
+    const i = idx.get(sym);
+    const hit = map[String(i)]?.find?.((x) => x[0] === k);
+    const px = data.px[i]?.[k];
+    if (!hit || !(px > 0)) continue;
+    const f = hit[1] / (1 + hit[1]);            // Anteil der Dividende am heutigen (bereinigten) Wert
+    let total = 0;
+    for (const l of lots) { const d = l.shares * px * f; l.basis += d; total += d; }
+    if (total < 0.005) continue;
+    b.div[y] = (b.div[y] || 0) + total;
+    b.divTotal = (b.divTotal || 0) + total;
+    if (b.yearly[y]) b.yearly[y].div = (b.yearly[y].div || 0) + total;
+    withhold(b, y, k, `Dividende ${data.names[i]} ${eur(total)}`);
+  }
 }
 
 function lastPx(data, i, k) {
@@ -263,8 +285,9 @@ export function simulate(data, key, opts) {
     if (!b.yearly[year]) b.yearly[year] = { contrib: 0, tax: 0, trades0: b.trades, value: 0, holdings: [], buys: [], sells: [] };
     const pxE = st.kind === 'etf' ? data.bench?.[st.bench]?.px?.[k] : etfPx(data, k);
     b.monthTax = 0;
+    if (k > k0 && st.kind !== 'etf') payDividends(b, data, k, yearOf(data.points[k - 1]), idx);  // Zahlung im Vormonat
     newYear(b, year, k, pxE);
-    if (!b.etfYear || b.etfYear.year !== year) b.etfYear = { year, v0: b.etfUnits * (pxE || 0), buys: [] };
+    if (!b.etfYear || b.etfYear.year !== year) b.etfYear = { year, units0: b.etfUnits, p0: pxE || 0, buys: [] };
     const taxPaid = b.monthTax;
     // Monatsbudget nur in den ersten o.budgetMonths Monaten (Starthilfe), danach trägt sich die Strategie selbst
     const paying = !(o.budgetMonths > 0) || k - k0 < o.budgetMonths;
@@ -286,7 +309,7 @@ export function simulate(data, key, opts) {
         const units = (b.cash - o.feeEtf - sc) / px;
         b.log.push({ k, type: 'ETF-Kauf', sym: 'ETF', name: data.bench[st.bench].name, px, shares: units, amount: b.cash, fee: o.feeEtf, spread: sc, why: 'Sparrate', cash: 0 });
         b.etfUnits += units; b.etfBasis += b.cash; b.fees += o.feeEtf; b.spreadCost += sc; b.trades += 1;
-        b.etfYear.buys.push({ amount: b.cash, month: Number(date.slice(5, 7)) - 1 });
+        b.etfYear.buys.push({ units, month: Number(date.slice(5, 7)) - 1 });
         m.invest = b.cash; b.cash = 0;
       }
     } else {
@@ -406,9 +429,16 @@ export function simulate(data, key, opts) {
   const ys = Object.keys(b.yearly).map(Number).sort((a, c) => a - c);
   ys.forEach((y, j) => { b.yearly[y].trades = (j + 1 < ys.length ? b.yearly[ys[j + 1]].trades0 : b.trades) - b.yearly[y].trades0; });
   if (b.yearly[endYear]) b.yearly[endYear].value = final;
+  // Zeitgewichtete Rendite p. a. (unabhängig vom Einzahlungszeitpunkt) und – beim ETF – die Kursentwicklung des
+  // Fonds selbst in Euro (so rechnen die meisten Online-Fondsrechner)
+  if (prevVal > 0 && final !== prevVal) { const t = twr[twr.length - 1] * (final / prevVal); if (t > 0) twr.push(t); }
+  const twrPa = years >= 1 && twr[twr.length - 1] > 0 ? Math.pow(twr[twr.length - 1], 1 / years) - 1 : null;
+  const bpx = st.kind === 'etf' ? data.bench?.[st.bench]?.px : null;
+  const fundPa = bpx && bpx[k0] > 0 && bpx[kEnd] > 0 && years >= 1 ? Math.pow(bpx[kEnd] / bpx[k0], 1 / years) - 1 : null;
   return {
+    twrPa, fundPa,
     key, label: key === 's1min4' ? `Stage 1: nur Kandidaten mit Momentum-Score ab ${String(o.minScore).replace('.', ',')}` : st.label, short: key === 's1min4' ? `Minimum Score ${String(o.minScore).replace('.', ',')}` : st.short, kind: st.kind, series, contrib: b.contrib, final, afterTax, endTax,
-    taxesPaid: b.taxes, vpTotal: b.vpTotal || 0, fees: b.fees, spreadCost: b.spreadCost, trades: b.trades, maxDD, years,
+    taxesPaid: b.taxes, vpTotal: b.vpTotal || 0, divTotal: b.divTotal || 0, fees: b.fees, spreadCost: b.spreadCost, trades: b.trades, maxDD, years,
     irr: irr(b.flows, k0, kEnd, final, data), irrAfter: irr(b.flows, k0, kEnd, afterTax, data),
     yearly: b.yearly, log: b.log, months: b.months, open, cash: b.cash, etfValue: etfVal, etfBasis: b.etfBasis,
     start: data.points[k0], end: data.points[kEnd], k0, kEnd,

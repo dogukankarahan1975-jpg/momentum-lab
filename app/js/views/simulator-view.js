@@ -103,6 +103,10 @@ export async function renderSimulator(el, data) {
     if (ext && opts.strategies.includes('world') && startIndex(data, opts.startYear) < data.points.findIndex((d) => d >= ext.to)) {
       notes.push(`MSCI World vor ${fmtDate(ext.to)}: Kurse des älteren ${ext.name} (seit ${fmtDate(ext.from)}), mit Ausschüttungen wieder angelegt. Geprüft über ${ext.months_checked} gemeinsame Monate: Korrelation ${fmtNum(ext.corr, 3)}, Abweichung ${fmtNum(ext.diff_pa * 100, 2)} % p. a.`);
     }
+    const ext5 = data.bench?.sp500?.extended;
+    if (ext5 && opts.strategies.includes('sp500') && startIndex(data, opts.startYear) < data.points.findIndex((d) => d >= ext5.to)) {
+      notes.push(`S&P 500 vor ${fmtDate(ext5.to)} (Start des ETF): ${ext5.name}. Geprüft über ${ext5.months_checked} gemeinsame Monate mit dem echten ETF: Korrelation ${fmtNum(ext5.corr, 3)}, Abweichung ${fmtNum(ext5.diff_pa * 100, 2)} % p. a.`);
+    }
     const keys = opts.strategies.filter((k) => STRATEGIES[k].kind !== 'etf' || benchStart(STRATEGIES[k].bench));
     if (!keys.length) { out.innerHTML = String(note('info', 'Wähle oben mindestens eine Strategie.')); return; }
     if (opts.biasCorr && data.bias?.pa > 0) notes.push(`Mit Korrektur: Alle Aktienkurse wurden um ${fmtNum(data.bias.pa * 100, 1)} % p. a. gemindert (gemessener Überlebenden-Effekt).`);
@@ -127,11 +131,12 @@ export async function renderSimulator(el, data) {
           <div class="stat"><div class="l">Vermögen heute${isEtf ? ' (nie verkauft)' : ''}</div><div class="v">${fmtEUR(r.final, 0)}</div></div>
           <div class="stat"><div class="l">Eingezahlt</div><div class="v">${fmtEUR(r.contrib, 0)}</div></div>
           <div class="stat"><div class="l">${isEtf ? 'Buchgewinn' : 'Gewinn'}</div><div class="v ${gainNow >= 0 ? 'pos' : 'neg'}">${fmtEUR(gainNow, 0)}</div></div>
-          <div class="stat"><div class="l">Rendite pro Jahr</div><div class="v">${fmtPct(r.irr)}</div></div>
+          <div class="stat"><div class="l">Rendite pro Jahr${isEtf ? ' (deine Raten)' : ''}</div><div class="v">${fmtPct(r.irr)}</div></div>
         </div>
+        ${isEtf && r.fundPa != null ? html`<p class="small" style="margin:8px 0 0"><b>Der ETF selbst: ${fmtPct(r.fundPa)} pro Jahr</b> (Kurs in Euro vom ${fmtDate(r.start)} bis ${fmtDate(r.end)}). Diesen Wert zeigen die meisten Online-Rechner. „Rendite pro Jahr (deine Raten)“ ist der Zinssatz auf deine monatlichen Einzahlungen: Spätere Raten waren kürzer investiert, deshalb weichen beide Werte voneinander ab.</p>` : ''}
         <p class="xs muted" style="margin:8px 0 0">${isEtf
           ? html`Jeden Monat gekauft, nie etwas verkauft. Laufend gezahlt nur die Steuer auf die Vorabpauschale: ${fmtEUR(r.taxesPaid, 0)}. Nur falls du heute alles verkaufen würdest: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`
-          : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
+          : html`Darin ${fmtEUR(r.cash, 0)} auf dem Konto${r.etfValue > 1 ? html` und ${fmtEUR(r.etfValue, 0)} im MSCI World ETF` : ''}. Bereits gezahlte Steuern ${fmtEUR(r.taxesPaid, 0)}${r.divTotal > 1 ? ` (inkl. Steuer auf ${fmtEUR(r.divTotal, 0)} Dividenden, jährlich versteuert)` : ''}. Falls du heute alles verkaufst: ${fmtEUR(r.afterTax, 0)} nach Steuern, Gebühren und Spread (Gewinn ${fmtEUR(gainAfter, 0)}, ${fmtPct(r.irrAfter)} p. a.).`}
           Größter Rückgang ${fmtPct(r.maxDD, 0)}. ${fmtNum(r.trades, 0)} Orders, Gebühren ${fmtEUR(r.fees, 0)}, Spread ${fmtEUR(r.spreadCost, 0)}.</p>
       </div>`);
     }
@@ -166,7 +171,7 @@ export async function renderSimulator(el, data) {
         return html`<tr><td class="sticky">${y}</td><td class="n">${fmtEUR(cum, 0)}</td><td class="n">${fmtEUR(v.value, 0)}</td><td class="n">${fmtEUR(v.tax, 0)}</td><td class="n">${v.trades}</td><td class="n">${fmtEUR(v.cash, 0)}</td><td style="min-width:220px;white-space:normal" class="xs">${hold}${v.etf && STRATEGIES[r.key].kind !== 'etf' ? ' + MSCI World ETF' : ''}</td></tr>`;
       });
       out.querySelector('#simyt').innerHTML = String(html`<div class="table-wrap"><table><thead><tr><th class="sticky">Jahr</th><th class="n">Eingezahlt</th><th class="n">Wert Jahresende</th><th class="n">Steuer</th><th class="n">Orders</th><th class="n">Konto</th><th>Bestand am Jahresende</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="xs muted">Steuer = in diesem Jahr einbehaltene Abgeltungsteuer inkl. Soli (bei jedem Verkauf sofort abgezogen, Erstattungen bei Verlusten im selben Jahr verrechnet; beim ETF die Vorabpauschale). Letzte Zeile: Wert am letzten Kurstag.</p>`);
+        <p class="xs muted">Steuer = in diesem Jahr einbehaltene Abgeltungsteuer inkl. Soli (bei jedem Verkauf sofort abgezogen, Erstattungen bei Verlusten im selben Jahr verrechnet; Dividenden im Jahr der Zahlung; beim ETF die Vorabpauschale). Letzte Zeile: Wert am letzten Kurstag.</p>`);
     };
     const drawMonth = () => {
       const k = Number(out.querySelector('#simmonth').value);

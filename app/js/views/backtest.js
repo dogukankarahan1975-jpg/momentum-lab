@@ -1,5 +1,5 @@
 import { barChart, lineChart, SERIES_COLORS } from '../charts.js';
-import { loadBacktest, loadSimIndex, loadSimulatorFor } from '../data.js';
+import { getUniverse, loadBacktest, loadSimIndex, loadSimulatorFor } from '../data.js';
 import { getSetting, setSetting } from '../store.js';
 import { renderSimulator } from './simulator-view.js';
 import { fmtDate, fmtEUR, fmtNum, fmtPct } from '../fmt.js';
@@ -101,17 +101,23 @@ export async function render(root) {
   const choices = [...avail.map((u) => ({ key: u.key, text: `${u.label} – ab ${String(u.coverage_from).slice(5)}/${String(u.coverage_from).slice(0, 4)}` })),
     { key: 'current', text: 'MSCI ACWI – heutige Liste (verzerrt, nur zum Vergleich)' }];
   let cur = await getSetting('simUniverse', null);
-  if (!choices.some((c) => c.key === cur)) cur = avail.some((u) => u.key === 'sp500') ? 'sp500' : choices[0].key;
+  if (!choices.some((c) => c.key === cur)) {
+    cur = avail.some((u) => u.key === getUniverse()) ? getUniverse() : avail.some((u) => u.key === 'sp500') ? 'sp500' : choices[0].key;
+  }
   const pick = document.createElement('div');
   simEl.before(pick);
   pick.innerHTML = html`<div class="panel"><label class="field" style="margin:0"><span>Aktienliste für den Backtest</span>
     <select id="simuni">${choices.map((c) => html`<option value="${c.key}" ${c.key === cur ? 'selected' : ''}>${c.text}</option>`)}</select></label>
     <p class="xs muted" id="simuniinfo" style="margin:8px 0 0"></p>
+    ${(() => {
+      const ec = (idx?.universes || []).find((u) => u.etf_check?.length)?.etf_check || [];
+      return ec.length ? html`<p class="xs muted" style="margin:6px 0 0">Gegenprobe der ETF-Sparplan-Linien mit einer zweiten Kursquelle (Tiingo, in Euro umgerechnet): ${ec.map((r) => `${r.line === 'sp500' ? 'S&P 500' : 'MSCI World'} ${String(r.cagr_ours_pct).replace('.', ',')} % p. a. bei uns, ${String(r.cagr_reference_pct).replace('.', ',')} % beim US-Schwester-ETF (${r.from.slice(5)}/${r.from.slice(0, 4)}–${r.to.slice(5)}/${r.to.slice(0, 4)})${r.ok ? '' : ' – Abweichung über 1 % p. a., wird geprüft'}`).join('; ')}. Kleine Unterschiede sind normal (Quellensteuer bei irischen ETFs, Kosten, Handelszeiten).</p>` : '';
+    })()}
     ${missing.length ? html`<p class="xs muted" style="margin:6px 0 0">Noch nicht verfügbar: ${missing.map((u) => `${u.label} (${u.reason || 'wird aufgebaut'})`).join('; ')}</p>` : ''}</div>`;
   const info = (key) => {
     const u = avail.find((x) => x.key === key);
     pick.querySelector('#simuniinfo').textContent = u
-      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.${u.tiingo ? (u.tiingo.key ? ` Kurse ehemaliger Mitglieder von Tiingo: ${u.tiingo.stored}${u.tiingo.open ? `, noch ${u.tiingo.open} offen (werden in den nächsten Läufen geladen)` : ''}.` : ' Tiingo-Schlüssel nicht hinterlegt – frühere Jahre nur mit Yahoo-Kursen.') : ''}`
+      ? `In jedem Monat nur die Aktien, die damals im Index waren (${u.source}). Ab ${String(u.coverage_from || '').split('-').reverse().join('/')}. Im Schnitt ${Math.round(((u.coverage_count_avg ?? u.coverage_avg) || 0) * 100)} % der damaligen Mitglieder mit Kursen${u.coverage_by_weight ? ` (${Math.round((u.coverage_avg || 0) * 100)} % des Indexgewichts)` : ''}.${u.tiingo ? (u.tiingo.key ? ` Kurse ehemaliger Mitglieder von Tiingo: ${u.tiingo.stored}${u.tiingo.open ? `, noch ${u.tiingo.open} offen (werden in den nächsten Läufen geladen)` : ''}.` : ' Tiingo-Schlüssel nicht hinterlegt – frühere Jahre nur mit Yahoo-Kursen.') : ''}${u.audit?.checks ? ` Automatische Prüfung: ${u.audit.checks - u.audit.failed} von ${u.audit.checks} Testrechnungen ohne Befund${u.audit.failed ? ' – Details im Prüfbericht' : ''}.` : ''}`
       : 'Heutige ACWI-Mitglieder rückwirkend angewandt: Firmen, die damals noch nicht im Index waren, werden mitgekauft. Ergebnisse zu günstig.';
   };
   const show = async (key) => {

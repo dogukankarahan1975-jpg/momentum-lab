@@ -18,6 +18,7 @@ from .core import prepare_panel
 from .fx import fx_on_index
 from .prices import update_prices
 from . import tiingo
+from . import audit
 from .universe import SUFFIX_CURRENCY
 
 REFRESH_DAYS = {"sp500": 7, "dax": 28, "acwi": 7}
@@ -174,7 +175,7 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
             log(f"[bt-acwi] Fehler: {exc}")
             st["error"] = str(exc)[:200]
     # vor 2019: N-Q (Quartale 1/3) und N-CSR/N-CSRS (Halbjahres-/Jahresbericht) – einmalig, verteilt auf mehrere Läufe
-    NQ_VER = 1
+    NQ_VER = 2                     # 2: Leser korrigiert (Zeilenumbrüche im Quelltext) -> erneut lesen
     if st.get("nq_ver") != NQ_VER:
         st["nq"] = {a: f for a, f in st.get("nq", {}).items() if f.get("rows")}
         st["nq_ver"], st["nq_done"] = NQ_VER, False
@@ -247,6 +248,37 @@ def load_acwi(http_get, http_json, http_post_json, archive: Path, universe: pd.D
         got = bu.map_isins_openfigi(http_post_json, todo, countries, log=log)
         imap.update(got)
         log(f"[bt-acwi] OpenFIGI: {len(got)} von {len(todo)} ISIN abgefragt, {sum(1 for v in got.values() if v)} zugeordnet")
+    # Prüfpfad: verdächtige oder kurslose Zuordnungen über die Yahoo-Suche (ISIN, Heimatbörse) neu bestimmen
+    try:
+        dead = set(json.loads((archive / "bt-dead.json").read_text())) if (archive / "bt-dead.json").exists() else set()
+        badp = archive / "bt-acwi-bad.json"
+        bad = set(json.loads(badp.read_text())) if badp.exists() else set()
+        yl = st.setdefault("yahoo_isin", {})
+        meta, weight = {}, {}
+        for rows in by_date.values():
+            for isin, name, country, cur, px, val in rows:
+                meta[isin] = (cur, country)
+                weight[isin] = max(weight.get(isin, 0.0), val or 0.0)
+        sus = [i for i in meta if i not in yl and not (imap.get(i) or "").endswith((".SS", ".SZ"))
+               and (imap.get(i) or meta[i][1] != "CN")
+               and (bu.suspicious_symbol(imap.get(i), *meta[i]) or imap.get(i) in dead or imap.get(i) in bad)]
+        sus.sort(key=lambda i: -weight.get(i, 0.0))
+        n_fix = 0
+        for i in sus[:600]:
+            if time.time() > deadline - 62 * 60:
+                break
+            sym = bu.yahoo_symbol_for_isin(http_json, i, *meta[i]) if http_json else None
+            yl[i] = sym or ""
+            n_fix += 1 if sym and sym != imap.get(i) else 0
+            time.sleep(0.3)
+        for i, sym in yl.items():
+            if sym:
+                imap[i] = sym
+        if sus:
+            log(f"[bt-acwi] Yahoo-Suche: {min(len(sus), 600)} verdächtige Zuordnungen geprüft, {n_fix} korrigiert, "
+                f"{max(0, len(sus) - 600)} offen")
+    except Exception as exc:  # noqa: BLE001
+        log(f"[bt-acwi] Yahoo-Suche: {exc}")
     st["isin_map"] = imap
     bu.save_store(p, st)
     # nicht zuordenbare ISIN zählen als fehlende Mitglieder (außer vermutlich China-A, die bewusst ausgeschlossen sind)
@@ -361,6 +393,7 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
         return float(row[cur] / row["USD"]) if cur in row and "USD" in row else None
 
     index = []
+    audit_mem: dict = {}
     order = ["acwi", "dax", "sp500", "spdax"]
     for name, spec in sorted(bu.BT_UNIVERSES.items(), key=lambda kv: order.index(kv[0]) if kv[0] in order else 9):
         entry = {"key": name, "label": spec["label"], "available": False}
@@ -384,8 +417,14 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                     fix = lambda rows: [[None] + r[1:] if r[0] in bad else r for r in rows]  # noqa: E731
                     months = {m: (fix(rows) if m < cut else rows) for m, rows in months.items()}
                     refm = {m: (fix(rows) if m < cut else rows) for m, rows in refm.items()}
+            months, epi = bu.episode_filter(months, close_local)
             valid, vstats = bu.validate_rows(months, close_local, local_per_usd, ref_months=refm)
             vstats.update(early)
+            vstats.update(epi)
+            if name == "acwi":   # nicht bestandene Symbole merken -> nächster Lauf sucht sie per ISIN neu
+                members = {r[0] for rows in months.values() for r in rows if r[0]}
+                archive.mkdir(parents=True, exist_ok=True)
+                (archive / "bt-acwi-bad.json").write_text(json.dumps(sorted(members - valid)))
             start, cov = bu.coverage_start(months, valid)
             ccov = bu.count_coverage(months, valid)
             weighted = any(len(r) > 6 for rows in months.values() for r in rows[:1])
@@ -467,9 +506,43 @@ def run_all(*, http_get, http_json, http_post_json, archive: Path, cache: Path, 
                 log(f"[bt] {spec['label']}: ab {start}, {len(syms)} Aktien, Abdeckung {cov_avg:.0%}")
             (out / f"simulator-{name}.json").write_text(cpath.read_text())
             entry.update(available=True, file=f"simulator-{name}.json", symbols=len(syms))
+            audit_mem[name] = {m: sorted(v) for m, v in mem.items()}
         except Exception as exc:  # noqa: BLE001
             traceback.print_exc()
             entry["reason"] = (str(exc) if isinstance(exc, TimeoutError) else f"Fehler: {str(exc)[:160]}")
         index.append(entry)
+    # Prüfbericht (archive/audit/latest.json): Simulator auf echten Daten, Kursvergleich, Ausreißer
+    try:
+        if left() > 8 * 60 and store is not None:
+            rep = {"generated": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%MZ"), "universes": {}}
+            files = {**{n: out / f"simulator-{n}.json" for n in audit_mem}, "current": out / "simulator.json"}
+            for n, f in files.items():
+                if not f.exists():
+                    continue
+                res = audit.run_node_audit(root, f, audit_mem.get(n), cache, log=log)
+                rep["universes"][n] = {"simulator": res, "anomalies": audit.anomalies(json.loads(f.read_text()))}
+                if res and "failed" in res:
+                    log(f"[audit] {n}: {res['checks']} Prüfungen, {res['failed']} mit Befund")
+                    for e in index:
+                        if e["key"] == n:
+                            e["audit"] = {"checks": res["checks"], "failed": res["failed"]}
+            rep["prices"] = audit.price_crosscheck(frames, archive.parent, today, log=log)
+            try:
+                sim_any = next((f for f in files.values() if f.exists()), None)
+                if sim_any is not None:
+                    rep["etf_lines"] = audit.etf_crosscheck(json.loads(sim_any.read_text()), fx, archive.parent)
+                    for e in index:
+                        e["etf_check"] = rep["etf_lines"]
+                    for r in rep["etf_lines"]:
+                        log(f"[audit] ETF {r['line']}: unsere Linie {r['cagr_ours_pct']} % p. a. vs. {r['reference']} "
+                            f"{r['cagr_reference_pct']} % p. a. ({r['from']}–{r['to']})")
+            except Exception as exc:  # noqa: BLE001
+                log(f"[audit] ETF-Vergleich: {exc}")
+            for e in index:
+                if e["key"] in rep["universes"]:
+                    e.setdefault("audit", {})["anomalies"] = len(rep["universes"][e["key"]]["anomalies"])
+            audit.write_report(archive.parent, rep)
+    except Exception as exc:  # noqa: BLE001
+        log(f"[audit] Fehler: {exc}")
     keys = list(bu.BT_UNIVERSES)
     return sorted(index, key=lambda e: keys.index(e["key"]) if e["key"] in keys else 99)

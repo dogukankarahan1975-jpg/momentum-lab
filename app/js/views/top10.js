@@ -1,18 +1,20 @@
 import { fundamentals, riskFlags } from '../analysis.js';
 import { whySelected } from '../analysis.js';
-import { freshness, loadDetail, loadScreen, loadStage2 } from '../data.js';
+import { freshness, getUniverse, loadDetail, loadScreen, loadStage2, UNIVERSE_LABEL } from '../data.js';
 import { computePortfolio } from '../depot.js';
 import { cls, fmtDate, fmtNum, fmtPct, fmtRankPct } from '../fmt.js';
 import { computeSignals } from '../screening.js';
 import { buyBadge, stage2Usable } from '../stage2.js';
 import { latestScreening, state } from '../state.js';
 import { getSetting, setSetting } from '../store.js';
-import { badge, empty, holdBand, html, note } from '../ui.js';
+import { badge, empty, holdBand, html, note, universeSwitch } from '../ui.js';
+import { wireUniverse } from '../main.js';
 
 export async function render(root, mode) {
   let screen;
   try { screen = await loadScreen(); } catch (e) {
-    root.innerHTML = String(html`<h1>Top 10</h1>${note('error', e.message)}`);
+    root.innerHTML = String(html`<h1>Top 10</h1>${universeSwitch(getUniverse())}${note('error', e.message)}`);
+    wireUniverse(root);
     return;
   }
   let s2 = null;
@@ -20,7 +22,7 @@ export async function render(root, mode) {
   const fr = freshness(screen.asof);
   if (mode) await setSetting('top10View', mode);
   const view = mode || (await getSetting('top10View', null)) || (s2 && s2.status !== 'fehler' ? 'final' : 'stage1');
-  const parts = [html`<h1>Top 10</h1>`];
+  const parts = [html`<h1>Top 10</h1>${universeSwitch(getUniverse())}`];
   if (screen.demo) parts.push(html`<div class="demo-banner">DEMO-DATEN – erfundene Unternehmen, keine echten Signale</div>`);
   parts.push(html`<div class="seg" role="group" aria-label="Ansicht">
     <a class="seg-link" href="#/top10/final" aria-pressed="${view === 'final'}">Stage 2 Rangfolge</a>
@@ -28,6 +30,7 @@ export async function render(root, mode) {
   if (view === 'final') parts.push(...finalParts(screen, s2, fr));
   else parts.push(...(await stage1Parts(screen, s2, fr)));
   root.innerHTML = parts.join('');
+  wireUniverse(root);
 }
 
 // ---------------------------------------------------------------- Stage 2: Fortsetzungs-Rangfolge

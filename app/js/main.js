@@ -1,5 +1,5 @@
 // Einstieg: Router, Service Worker, Kopfzeile mit Datenstand.
-import { freshness, loadStatus } from './data.js';
+import { freshness, loadStatus, setUniverse, getUniverse, UNIVERSE_LABEL } from './data.js';
 import { fmtDate } from './fmt.js';
 import { openDB, requestPersist, getSetting, setSetting } from './store.js';
 import { state, reloadDepot, reloadSettings } from './state.js';
@@ -58,6 +58,19 @@ async function render() {
   }
 }
 
+/** Screening-Universum wechseln (MSCI ACWI / S&P 500): gilt für Screening, Top 10, Depot-Signale und Signale. */
+export async function switchUniverse(k) {
+  setUniverse(k);
+  await setSetting('screenUniverse', getUniverse());
+  toast(`Screening: ${UNIVERSE_LABEL[getUniverse()]}`);
+  refreshHeader();
+  render();
+}
+
+export function wireUniverse(root) {
+  root.querySelectorAll('[data-uni]').forEach((b) => { b.onclick = () => { if (b.dataset.uni !== getUniverse()) switchUniverse(b.dataset.uni); }; });
+}
+
 export async function refreshHeader() {
   const pill = document.getElementById('data-pill');
   try {
@@ -66,7 +79,7 @@ export async function refreshHeader() {
     const bad = st.overall === 'fehler' || fr.abort;
     const warn = st.overall === 'warnung' || !fr.ok;
     const color = bad ? 'var(--critical)' : warn ? 'var(--warn)' : 'var(--good)';
-    pill.innerHTML = `<span class="dot" style="background:${color}"></span>${st.demo ? 'DEMO ' : ''}${st.asof ? esc(fmtDate(st.asof).slice(0, 6)) : 'keine Daten'}`;
+    pill.innerHTML = `<span class="dot" style="background:${color}"></span>${st.demo ? 'DEMO ' : ''}${getUniverse() === 'sp500' ? 'S&amp;P · ' : ''}${st.asof ? esc(fmtDate(st.asof).slice(0, 6)) : 'keine Daten'}`;
     pill.setAttribute('aria-label', `Datenstand ${fmtDate(st.asof)}, ${bad ? 'Fehler' : warn ? 'Warnung' : 'aktuell'}`);
   } catch {
     pill.innerHTML = '<span class="dot" style="background:var(--ink-3)"></span>offline';
@@ -99,6 +112,7 @@ async function boot() {
     return;
   }
   await reloadSettings();
+  setUniverse(await getSetting('screenUniverse', 'acwi'));
   await reloadDepot();
   state.booted = true;
   window.addEventListener('hashchange', render);

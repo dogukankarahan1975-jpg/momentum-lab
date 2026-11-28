@@ -1,6 +1,6 @@
 import { fundamentals, riskFlags, whyBetter, whySelected } from '../analysis.js';
 import { lineChart } from '../charts.js';
-import { freshness, loadDetail, loadScreen, loadStage2, reasonText, refreshHidden } from '../data.js';
+import { freshness, loadDetail, loadScreen, loadStage2, reasonText, refreshHidden, rowWithSource, UNIVERSE_LABEL } from '../data.js';
 import { getHidden, setHidden } from '../hidden.js';
 import { stage2Usable } from '../stage2.js';
 import { stage2DetailHTML } from './stage2-detail.js';
@@ -10,11 +10,13 @@ import { badge, holdBand, html, note, raw, safeUrl, srcTag } from '../ui.js';
 import { openTxForm } from './forms.js';
 
 export async function render(root, symbol) {
-  const screen = await loadScreen();
-  const r = screen.bySymbol.get(symbol);
+  const sel = await loadScreen();
+  // Depot-Aktie aus der anderen Liste: Daten aus deren Screening anzeigen
+  const { row: r, screen } = rowWithSource(sel, symbol);
   if (!r) { root.innerHTML = String(note('error', `Keine Daten zu ${symbol}.`)); return; }
+  const fromOther = screen !== sel;
   let d = null;
-  if (r.has_detail) { try { d = await loadDetail(symbol); } catch { d = null; } }
+  if (r.has_detail) { try { d = await loadDetail(symbol, fromOther ? screen.universe : undefined); } catch { d = null; } }
   const isCand = screen.candidates.includes(symbol);
   const hold = screen.params?.hold_max_pct ?? 0.2;
   const held = state.positions.find((p) => p.symbol === symbol);
@@ -28,6 +30,7 @@ export async function render(root, symbol) {
     <h1>${r.name}</h1>
     <div class="chips" style="margin:6px 0 12px"><span class="chip">${symbol}</span><span class="chip">${r.country}</span><span class="chip">${r.sector}</span>${r.isin ? html`<span class="chip">${r.isin}</span>` : ''}
       ${symbol === screen.top_pick ? badge('TOP PICK') : isCand ? badge('KAUF-KANDIDAT') : ''}${held ? html`<span class="chip" style="color:var(--ice)">im Depot</span>` : ''}</div>`);
+  if (fromOther) parts.push(note('info', `Diese Aktie steht nicht im gewählten Screening. Rang und Werte stammen aus dem ${UNIVERSE_LABEL[screen.universe] || 'anderen'}-Screening.`));
   if (isHidden) parts.push(note('warn', html`<b>Ausgeblendet:</b> Du hast markiert, dass es diese Aktie bei Trade Republic nicht gibt. Sie erscheint nicht in Top 10, Stage 2 und im Simulator.`));
   if (r.Z != null) {
     parts.push(html`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -38,7 +41,7 @@ export async function render(root, symbol) {
   }
   // Stage 2 (Fortsetzungsanalyse): volle Analyse für Kandidaten, Kurzfassung für alle anderen mit Score
   let s2 = null;
-  try { s2 = await loadStage2(); } catch { s2 = null; }
+  if (!fromOther) { try { s2 = await loadStage2(); } catch { s2 = null; } }
   const e2 = s2?.bySymbol?.get(symbol);
   if (e2 && s2.schema >= 2) parts.push(stage2DetailHTML(e2, s2, stage2Usable(s2, screen, freshness(screen.asof))));
   // Kurs

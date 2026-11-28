@@ -318,8 +318,15 @@ def market_regime(bench_frames: dict, fx: pd.DataFrame, elig_above_ma: pd.Series
 
 
 # ------------------------------------------------------------------ Hauptablauf
+_LG_NAME = "last_good"          # letzter gültiger Stand (je Screening-Universum eigener Ordner)
+_RUN_MEMO: dict = {}             # innerhalb eines Laufs geteilte Downloads (z. B. Frankfurt-Liste)
+
+
 def run(args) -> int:
-    t0 = time.time()
+    global _LG_NAME
+    t0 = getattr(args, "t0", None) or time.time()
+    sub = bool(getattr(args, "sub", False))       # zweites Screening (S&P 500): ohne Backtests
+    _LG_NAME = "last_good" + (f"_{args.universe}" if sub else "")
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "details").mkdir(exist_ok=True)
@@ -347,21 +354,25 @@ def run(args) -> int:
         watch = []
         hist, pit_frames, pit_currency, kind = demo_history(universe, frames), {}, {}, "acwi"
     else:
-        kind = read_universe_kind(ROOT / "config" / "universe.txt")
-        ures = load_universe(lambda u: http_get(u), archive / "universe", offline=False, kind=kind)
+        kind = getattr(args, "universe", None) or read_universe_kind(ROOT / "config" / "universe.txt")
+        ures = load_universe(lambda u: http_get(u), archive / "universe", offline=False, kind=kind,
+                             sec_store=Path(getattr(args, "archive_root", None) or args.archive) / "universe" / "bt-acwi.json.gz")
         universe, uni_as_of = ures.frame, ures.as_of
         for w in ures.warnings:
             msg("warnung", w)
         sources["universe"] = {"name": ures.source, "ok": ures.source.startswith("iShares"),
                                "as_of": uni_as_of, "size_index": int(len(universe)), "type": "database", "kind": kind,
-                               "url": ("https://www.ishares.com/uk/individual/en/products/251850/ishares-msci-acwi-ucits-etf"
-                                       if kind == "acwi" else "https://www.ishares.com/us/products/239696/ishares-msci-world-etf")}
+                               "url": {"acwi": "https://www.ishares.com/uk/individual/en/products/251850/ishares-msci-acwi-ucits-etf",
+                                       "sp500": "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf"}.get(
+                                           kind, "https://www.ishares.com/us/products/239696/ishares-msci-world-etf")}
         # Nur Aktien, die in Deutschland (Börse Frankfurt) handelbar sind – Annäherung an das Trade-Republic-Angebot
         from .tradable import apply_filter, load_frankfurt_isins
         isins, tstat = (None, {"name": "Deutsche Börse – handelbare Instrumente Börse Frankfurt", "type": "official",
                                "ok": False, "error": "nicht benötigt"})
         if "isin" in universe and (universe["isin"].astype(str).str.len() == 12).mean() > 0.8:
-            isins, tstat = load_frankfurt_isins(lambda u: http_get(u, binary=True), lambda u: http_get(u), log)
+            if "fra" not in _RUN_MEMO:          # im zweiten Screening (S&P 500) nicht erneut herunterladen
+                _RUN_MEMO["fra"] = load_frankfurt_isins(lambda u: http_get(u, binary=True), lambda u: http_get(u), log)
+            isins, tstat = _RUN_MEMO["fra"][0], dict(_RUN_MEMO["fra"][1])
         universe, tinfo = apply_filter(universe, isins, archive / "universe", iso(pd.Timestamp.utcnow().tz_localize(None)))
         untradable = set(tinfo.pop("removed_symbols", []))
         tinfo.pop("not_found_symbols", None)
@@ -384,10 +395,13 @@ def run(args) -> int:
                 hints[s] = SUFFIX_CURRENCY.get(suf)
         store = PriceStore.load(cache / "prices.pkl.gz")
         log(f"Kurse laden für {len(symbols)} Symbole (Cache: {len(store.data)})")
-        res = update_prices(symbols, store, hints, full_refresh=args.full_refresh, log=log)
+        res = update_prices(symbols, store, hints, full_refresh=args.full_refresh, log=log,
+                            refresh_if_older_days=(1 if sub else None))     # heute schon geladene Kurse wiederverwenden
         frames, currency, price_status, pstats = res.frames, res.currency, res.status, res.stats
         # Historische Indexzusammensetzung für den Backtest (point in time) und Kurse ehemaliger Mitglieder
         try:
+            if sub:
+                raise RuntimeError("im zweiten Screening nicht benötigt")
             from . import pit
             today_ts = pd.Timestamp.utcnow().tz_localize(None).normalize()
             hist_path = pit.path_for(archive / "universe", kind)
@@ -414,10 +428,11 @@ def run(args) -> int:
                                             f"{len(pit_only)} ehemalige Mitglieder, davon {len(pit_frames)} mit Kursen"
                                             + (f"; Fehler: {hinfo['error']}" if hinfo.get("error") else "")}
         except Exception as exc:  # noqa: BLE001 – Historie ist optional, das Screening läuft auch ohne
-            log(f"[historie] Fehler: {exc}")
+            log(f"[historie] {'übersprungen' if sub else 'Fehler'}: {exc}")
             hist, pit_frames, pit_currency = None, {}, {}
-            sources["history"] = {"name": "iShares-Bestandslisten zu früheren Stichtagen", "type": "database",
-                                  "ok": False, "error": str(exc)[:200]}
+            if not sub:
+                sources["history"] = {"name": "iShares-Bestandslisten zu früheren Stichtagen", "type": "database",
+                                      "ok": False, "error": str(exc)[:200]}
         store.save(cache / "prices.pkl.gz")
         sources["prices"] = {"name": "Yahoo Finance (inoffiziell)", "ok": pstats["ok"] > 0.8 * len(symbols),
                              "type": "database", "stats": pstats}
@@ -724,7 +739,7 @@ def run(args) -> int:
                 cache=cache, out=out, root=ROOT, universe=universe, frames=frames, currency=currency,
                 store=None if demo else store, fx=fx, asof=asof, today=today, bench_eur=b_eur, backfill=b_fill,
                 build_sim_data=build_sim_data, sanitize=sanitize, log=log,
-                price_deadline_s=2400, deadline=t0 + 118 * 60,
+                price_deadline_s=2400, deadline=t0 + (105 if getattr(args, "with_sp500", False) else 118) * 60,
                 key_base=f"{PIPELINE_VERSION}|{params_hash()}|{stage2_params_hash()}|{prev_d.strftime('%Y-%m') if prev_d is not None else ''}",
                 sources=demo_bt_sources(universe, frames) if demo else None)
             if not demo:
@@ -743,7 +758,7 @@ def run(args) -> int:
             msg("warnung", f"Backtests mit damaliger Indexzusammensetzung fehlgeschlagen: {exc}")
 
     sim_cache = cache / "simulator.json"
-    if sim_cache.exists():
+    if sim_cache.exists() and not sub:
         sim_txt = sim_cache.read_text()
         if demo:
             sim_txt = sim_txt.replace('"schema":1,', '"schema":1,"demo":true,', 1)
@@ -819,7 +834,7 @@ def run(args) -> int:
         (out / "archive" / "index.json").write_text(json.dumps({"months": idx}))
     if overall != "fehler":
         import shutil
-        lg = cache / "last_good"
+        lg = cache / _LG_NAME
         if lg.exists():
             shutil.rmtree(lg)
         shutil.copytree(out, lg)
@@ -1051,7 +1066,7 @@ def _fail(out: Path, messages, sources, demo, reason, cache: Path | None = None)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     messages.append({"level": "fehler", "text": f"Heutiger Datenlauf fehlgeschlagen: {reason}"})
     asof, overall = None, "fehler"
-    lg = (cache or Path("cache")) / "last_good"
+    lg = (cache or Path("cache")) / _LG_NAME
     if lg.exists() and (lg / "screen.json").exists():
         for item in lg.iterdir():
             dst = out / item.name
@@ -1110,6 +1125,7 @@ def _json_default(o):
 
 
 def main(argv=None) -> int:
+    global _LG_NAME
     ap = argparse.ArgumentParser(description="Momentum Lab Datenlauf")
     ap.add_argument("--mode", choices=["live", "demo"], default="live")
     ap.add_argument("--out", default="site/data")
@@ -1123,13 +1139,40 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     if os.environ.get("FULL_REFRESH", "").lower() in ("1", "true", "yes"):
         args.full_refresh = True
+    args.t0 = time.time()
+    args.universe, args.sub, args.archive_root = None, False, args.archive
+    # Zweites Screening (S&P 500) nur im echten Lauf; Schalter: config/screening_sp500.txt mit „aus“ deaktiviert es
+    sp_cfg = ROOT / "config" / "screening_sp500.txt"
+    args.with_sp500 = (args.mode == "live" or os.environ.get("DEMO_SP500") == "1") and \
+        not (sp_cfg.exists() and "aus" in sp_cfg.read_text().lower())
     try:
-        return run(args)
+        rc = run(args)
     except Exception as exc:  # noqa: BLE001
         traceback.print_exc()
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
-        return _fail(out, [], {}, args.mode == "demo", f"Unerwarteter Fehler im Datenlauf: {exc}", Path(args.cache))
+        rc = _fail(out, [], {}, args.mode == "demo", f"Unerwarteter Fehler im Datenlauf: {exc}", Path(args.cache))
+    if args.with_sp500:
+        import copy
+        a2 = copy.copy(args)
+        a2.universe, a2.sub, a2.skip_backtest = "sp500", True, True
+        a2.out = str(Path(args.out) / "sp500")
+        a2.archive = str(Path(args.archive) / "sp500")
+        if time.time() - args.t0 > 128 * 60:
+            log("[sp500] Zeitlimit – S&P-500-Screening im nächsten Lauf (letzter Stand bleibt sichtbar)")
+            _LG_NAME = "last_good_sp500"
+            Path(a2.out).mkdir(parents=True, exist_ok=True)
+            _fail(Path(a2.out), [], {}, args.mode == "demo", "Zeitlimit dieses Laufs erreicht", Path(args.cache))
+        else:
+            try:
+                log("===== Zweites Screening: S&P 500 =====")
+                run(a2)
+            except Exception as exc:  # noqa: BLE001
+                traceback.print_exc()
+                _LG_NAME = "last_good_sp500"
+                Path(a2.out).mkdir(parents=True, exist_ok=True)
+                _fail(Path(a2.out), [], {}, args.mode == "demo", f"S&P-500-Screening fehlgeschlagen: {exc}", Path(args.cache))
+    return rc
 
 
 if __name__ == "__main__":

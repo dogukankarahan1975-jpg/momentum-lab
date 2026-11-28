@@ -1,17 +1,33 @@
 // Laden der vom täglichen Datenlauf erzeugten Dateien (gleicher Server, keine Fremdanbieter).
 import { daysBetween, todayISO } from './fmt.js';
 import { applyHiddenScreen, applyHiddenStage2, getHidden } from './hidden.js';
+import { state } from './state.js';
 
 export const SUPPORTED_SCHEMA = 1;
 const base = () => new URL('data/', document.baseURI);
 const memo = new Map();
 
+// Screening-Universum: 'acwi' (MSCI ACWI, Dateien in data/) oder 'sp500' (S&P 500, Dateien in data/sp500/).
+// Backtest-Dateien (simulator*, backtest, methodology) gibt es nur einmal und liegen immer in data/.
+export const UNIVERSE_LABEL = { acwi: 'MSCI ACWI', sp500: 'S&P 500' };
+let universe = 'acwi';
+const SHARED = /^(simulator|simulators|backtest|methodology)/;
+export function getUniverse() { return universe; }
+export function setUniverse(k) {
+  const nk = k === 'sp500' ? 'sp500' : 'acwi';
+  if (nk !== universe) {
+    universe = nk;
+    for (const key of [...memo.keys()]) if (!SHARED.test(key) && key !== 'bt' && key !== 'meth' && !key.startsWith('sim')) memo.delete(key);
+  }
+}
+const pathFor = (name, uni = universe) => (uni === 'sp500' && !SHARED.test(name) ? `sp500/${name}` : name);
+
 export class DataError extends Error {
   constructor(message, kind = 'netz') { super(message); this.kind = kind; }
 }
 
-export async function getJSON(name, { fresh = false, timeout = 20000 } = {}) {
-  const url = new URL(name, base());
+export async function getJSON(name, { fresh = false, timeout = 20000, uni = universe } = {}) {
+  const url = new URL(pathFor(name, uni), base());
   if (fresh) url.searchParams.set('t', Date.now());
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
@@ -21,7 +37,11 @@ export async function getJSON(name, { fresh = false, timeout = 20000 } = {}) {
   } catch (e) {
     throw new DataError(e.name === 'AbortError' ? `Zeitüberschreitung beim Laden von ${name}` : `Keine Verbindung (${name})`, 'netz');
   } finally { clearTimeout(timer); }
-  if (res.status === 404) throw new DataError(`${name} existiert noch nicht – der erste Datenlauf ist evtl. noch nicht fertig.`, 'fehlt');
+  if (res.status === 404) {
+    throw new DataError(uni === 'sp500' && !SHARED.test(name)
+      ? 'Das S&P-500-Screening entsteht beim nächsten Datenlauf. Bis dahin oben auf „MSCI ACWI“ wechseln.'
+      : `${name} existiert noch nicht – der erste Datenlauf ist evtl. noch nicht fertig.`, 'fehlt');
+  }
   if (!res.ok) throw new DataError(`${name}: Server antwortet mit ${res.status}`, 'netz');
   try { return await res.json(); } catch { throw new DataError(`${name} ist beschädigt (kein gültiges JSON).`, 'format'); }
 }
@@ -48,8 +68,26 @@ export function parseScreen(raw) {
 export async function loadScreen(fresh = false) {
   if (!fresh && memo.has('screen')) return memo.get('screen');
   const s = applyHiddenScreen(parseScreen(await getJSON('screen.json', { fresh, timeout: 30000 })), await getHidden());
+  // Depot-Aktien aus dem anderen Screening (z. B. eine europäische Aktie aus dem ACWI, während S&P 500 gewählt ist):
+  // Kurs und Bewertung kommen dann aus dessen eigener Liste (screen.other), damit kein falsches Signal entsteht.
+  const missing = state.positions.some((p) => !s.bySymbol.has(p.symbol));
+  if (missing) {
+    const other = universe === 'sp500' ? 'acwi' : 'sp500';
+    try {
+      const o = parseScreen(await getJSON('screen.json', { fresh, timeout: 30000, uni: other }));
+      s.other = { ...o, universe: other };
+    } catch { s.other = null; }
+  }
+  s.universe = universe;
   memo.set('screen', s);
   return s;
+}
+/** Zeile einer Aktie: zuerst aus dem gewählten Screening, sonst aus dem anderen. Liefert {row, screen}. */
+export function rowWithSource(screen, symbol) {
+  const r = screen?.bySymbol?.get(symbol);
+  if (r) return { row: r, screen };
+  const o = screen?.other?.bySymbol?.get(symbol);
+  return o ? { row: o, screen: screen.other } : { row: null, screen };
 }
 export function cachedScreen() { return memo.get('screen') || null; }
 /** Nach Ein-/Ausblenden einer Aktie: Listen neu aufbauen. */
@@ -59,11 +97,12 @@ export async function refreshHidden() {
   if (memo.has('stage2raw')) memo.set('stage2', applyHiddenStage2(memo.get('stage2raw'), h));
 }
 
-export async function loadDetail(symbol) {
+export async function loadDetail(symbol, uni = universe) {
   const fn = `details/${symbol.replace(/[^A-Za-z0-9._-]/g, '_')}.json`;
-  if (memo.has(fn)) return memo.get(fn);
-  const d = await getJSON(fn);
-  memo.set(fn, d);
+  const mk = `${uni}:${fn}`;
+  if (memo.has(mk)) return memo.get(mk);
+  const d = await getJSON(fn, { uni });
+  memo.set(mk, d);
   return d;
 }
 export async function loadBacktest() {

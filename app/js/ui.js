@@ -129,3 +129,10 @@ export function onDelegate(root, event, selector, fn) {
     if (t && root.contains(t)) fn(e, t);
   });
 }
+
+/** Umschalter für das Screening-Universum (MSCI ACWI / S&P 500). Aktion: data-uni Buttons, verdrahtet von wireUniverse. */
+export function universeSwitch(current) {
+  return html`<div class="seg" role="group" aria-label="Screening-Universum">
+    <button type="button" data-uni="acwi" aria-pressed="${current === 'acwi'}">MSCI ACWI</button>
+    <button type="button" data-uni="sp500" aria-pressed="${current === 'sp500'}">S&amp;P 500</button></div>`;
+}
